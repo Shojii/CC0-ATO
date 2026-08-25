@@ -1,0 +1,2952 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="description" content="An ever-growing collective diagram. Every visitor inherits what came before, adds a small trace, then passes it forward. Nothing can be erased." />
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#F2EDE1" />
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#14120D" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%9C%3C/text%3E%3C/svg%3E" />
+
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Living Archive" />
+<meta property="og:description" content="An ever-growing collective diagram. Nothing starts from nothing. Nothing can be erased." />
+<meta property="og:image" content="/og.png" />
+<meta name="twitter:card" content="summary_large_image" />
+
+<title>Living Archive</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=Archivo:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --paper: #F2EDE1;
+    --paper-2: #ECE5D3;
+    --ink: #1D1912;
+    --ash: #8B8172;
+    --ash-pale: #CFC6B4;
+    --accent: #A8402A;
+    --line: rgba(29,25,18,0.14);
+    --line-soft: rgba(29,25,18,0.08);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper: #14120D;
+      --paper-2: #1B1812;
+      --ink: #EAE2D1;
+      --ash: #857A67;
+      --ash-pale: #3A352A;
+      --accent: #D9724F;
+      --line: rgba(234,226,209,0.16);
+      --line-soft: rgba(234,226,209,0.08);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper: #14120D;
+    --paper-2: #1B1812;
+    --ink: #EAE2D1;
+    --ash: #857A67;
+    --ash-pale: #3A352A;
+    --accent: #D9724F;
+    --line: rgba(234,226,209,0.16);
+    --line-soft: rgba(234,226,209,0.08);
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; height:100%; overflow:hidden; }
+  body{
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Archivo", ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  #app{ position:fixed; inset:0; background: var(--paper); }
+  #stage{ position:absolute; inset:0; display:block; touch-action:none; cursor: grab; }
+  #stage.dragging{ cursor: grabbing; }
+  #stage.crosshair{ cursor: crosshair; }
+  #stage.reticle{ cursor: none; }
+
+  #grain{
+    position:fixed; inset:0; pointer-events:none; opacity:0.05;
+    mix-blend-mode: multiply; z-index:5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) #grain{ mix-blend-mode: screen; opacity:0.06; }
+  }
+  :root[data-theme="dark"] #grain{ mix-blend-mode: screen; opacity:0.06; }
+
+  #vignette{
+    position:fixed; inset:0; pointer-events:none; z-index:4;
+    background: radial-gradient(ellipse at 50% 45%, transparent 45%, var(--paper) 145%);
+    opacity:0.55;
+  }
+
+  .mono{ font-family:"Space Mono", ui-monospace, monospace; }
+  .serif{ font-family:"Fraunces", Georgia, serif; }
+
+  /* ---------- HUD ---------- */
+  .hud-top, .hud-bottom{
+    position:fixed; left:0; right:0; z-index:20;
+    display:flex; align-items:center; justify-content:space-between;
+    padding: clamp(14px, 2.4vw, 26px) clamp(16px, 3vw, 34px);
+    pointer-events:none;
+  }
+  .hud-top{ top:0; }
+  .hud-bottom{ bottom:0; }
+  .hud-top > *, .hud-bottom > *{ pointer-events:auto; }
+
+  .hud-corner{ display:flex; flex-direction:column; gap:5px; min-width: 120px; }
+  .hud-corner--right{ align-items:flex-end; text-align:right; }
+  .tag{
+    font-size:11px; letter-spacing:0.14em; text-transform:uppercase;
+    color: var(--ink); opacity:0.72; white-space:nowrap;
+  }
+  .tag--loading{ display:inline-flex; align-items:baseline; gap:2px; opacity:0.5; }
+  .dots span{ animation: blink 1.6s infinite; opacity:0; }
+  .dots span:nth-child(1){ animation-delay:0s; }
+  .dots span:nth-child(2){ animation-delay:.35s; }
+  .dots span:nth-child(3){ animation-delay:.7s; }
+  @keyframes blink{ 0%,100%{opacity:0;} 35%{opacity:1;} 65%{opacity:0.15;} }
+  @media (prefers-reduced-motion: reduce){ .dots span{ animation:none; opacity:.5; } }
+
+  .hud-center{ position:absolute; left:50%; top: clamp(14px,2.4vw,26px); transform:translateX(-50%); }
+  .wordmark{
+    font-family:"Fraunces", Georgia, serif; font-weight:500; font-size:15px;
+    letter-spacing:0.01em; color:var(--ink); opacity:0.86; white-space:nowrap;
+  }
+
+  .mono-count{ font-family:"Space Mono", monospace; font-size:11.5px; letter-spacing:0.03em; color:var(--ink); opacity:0.68; font-variant-numeric: tabular-nums; }
+
+  .hud-bottom{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center; }
+  .hud-zoom{ display:flex; align-items:center; gap:10px; justify-self:start; }
+  .hud-evolution{ justify-self:end; }
+
+  .zbtn{
+    width:26px; height:26px; border-radius:50%; border:1px solid var(--line);
+    background:transparent; color:var(--ink); font-family:"Space Mono",monospace; font-size:14px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; line-height:1;
+    transition: background .15s ease, opacity .15s ease;
+  }
+  .zbtn:hover{ background: var(--line-soft); }
+  .zbtn:active{ opacity:0.6; }
+
+  .ghost-btn{
+    background:none; border:none; padding:6px 2px; cursor:pointer;
+    font-family:"Archivo", sans-serif; font-size:12.5px; letter-spacing:0.06em; text-transform:uppercase;
+    color:var(--ink); position:relative;
+  }
+  .ghost-btn::after{
+    content:""; position:absolute; left:0; right:0; bottom:1px; height:1px; background:var(--ink);
+    transform:scaleX(0); transform-origin:left; transition:transform .25s ease; opacity:0.6;
+  }
+  .ghost-btn:hover::after{ transform:scaleX(1); }
+  .ghost-btn:focus-visible, .zbtn:focus-visible, button:focus-visible, input:focus-visible{
+    outline: 2px solid var(--accent); outline-offset:2px;
+  }
+  .ghost-btn.active{ color:var(--accent); }
+  .ghost-btn.active::after{ background:var(--accent); transform:scaleX(1); }
+
+  /* ---------- Intro ---------- */
+  .intro{
+    position:fixed; inset:0; z-index:100; background:var(--paper);
+    display:flex; align-items:center; justify-content:center;
+    transition: opacity 1.1s ease, visibility 1.1s;
+  }
+  .intro.hidden{ opacity:0; visibility:hidden; pointer-events:none; }
+  .intro-inner{ max-width:560px; padding: 0 28px; text-align:center; }
+  .intro-eyebrow{
+    font-family:"Space Mono", monospace; font-size:12px; letter-spacing:0.28em;
+    color:var(--ink); opacity:0.55; margin:0 0 28px;
+  }
+  .intro-copy{
+    font-family:"Fraunces", Georgia, serif; font-weight:400; font-size: clamp(19px, 2.6vw, 26px);
+    line-height:1.5; color:var(--ink); margin:0 0 20px; opacity:0;
+    transform: translateY(8px);
+    animation: rise 1s ease forwards;
+    text-wrap: balance;
+  }
+  .intro-copy--final{ font-style:italic; color:var(--accent); }
+  .intro-copy:nth-of-type(1){ animation-delay:.15s; }
+  .intro-copy:nth-of-type(2){ animation-delay:.55s; }
+  .intro-copy:nth-of-type(3){ animation-delay:1.05s; }
+  @keyframes rise{ to{ opacity:1; transform:translateY(0); } }
+  @media (prefers-reduced-motion: reduce){
+    .intro-copy{ animation:none; opacity:1; transform:none; }
+  }
+  .enter-btn{
+    margin-top:34px; background:none; border:1px solid var(--ink); color:var(--ink);
+    font-family:"Archivo", sans-serif; font-size:12.5px; letter-spacing:0.1em; text-transform:uppercase;
+    padding:13px 26px; cursor:pointer; opacity:0; animation: rise 1s ease forwards; animation-delay:1.5s;
+    transition: background .2s ease, color .2s ease;
+  }
+  .enter-btn:hover{ background:var(--ink); color:var(--paper); }
+  @media (prefers-reduced-motion: reduce){ .enter-btn{ animation:none; opacity:1; } }
+  .arrow{ display:inline-block; margin-left:4px; transition: transform .2s ease; }
+  .enter-btn:hover .arrow{ transform: translateX(3px); }
+
+  /* ---------- Contribution bar ---------- */
+  .contrib-bar{
+    position:fixed; left:0; right:0; bottom:0; z-index:30;
+    background: var(--paper); border-top:1px solid var(--line);
+    padding: 20px clamp(18px,4vw,40px) 24px;
+    display:flex; align-items:center; justify-content:space-between; gap:24px;
+    flex-wrap:wrap;
+  }
+  .contrib-left{ display:flex; flex-direction:column; gap:4px; max-width:640px; }
+  .contrib-step{
+    font-family:"Space Mono", monospace; font-size:11px; letter-spacing:0.14em;
+    text-transform:uppercase; color:var(--accent); opacity:0.85;
+  }
+  .contrib-msg{ font-family:"Fraunces", Georgia, serif; font-size:16px; color:var(--ink); text-wrap:balance; }
+  .contrib-sub{ font-family:"Archivo", sans-serif; font-size:12.5px; color:var(--ink); opacity:0.55; }
+  .contrib-right{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; justify-content:flex-end; }
+  .btn-text{
+    background:none; border:none; font-family:"Archivo",sans-serif; font-size:12px;
+    letter-spacing:0.05em; text-transform:uppercase; color:var(--ink); opacity:0.55; cursor:pointer;
+    white-space:nowrap;
+  }
+  .btn-text:hover{ opacity:0.9; }
+  .btn-primary{
+    background:var(--ink); color:var(--paper); border:none; padding:12px 22px;
+    font-family:"Archivo",sans-serif; font-size:12.5px; letter-spacing:0.07em; text-transform:uppercase;
+    cursor:pointer; transition: opacity .2s ease; white-space:nowrap;
+  }
+  .btn-primary:disabled{ opacity:0.32; cursor:default; }
+  .btn-primary:not(:disabled):hover{ opacity:0.82; }
+
+  /* ---------- Toast ---------- */
+  .toast{
+    position:fixed; left:50%; bottom:104px; transform:translate(-50%,6px);
+    z-index:40; text-align:center; opacity:0; transition: opacity .5s ease, transform .5s ease;
+    pointer-events:none;
+  }
+  .toast.show{ opacity:1; transform:translate(-50%,0); }
+  .toast-line1{ font-family:"Fraunces", Georgia, serif; font-style:italic; font-size:16px; color:var(--ink); }
+  .toast-line2{ font-family:"Archivo", sans-serif; font-size:11.5px; letter-spacing:0.05em; color:var(--ink); opacity:0.55; margin-top:2px; }
+
+  /* ---------- Node tooltip ---------- */
+  .fps-tag{
+    font-size:9.5px; letter-spacing:0.1em; opacity:0.4;
+    font-variant-numeric: tabular-nums; margin-top:3px;
+  }
+
+  #nodeTip{
+    position:fixed; z-index:25; pointer-events:none; font-family:"Fraunces","Georgia",serif;
+    font-size:14px; color:var(--ink); background:var(--paper);
+    padding:6px 10px; border:1px solid var(--line); opacity:0; transition:opacity .15s ease;
+    white-space:nowrap; transform:translate(-50%,-130%);
+  }
+  #nodeTip.show{ opacity:0.94; }
+  #nodeTip .tip-icon{ font-size:12px; margin-right:6px; opacity:0.85; }
+  #nodeTip .tip-id{
+    font-variant-numeric: oldstyle-nums; font-feature-settings:"onum" 1;
+    font-size:15px;
+  }
+  #nodeTip .tip-sep{ margin:0 6px; color:var(--ash); opacity:0.7; }
+  #nodeTip .tip-liens{ font-style:italic; color:var(--ash); }
+  #nodeTip .tip-coord{
+    margin-top:4px; padding-top:4px; border-top:1px solid var(--line-soft);
+    font-family:"Space Mono", ui-monospace, monospace; font-size:9.5px;
+    letter-spacing:0.04em; color:var(--ink); opacity:0.5;
+    font-variant-numeric: tabular-nums;
+  }
+  #nodeTip .tip-coord b{ font-weight:400; opacity:0.55; margin-right:2px; }
+  #nodeTip .tip-coord i{ font-style:normal; margin-right:9px; }
+  #nodeTip .tip-coord i:last-child{ margin-right:0; }
+
+  /* ---------- Evolution panel ---------- */
+  .evo-panel{
+    position:fixed; left:0; right:0; bottom:0; z-index:30;
+    background:var(--paper); border-top:1px solid var(--line);
+    padding: 18px clamp(18px,4vw,40px) 22px;
+  }
+  .evo-row{ display:flex; align-items:center; gap:18px; }
+  .evo-close{
+    position:absolute; top:12px; right:16px; background:none; border:none; cursor:pointer;
+    color:var(--ink); font-size:18px; opacity:0.5; font-family:"Archivo",sans-serif;
+  }
+  .evo-close:hover{ opacity:0.9; }
+  .evo-label-block{ display:flex; flex-direction:column; gap:2px; min-width:190px; }
+  #evoCaption{ font-family:"Fraunces", Georgia, serif; font-size:13px; color:var(--ink); opacity:0.75; }
+  input[type="range"]{
+    -webkit-appearance:none; appearance:none; flex:1; height:1px; background:var(--line); outline:none;
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:11px; height:11px; border-radius:50%; background:var(--ink);
+    cursor:pointer; border:2px solid var(--paper); box-shadow:0 0 0 1px var(--ink);
+  }
+  input[type="range"]::-moz-range-thumb{
+    width:11px; height:11px; border-radius:50%; background:var(--ink); border:2px solid var(--paper);
+    box-shadow:0 0 0 1px var(--ink); cursor:pointer;
+  }
+
+  .nudge{
+    position:fixed; left:50%; bottom:104px; transform:translateX(-50%);
+    font-family:"Archivo", sans-serif; font-size:11.5px; letter-spacing:0.04em; color:var(--ink);
+    opacity:0; transition:opacity .8s ease; pointer-events:none; z-index:22; text-align:center;
+  }
+  .nudge.show{ opacity:0.6; }
+
+  /* ---- parameters panel ------------------------------------------- */
+  .settings-toggle{
+    font-family:"Space Mono", ui-monospace, monospace; font-size:9.5px;
+    letter-spacing:0.12em; text-transform:uppercase;
+    background:transparent; border:0; padding:2px 0; margin-top:5px;
+    color:var(--ink); opacity:0.5; cursor:pointer; text-align:right;
+    border-bottom:1px solid transparent; transition:opacity .2s, border-color .2s;
+  }
+  .settings-toggle:hover, .settings-toggle[aria-expanded="true"]{ opacity:0.9; border-bottom-color:var(--line); }
+  .settings-toggle:focus-visible{ outline:1px solid var(--accent); outline-offset:3px; }
+
+  .settings-panel{
+    position:fixed; top:100px; right:26px; z-index:32; width:236px;
+    display:flex; flex-direction:column; gap:16px;
+    padding:16px 16px 14px; pointer-events:auto;
+    max-height:calc(100vh - 176px); overflow-y:auto; overscroll-behavior:contain;
+    background:var(--paper-2); border:1px solid var(--line);
+    box-shadow:0 12px 34px -22px rgba(0,0,0,0.5);
+  }
+  .settings-head{ display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+    padding-bottom:11px; border-bottom:1px solid var(--line-soft); }
+  .settings-title{ font-size:9.5px; letter-spacing:0.16em; text-transform:uppercase; opacity:0.55; }
+  .settings-close{
+    background:transparent; border:0; padding:0; line-height:1; cursor:pointer;
+    font-family:"Space Mono", monospace; font-size:14px; color:var(--ink); opacity:0.45;
+  }
+  .settings-close:hover{ opacity:0.9; }
+  .setting{ display:flex; flex-direction:column; gap:6px; }
+  .settings-group{
+    display:flex; flex-direction:column; gap:15px;
+    padding-top:13px; border-top:1px solid var(--line-soft);
+  }
+  .settings-group-name{
+    font-family:"Space Mono", ui-monospace, monospace; font-size:8.5px;
+    letter-spacing:0.17em; text-transform:uppercase;
+    color:var(--accent); opacity:0.8;
+  }
+  .setting-top{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+  .setting-name{
+    font-family:"Space Mono", ui-monospace, monospace; font-size:9px;
+    letter-spacing:0.11em; text-transform:uppercase; color:var(--ink); opacity:0.66;
+  }
+  .setting-val{
+    font-family:"Space Mono", ui-monospace, monospace; font-size:10px;
+    color:var(--accent); font-variant-numeric:tabular-nums;
+  }
+  .setting-note{ font-family:"Fraunces", Georgia, serif; font-style:italic;
+    font-size:10.5px; color:var(--ink); opacity:0.38; line-height:1.35; }
+  .setting input[type="range"]{
+    -webkit-appearance:none; appearance:none; width:100%; height:12px;
+    background:transparent; cursor:pointer; display:block;
+  }
+  .setting input[type="range"]::-webkit-slider-runnable-track{ height:1px; background:var(--line); }
+  .setting input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none; width:9px; height:9px; margin-top:-4px;
+    background:var(--paper); border:1px solid var(--accent); border-radius:0;
+  }
+  .setting input[type="range"]::-moz-range-track{ height:1px; background:var(--line); }
+  .setting input[type="range"]::-moz-range-thumb{
+    width:9px; height:9px; background:var(--paper);
+    border:1px solid var(--accent); border-radius:0;
+  }
+  .setting input[type="range"]:focus-visible{ outline:1px solid var(--accent); outline-offset:4px; }
+  .settings-actions{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-top:2px; }
+  .settings-reset{
+    align-self:flex-start;
+    font-family:"Space Mono", ui-monospace, monospace; font-size:9px;
+    letter-spacing:0.11em; text-transform:uppercase;
+    background:transparent; border:0; padding:0; cursor:pointer;
+    color:var(--ink); opacity:0.45; border-bottom:1px solid var(--line);
+  }
+  .settings-reset:hover{ opacity:0.85; border-bottom-color:var(--accent); }
+
+  .settings-keys{
+    display:flex; flex-direction:column; gap:3px; margin:2px 0 0;
+    padding-top:11px; border-top:1px solid var(--line-soft);
+  }
+  .settings-keys > div{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+  .settings-keys dt, .settings-keys dd{
+    margin:0; font-family:"Space Mono", ui-monospace, monospace; font-size:8.5px;
+    letter-spacing:0.07em; text-transform:uppercase; color:var(--ink);
+  }
+  .settings-keys dt{ opacity:0.5; }
+  .settings-keys dd{ opacity:0.34; }
+
+  .lines-panel{ right:274px; }
+  .setting-cycle{
+    font-family:"Space Mono", ui-monospace, monospace; font-size:10px;
+    letter-spacing:0.06em; text-transform:uppercase;
+    background:transparent; border:1px solid var(--line); cursor:pointer;
+    color:var(--accent); padding:2px 7px; min-width:66px; text-align:center;
+  }
+  .setting-cycle:hover{ border-color:var(--accent); }
+
+  @media (max-width:1180px){
+    .lines-panel{ right:26px; }
+  }
+  @media (max-width:640px){
+    .settings-panel{ top:auto; bottom:96px; right:14px; left:14px; width:auto; }
+    .lines-panel{ right:14px; }
+    .settings-keys{ display:none; }
+  }
+
+  [hidden]{display:none!important;}
+
+  @media (max-width: 720px){
+    .hud-center{ display:none; }
+    .hud-corner{ min-width:auto; }
+    .contrib-bar{ padding:16px 16px 20px; }
+    .contrib-right{ width:100%; justify-content:flex-end; }
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <canvas id="stage"></canvas>
+  <div id="grain"></div>
+  <div id="vignette"></div>
+  <div id="nodeTip"></div>
+
+  <section class="intro" id="intro">
+    <div class="intro-inner">
+      <p class="intro-eyebrow">LIVING ARCHIVE</p>
+      <p class="intro-copy">Nothing starts from nothing.</p>
+      <p class="intro-copy">This drawing began as an archive from the past. Every visitor inherits what came before, adds a small trace, then passes it forward.</p>
+      <p class="intro-copy intro-copy--final">Nothing can be erased.</p>
+      <button class="enter-btn" id="enterBtn">Enter the archive <span class="arrow">→</span></button>
+    </div>
+  </section>
+
+  <header class="hud-top">
+    <div class="hud-corner hud-corner--left">
+      <span class="tag mono">CC0</span>
+      <span class="tag tag--loading mono">PERMANENT LOADING<span class="dots"><span>.</span><span>.</span><span>.</span></span></span>
+      <span class="tag mono fps-tag" id="fpsTag">— fps</span>
+    </div>
+    <div class="hud-center"><span class="wordmark">Living Archive</span></div>
+    <div class="hud-corner hud-corner--right">
+      <span class="mono-count" id="traceCount">1,284 traces</span>
+      <button class="settings-toggle" id="settingsToggle" aria-expanded="false" aria-controls="settingsPanel">Settings</button>
+      <button class="settings-toggle" id="linesToggle" aria-expanded="false" aria-controls="linesPanel">Lines</button>
+    </div>
+  </header>
+
+  <footer class="hud-bottom">
+    <div class="hud-zoom">
+      <button class="zbtn" id="zoomOut" aria-label="Zoom out">−</button>
+      <span class="mono-count" id="zoomPct">42%</span>
+      <button class="zbtn" id="zoomIn" aria-label="Zoom in">+</button>
+    </div>
+    <button class="ghost-btn" id="leaveTraceBtn">Leave a trace</button>
+    <button class="ghost-btn" id="evolutionBtn" style="justify-self:end;">View evolution</button>
+  </footer>
+
+  <div class="contrib-bar" id="contribBar" hidden>
+    <div class="contrib-left">
+      <div class="contrib-step mono" id="contribStep">STEP 1 — ADD YOUR POINTS</div>
+      <div class="contrib-msg serif" id="contribMsg">3 points remaining</div>
+      <div class="contrib-sub" id="contribSub">Click anywhere in the archive to place your first point.</div>
+    </div>
+    <div class="contrib-right" id="contribRight"></div>
+  </div>
+
+  <aside class="settings-panel lines-panel" id="linesPanel" hidden>
+    <div class="settings-head">
+      <span class="settings-title mono">Line rendering</span>
+      <button class="settings-close" id="linesClose" aria-label="Close line rendering">×</button>
+    </div>
+
+    <div class="settings-group">
+      <span class="settings-group-name">Stroke</span>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Line weight</span>
+          <span class="setting-val" id="valLnWeight">0.35×</span>
+        </div>
+        <input type="range" id="lnWeight" min="0.2" max="5" step="0.05" value="0.35" aria-label="Line weight">
+        <span class="setting-note">Multiplies every line width in the archive.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Line opacity</span>
+          <span class="setting-val" id="valLnOpacity">1.00×</span>
+        </div>
+        <input type="range" id="lnOpacity" min="0.05" max="1" step="0.05" value="1.00" aria-label="Line opacity">
+        <span class="setting-note">Ink density, over and above the depth and age fades.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Point weight</span>
+          <span class="setting-val" id="valLnCube">0.50×</span>
+        </div>
+        <input type="range" id="lnCube" min="0.2" max="5" step="0.05" value="0.5" aria-label="Point weight">
+        <span class="setting-note">The twelve edges of each point cube.</span>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <span class="settings-group-name">Hand</span>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Wobble</span>
+          <span class="setting-val" id="valLnJitter">1.50×</span>
+        </div>
+        <input type="range" id="lnJitter" min="0" max="6" step="0.05" value="1.5" aria-label="Wobble">
+        <span class="setting-note">Departure from true, eased to nothing at both ends.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Wobble grain</span>
+          <span class="setting-val" id="valLnGrain">6</span>
+        </div>
+        <input type="range" id="lnGrain" min="2" max="24" step="1" value="6" aria-label="Wobble grain">
+        <span class="setting-note">Segments per line. Few is angular, many is fluid.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Strokes per line</span>
+          <span class="setting-val" id="valLnPasses">3</span>
+        </div>
+        <input type="range" id="lnPasses" min="1" max="4" step="1" value="3" aria-label="Strokes per line">
+        <span class="setting-note">How many times the nib goes over the same line.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Extra stroke ink</span>
+          <span class="setting-val" id="valLnDbl">0.75×</span>
+        </div>
+        <input type="range" id="lnDbl" min="0" max="1.5" step="0.05" value="0.75" aria-label="Extra stroke ink">
+        <span class="setting-note">Weight of the passes after the first. Zero leaves a single stroke.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Thread life</span>
+          <span class="setting-val" id="valLnLife">0.93×</span>
+        </div>
+        <input type="range" id="lnLife" min="0" max="5" step="0.01" value="0.93" aria-label="Thread life">
+        <span class="setting-note">How wide the threads swing as they stir. The moving part has its own reach, so this goes well past the resting wobble.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Thread speed</span>
+          <span class="setting-val" id="valLnLifeSpd">1.25×</span>
+        </div>
+        <input type="range" id="lnLifeSpd" min="0.1" max="4" step="0.05" value="1.25" aria-label="Thread speed">
+        <span class="setting-note">How fast it travels. This is the one to push if the stirring reads too slow.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Nib taper</span>
+          <span class="setting-val" id="valLnTaper">0.30×</span>
+        </div>
+        <input type="range" id="lnTaper" min="0" max="1" step="0.05" value="0.3" aria-label="Nib taper">
+        <span class="setting-note">Thin at the ends, full in the middle.</span>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <span class="settings-group-name">Pattern</span>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Dash length</span>
+          <span class="setting-val" id="valLnDash">0 px</span>
+        </div>
+        <input type="range" id="lnDash" min="0" max="30" step="0.5" value="0" aria-label="Dash length">
+        <span class="setting-note">Zero is a solid line.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Dash gap</span>
+          <span class="setting-val" id="valLnGap">6 px</span>
+        </div>
+        <input type="range" id="lnGap" min="0.5" max="30" step="0.5" value="6" aria-label="Dash gap">
+        <span class="setting-note">Only matters once the dash length is above zero.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">End cap</span>
+          <button class="setting-cycle" id="lnCap">Butt</button>
+        </div>
+        <span class="setting-note">How a line finishes: butt, round or square.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Corner</span>
+          <button class="setting-cycle" id="lnJoin">Miter</button>
+        </div>
+        <span class="setting-note">How wobble corners meet: miter, round or bevel.</span>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <span class="settings-group-name">Beams</span>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Beam weight</span>
+          <span class="setting-val" id="valLnBeamW">0.45×</span>
+        </div>
+        <input type="range" id="lnBeamW" min="0" max="4" step="0.05" value="0.45" aria-label="Beam weight">
+        <span class="setting-note">The thick shaded rods of the genesis plate.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Beam opacity</span>
+          <span class="setting-val" id="valLnBeamO">0.70×</span>
+        </div>
+        <input type="range" id="lnBeamO" min="0" max="2" step="0.05" value="0.7" aria-label="Beam opacity">
+        <span class="setting-note">Zero removes the rods and leaves the hairlines.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Beam spread</span>
+          <span class="setting-val" id="valLnBeamS">15%</span>
+        </div>
+        <input type="range" id="lnBeamS" min="0" max="1" step="0.01" value="0.15" aria-label="Beam spread">
+        <span class="setting-note">Share of the other lines promoted to a rod, each with its own gauge.</span>
+      </div>
+    </div>
+
+    <div class="settings-actions">
+      <button class="settings-reset" id="linesReset">Reset lines</button>
+      <button class="settings-reset" id="linesCopy">Copy all</button>
+    </div>
+  </aside>
+
+  <aside class="settings-panel" id="settingsPanel" hidden>
+    <div class="settings-head">
+      <span class="settings-title mono">Parameters</span>
+      <button class="settings-close" id="settingsClose" aria-label="Close parameters">×</button>
+    </div>
+
+    <div class="settings-group">
+      <span class="settings-group-name">Structure</span>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Field of view</span>
+          <span class="setting-val" id="valFov">1.00×</span>
+        </div>
+        <input type="range" id="setFov" min="0.35" max="3" step="0.05" value="1" aria-label="Field of view">
+        <span class="setting-note">A short lens exaggerates the depth, a long one flattens it.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">3D depth</span>
+          <span class="setting-val" id="valDepth">1.00×</span>
+        </div>
+        <input type="range" id="setDepth" min="0" max="2.5" step="0.05" value="1" aria-label="3D depth">
+        <span class="setting-note">How far the points spread along Z.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Depth falloff</span>
+          <span class="setting-val" id="valFalloff">1.20×</span>
+        </div>
+        <input type="range" id="setFalloff" min="0" max="2.5" step="0.05" value="1.2" aria-label="Depth falloff">
+        <span class="setting-note">How much the points furthest back give way.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Blur amount</span>
+          <span class="setting-val" id="valDof">1.00×</span>
+        </div>
+        <input type="range" id="setDof" min="0" max="3" step="0.05" value="1" aria-label="Blur amount">
+        <span class="setting-note">How soft the background goes. Zero is sharp all the way back.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Focus range</span>
+          <span class="setting-val" id="valFocus">1.00×</span>
+        </div>
+        <input type="range" id="setFocus" min="0.2" max="2.5" step="0.05" value="1" aria-label="Focus range">
+        <span class="setting-note">How far back the sharp zone reaches before the blur starts.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Placement depth</span>
+          <span class="setting-val" id="valReach">1.00×</span>
+        </div>
+        <input type="range" id="setReach" min="0" max="2.5" step="0.05" value="1" aria-label="Placement depth">
+        <span class="setting-note">How deep a new point can settle behind or in front of its neighbours.</span>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <span class="settings-group-name">Motion</span>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Rotation speed</span>
+          <span class="setting-val" id="valRot">1.0×</span>
+        </div>
+        <input type="range" id="setRot" min="0" max="4" step="0.1" value="1" aria-label="Rotation speed">
+        <span class="setting-note">Idle drift of the whole composition.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Mouse inertia</span>
+          <span class="setting-val" id="valInertia">0.50</span>
+        </div>
+        <input type="range" id="setInertia" min="0" max="1.5" step="0.05" value="0.5" aria-label="Mouse inertia">
+        <span class="setting-note">Lean of the form toward the cursor.</span>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <span class="settings-group-name">Cursor erosion</span>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Reach</span>
+          <span class="setting-val" id="valErode">1.00×</span>
+        </div>
+        <input type="range" id="setErode" min="0" max="6" step="0.05" value="1" aria-label="Reach">
+        <span class="setting-note">How much of a line comes apart around the cursor.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Springback</span>
+          <span class="setting-val" id="valSpring">1.00×</span>
+        </div>
+        <input type="range" id="setSpring" min="0" max="2" step="0.05" value="1" aria-label="Springback">
+        <span class="setting-note">How far the cloud overshoots the cursor and how long it rings. Zero pins it.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Follow speed</span>
+          <span class="setting-val" id="valFollow">1.00×</span>
+        </div>
+        <input type="range" id="setFollow" min="0.2" max="3" step="0.05" value="1" aria-label="Follow speed">
+        <span class="setting-note">How eagerly it chases. Low trails far behind, high stays close.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Particle spread</span>
+          <span class="setting-val" id="valSpread">1.00×</span>
+        </div>
+        <input type="range" id="setSpread" min="0" max="6" step="0.05" value="1" aria-label="Particle spread">
+        <span class="setting-note">How far the grains scatter off the line.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Particle size</span>
+          <span class="setting-val" id="valGrain">1.00×</span>
+        </div>
+        <input type="range" id="setGrain" min="0.2" max="12" step="0.1" value="1" aria-label="Particle size">
+        <span class="setting-note">Square grains, snapped to whole pixels. Push it and they read as blocks.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Particle drift</span>
+          <span class="setting-val" id="valDrift">1.00×</span>
+        </div>
+        <input type="range" id="setDrift" min="0" max="3" step="0.05" value="1" aria-label="Particle drift">
+        <span class="setting-note">Each grain wanders on its own, and the cloud trails the cursor.</span>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <span class="settings-group-name">Environment</span>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Ambient dust</span>
+          <span class="setting-val" id="valDust">1.00×</span>
+        </div>
+        <input type="range" id="setDust" min="0" max="3" step="0.05" value="1" aria-label="Ambient dust">
+        <span class="setting-note">Motes hanging in the air of the room. They drift on their own and never turn with the form.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Dust count</span>
+          <span class="setting-val" id="valDustN">260</span>
+        </div>
+        <input type="range" id="setDustN" min="0" max="900" step="10" value="260" aria-label="Dust count">
+        <span class="setting-note">How many motes are in the air.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Dust size</span>
+          <span class="setting-val" id="valDustSz">1.00×</span>
+        </div>
+        <input type="range" id="setDustSz" min="0.3" max="4" step="0.05" value="1" aria-label="Dust size">
+        <span class="setting-note">Scales the whole spread of gauges, from grit to flecks.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Trace fade</span>
+          <span class="setting-val" id="valFade">60</span>
+        </div>
+        <input type="range" id="setFade" min="5" max="200" step="5" value="60" aria-label="Trace fade">
+        <span class="setting-note">Traces before an old one reaches 5% — its floor.</span>
+      </div>
+    </div>
+
+    <div class="settings-actions">
+      <button class="settings-reset" id="settingsReset">Reset defaults</button>
+      <button class="settings-reset" id="settingsCopy">Copy all</button>
+      <button class="settings-reset" id="fpsToggle">Hide FPS</button>
+    </div>
+
+    <dl class="settings-keys">
+      <div><dt>Hold wheel + drag</dt><dd>orbit</dd></div>
+      <div><dt>Right-drag</dt><dd>orbit</dd></div>
+      <div><dt>Wheel</dt><dd>zoom</dd></div>
+      <div><dt>Left click</dt><dd>place a point</dd></div>
+    </dl>
+  </aside>
+
+  <div class="toast" id="toast">
+    <div class="toast-line1">Trace added.</div>
+    <div class="toast-line2">The archive keeps loading.</div>
+  </div>
+
+  <div class="nudge" id="nudge">Rotate the composition — your trace now lives somewhere inside all of this.</div>
+
+  <div class="evo-panel" id="evoPanel" hidden>
+    <button class="evo-close" id="evoClose">×</button>
+    <div class="evo-row">
+      <button class="ghost-btn" id="evoPlay">▶ Play</button>
+      <input type="range" id="evoSlider" min="0" max="1" value="1" step="1">
+      <div class="evo-label-block">
+        <span class="mono-count" id="evoLabel">GEN 138 / 138</span>
+        <span id="evoCaption">Current state</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ========================================================================
+     RNG + vector helpers
+  ========================================================================= */
+  function mulberry32(seed){
+    return function(){
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  var rand = mulberry32(20260823);
+  function randRange(a,b){ return a + rand()*(b-a); }
+  function choice(arr){ return arr[Math.floor(rand()*arr.length)]; }
+  function gaussLike(){ return (rand()+rand()+rand()-1.5)/1.5; }
+
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ------------------------------------------------------------------
+     Live parameters — exposed through the on-screen settings panel.
+  ------------------------------------------------------------------- */
+  var SETTINGS_DEFAULTS = { rotSpeed:1, fov:1, depth:1, depthFalloff:1.2, inertia:0.5, reach:1,
+    erode:1, grainSpread:1, grainSize:1, grainDrift:1,
+    dust:1, dustCount:260, dustSize:1, dof:1, focusRange:1, fadeSpan:60,
+    springback:1, follow:1 };
+  var SETTINGS = Object.assign({}, SETTINGS_DEFAULTS);
+
+  function v3(x,y,z){ return {x:x,y:y,z:z}; }
+  function add3(a,b){ return {x:a.x+b.x, y:a.y+b.y, z:a.z+b.z}; }
+  function sub3(a,b){ return {x:a.x-b.x, y:a.y-b.y, z:a.z-b.z}; }
+  function scale3(a,s){ return {x:a.x*s, y:a.y*s, z:a.z*s}; }
+  function dot3(a,b){ return a.x*b.x + a.y*b.y + a.z*b.z; }
+  function cross3(a,b){ return { x:a.y*b.z-a.z*b.y, y:a.z*b.x-a.x*b.z, z:a.x*b.y-a.y*b.x }; }
+  function len3(a){ return Math.sqrt(dot3(a,a)); }
+  function norm3(a){ var l=len3(a); if(l<1e-6) return {x:0,y:1,z:0}; return {x:a.x/l,y:a.y/l,z:a.z/l}; }
+  function dist3(a,b){ return len3(sub3(a,b)); }
+  function randomUnit3(){
+    var z = randRange(-1,1), t = randRange(0,Math.PI*2);
+    var r = Math.sqrt(Math.max(0,1-z*z));
+    return { x:r*Math.cos(t), y:r*Math.sin(t), z:z };
+  }
+  function rodrigues(vec, axis, angle){
+    var c=Math.cos(angle), s=Math.sin(angle);
+    var t1=scale3(vec,c), t2=scale3(cross3(axis,vec),s), t3=scale3(axis, dot3(axis,vec)*(1-c));
+    return add3(add3(t1,t2),t3);
+  }
+  function wanderDir(dir, amount){
+    var rnd = randomUnit3();
+    var ax = cross3(dir, rnd);
+    if(len3(ax) < 1e-6) ax = {x:0,y:0,z:1}; else ax = norm3(ax);
+    return norm3(rodrigues(dir, ax, (rand()-0.5)*amount));
+  }
+
+  /* ========================================================================
+     DATA MODEL
+  ========================================================================= */
+  var nodes = [];
+  var edges = [];
+  var nodeById = {};
+  var degreeMap = {};
+  var nextNodeId = 0, nextEdgeId = 0;
+
+  function addNode(props){
+    var n = Object.assign({
+      id: 'n' + (nextNodeId++),
+      x:0, y:0, z:0, r:2, label:null, big:false,
+      generation:0, createdAt:Date.now(), contributor:'ARCHIVE',
+      origin:'archive', traceId:'GENESIS', dir:{x:1,y:0,z:0}, dist:0
+    }, props);
+    // z0 holds the point's own depth; SETTINGS.depth scales what renders,
+    // so the depth slider never destroys the underlying coordinate.
+    if(n.z0 === undefined) n.z0 = n.z;
+    n.z = n.z0 * SETTINGS.depth;
+    nodes.push(n);
+    nodeById[n.id] = n;
+    degreeMap[n.id] = 0;
+    return n;
+  }
+  function addEdge(a,b,props){
+    if(a===b || !a || !b) return null;
+    for(var i=0;i<edges.length;i++){
+      var e = edges[i];
+      if((e.a===a&&e.b===b)||(e.a===b&&e.b===a)) return e;
+    }
+    var e = Object.assign({
+      id:'e'+(nextEdgeId++), a:a, b:b, generation:0, createdAt:Date.now(), origin:'archive'
+    }, props);
+    if(e.seed === undefined) e.seed = (nextEdgeId*2654435761) >>> 8; // stable grain
+    edges.push(e);
+    degreeMap[a] = (degreeMap[a]||0)+1;
+    degreeMap[b] = (degreeMap[b]||0)+1;
+    return e;
+  }
+  function degree(id){ return degreeMap[id] || 0; }
+
+  var MAX_DEGREE = 8;
+  var TRIANGULATION_REFS = 4; // a new point is fixed against its 4 nearest existing points
+
+  function nearestExisting(pos, count, maxDegree){
+    var out = [];
+    for(var i=0;i<nodes.length;i++){
+      var n = nodes[i];
+      if(maxDegree!==undefined && degree(n.id) >= maxDegree) continue;
+      out.push({ node:n, d: dist3(pos, n) });
+    }
+    out.sort(function(a,b){ return a.d-b.d; });
+    return out.slice(0, count);
+  }
+
+  // Triangulation solver for the live "leave a trace" flow. Every new point
+  // always gets a full base of its 3 nearest reference points — drawn from
+  // the existing archive and, when several points are placed in the same
+  // contribution, from each other too — never fewer.
+  // The 3 reference points a single position would be fixed against, drawn
+  // from the existing archive plus any sibling points in the same
+  // contribution. Shared by the live preview and the committed solve, so
+  // what the cursor shows is exactly what gets recorded.
+  function candidateRefsFor(p, siblings, maxDegree){
+    var candidates = [];
+    (siblings||[]).forEach(function(q){
+      if(q.id===p.id) return;
+      candidates.push({ w:dist3(p,q), id:q.id, node:q });
+    });
+    nearestExisting(p, TRIANGULATION_REFS+2, maxDegree).forEach(function(res){
+      candidates.push({ w:res.d, id:res.node.id, node:res.node });
+    });
+    candidates.sort(function(x,y){ return x.w-y.w; });
+    return candidates.slice(0, TRIANGULATION_REFS);
+  }
+
+  function computeTriangulation(points, maxDegree){
+    var edgesOut = [];
+    var seenPairs = {};
+    function pairKey(a,b){ return a<b ? a+'|'+b : b+'|'+a; }
+    points.forEach(function(p){
+      candidateRefsFor(p, points, maxDegree).forEach(function(c){
+        var key = pairKey(p.id, c.id);
+        if(seenPairs[key]) return;
+        seenPairs[key] = true;
+        edgesOut.push({ a:p.id, b:c.id });
+      });
+    });
+    return edgesOut;
+  }
+
+  // The classical Euclidean lettering order — Α through Υ — matching the
+  // source plate's own labels, assigned as points are placed (not spatially).
+  var LABEL_POOL = ['Α','Β','Γ','Δ','Ε','Ζ','Η','Θ','Ι','Κ','Λ','Μ','Ν','Ξ','Ο','Π','Ρ','Σ','Τ','Υ'];
+  var labelCursor = 0;
+  function nextLabel(){ return LABEL_POOL[labelCursor++] || null; }
+
+  var GEN0_TS = Date.now() - (1000*60*60*24*365*3.2); // ~3.2 years ago
+
+  /* ========================================================================
+     Genesis diagram — generation 0, after the source plate: two dense
+     clusters strung along a tall vertical axis, each anchored to a
+     secondary point by a thick shaded rod, with long sight-lines crossing
+     between them and a sparse tail of outliers below.
+  ========================================================================= */
+  function buildGenesis(){
+    var hubTop = addNode({ x:0,y:150,z:0, r:6, big:true, label:nextLabel(),
+      generation:0, createdAt:GEN0_TS, dir:{x:0,y:1,z:0}, dist:0, traceId:'GENESIS' });
+
+    var topSat = [];
+    var topAngles = [ {a:-2.5,r:70,z:30}, {a:-0.9,r:40,z:-24}, {a:0.5,r:58,z:38}, {a:1.6,r:34,z:-16}, {a:2.4,r:46,z:24} ];
+    topAngles.forEach(function(t,i){
+      var x = Math.cos(t.a)*t.r, y = hubTop.y + Math.sin(t.a)*t.r*0.6, z = t.z;
+      var dir = norm3({ x:x, y:y-hubTop.y, z:z });
+      var n = addNode({
+        x:x, y:y, z:z, r: i===2?4.4:2.0, big:i===2, label:nextLabel(),
+        generation:0, createdAt: GEN0_TS + (i+1)*30000,
+        dir:dir, dist:t.r, traceId:'GENESIS'
+      });
+      addEdge(hubTop.id, n.id, { generation:0, createdAt:GEN0_TS });
+      topSat.push(n);
+    });
+    addEdge(topSat[0].id, topSat[2].id, { generation:0, createdAt:GEN0_TS });
+    addEdge(topSat[1].id, topSat[3].id, { generation:0, createdAt:GEN0_TS });
+    addEdge(topSat[3].id, topSat[4].id, { generation:0, createdAt:GEN0_TS });
+
+    var hubB = topSat[2]; // the large secondary node anchoring the first rod
+
+    // -- first beam: a thick shaded rod, with a small tick along it —
+    //    drifting back in depth as it descends, so the rod reads as
+    //    receding into the scene rather than lying flat on the screen.
+    var tick = addNode({ x:hubB.x*0.55, y:hubB.y-95, z:hubB.z+45, r:1.2, label:nextLabel(),
+      generation:0, createdAt:GEN0_TS+220000, dir:{x:0,y:-1,z:0}, dist:95, traceId:'GENESIS' });
+    var gamma = addNode({ x:hubB.x*0.4, y:hubB.y-190, z:hubB.z+95, r:4.8, big:true, label:nextLabel(),
+      generation:0, createdAt:GEN0_TS+240000, dir:{x:0,y:-1,z:0}, dist:190, traceId:'GENESIS' });
+    addEdge(hubB.id, tick.id, { generation:0, createdAt:GEN0_TS, beam:true });
+    addEdge(tick.id, gamma.id, { generation:0, createdAt:GEN0_TS, beam:true });
+
+    // -- lower cluster, further back still --
+    var hubLow = addNode({ x:gamma.x-70, y:gamma.y-70, z:gamma.z+55, r:5.6, big:true, label:nextLabel(),
+      generation:0, createdAt:GEN0_TS+260000, dir:{x:-1,y:-1,z:0}, dist:250, traceId:'GENESIS' });
+    addEdge(gamma.id, hubLow.id, { generation:0, createdAt:GEN0_TS });
+
+    var lowSat = [];
+    var lowAngles = [ {a:-2.2,r:66,z:32}, {a:-0.6,r:38,z:-36}, {a:0.9,r:52,z:40}, {a:2.1,r:44,z:-28} ];
+    lowAngles.forEach(function(t,i){
+      var x = hubLow.x+Math.cos(t.a)*t.r, y = hubLow.y+Math.sin(t.a)*t.r*0.6, z = hubLow.z+t.z;
+      var dir = norm3({ x:x-hubLow.x, y:y-hubLow.y, z:z-hubLow.z });
+      var n = addNode({
+        x:x, y:y, z:z, r:2.0, label:nextLabel(),
+        generation:0, createdAt: GEN0_TS + (300+i)*3000,
+        dir:dir, dist:t.r, traceId:'GENESIS'
+      });
+      addEdge(hubLow.id, n.id, { generation:0, createdAt:GEN0_TS });
+      lowSat.push(n);
+    });
+    addEdge(lowSat[0].id, lowSat[2].id, { generation:0, createdAt:GEN0_TS });
+    addEdge(lowSat[1].id, lowSat[3].id, { generation:0, createdAt:GEN0_TS });
+
+    var hubT = lowSat[2]; // secondary node anchoring the second rod
+
+    // -- second beam --
+    var pi = addNode({ x:hubT.x+30, y:hubT.y-110, z:hubT.z-6, r:1.6, label:nextLabel(),
+      generation:0, createdAt:GEN0_TS+400000, dir:{x:0,y:-1,z:0}, dist:110, traceId:'GENESIS' });
+    addEdge(hubT.id, pi.id, { generation:0, createdAt:GEN0_TS, beam:true });
+
+    // -- long sight-lines crossing between the two clusters --
+    addEdge(hubTop.id, hubLow.id, { generation:0, createdAt:GEN0_TS });
+    addEdge(topSat[4].id, lowSat[1].id, { generation:0, createdAt:GEN0_TS });
+    addEdge(topSat[0].id, hubLow.id, { generation:0, createdAt:GEN0_TS });
+
+    // -- a sparse tail of outliers below, as in the source plate --
+    var outliers = [];
+    var outAngles = [ {a:-2.6,r:150,y:-70}, {a:-1.4,r:90,y:-140}, {a:-0.3,r:130,y:-170}, {a:1.1,r:170,y:-120} ];
+    outAngles.forEach(function(t,i){
+      var x = pi.x + Math.cos(t.a)*t.r*0.5, y = pi.y + t.y, z = pi.z + Math.sin(t.a)*t.r*0.4;
+      var dir = norm3({ x:x-pi.x, y:y-pi.y, z:z-pi.z });
+      var n = addNode({
+        x:x, y:y, z:z, r: i===3?1.1:1.7, label: i===3?null:nextLabel(),
+        generation:0, createdAt: GEN0_TS + (500+i)*5000,
+        dir:dir, dist:t.r, traceId:'GENESIS'
+      });
+      addEdge(pi.id, n.id, { generation:0, createdAt:GEN0_TS });
+      outliers.push(n);
+    });
+    addEdge(outliers[0].id, outliers[1].id, { generation:0, createdAt:GEN0_TS });
+    addEdge(outliers[1].id, outliers[2].id, { generation:0, createdAt:GEN0_TS });
+    addEdge(outliers[2].id, outliers[3].id, { generation:0, createdAt:GEN0_TS });
+
+    var growthAnchors = [hubTop, gamma, hubLow, pi].concat(outliers.slice(0,2)).concat(topSat.slice(0,2));
+    return { hub:hubTop, ring:topSat.concat(lowSat), anchors:growthAnchors };
+  }
+
+  var genesis = buildGenesis();
+  var GENESIS_COUNT = nodes.length;
+  nodes.forEach(function(n){ n.isOriginal = true; });
+
+  // No synthetic pre-history — the archive starts as the found diagram
+  // alone. Every generation from here on belongs to a real visitor's trace.
+  var MAX_GENERATION = 1;
+  var WORLD_RADIUS = nodes.reduce(function(m,n){ return Math.max(m, len3(n)); }, 10);
+  var NOW = Date.now();
+
+  /* ========================================================================
+     Visitor identity + persistence
+  ========================================================================= */
+  var STORAGE_KEY = 'livingArchive.v2';
+  var storeState = null;
+  try{ storeState = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); }catch(e){ storeState = null; }
+  if(!storeState){
+    storeState = {
+      contributorId: 'V-' + Math.floor(1000+rand()*8999) + '-' + Math.floor(rand()*90+10),
+      contributions: [],
+      baselineTraceCount: 0,
+      seenIntro: false
+    };
+  }
+  function persist(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(storeState)); }catch(e){}
+  }
+
+  // A small number of points retired by request — they keep their place in
+  // the numbering (nothing else shifts), they simply no longer appear.
+  var REMOVED_NODE_INDICES = { 23:true, 31:true };
+
+  var liveGen = MAX_GENERATION;
+  (storeState.contributions || []).forEach(function(trace){
+    liveGen++;
+    var idMap = {};
+    var removedIds = {};
+    var tid = trace.traceId || ('T-live-' + trace.createdAt);
+    trace.nodes.forEach(function(pn){
+      var nn = addNode({
+        x:pn.x, y:pn.y, z:pn.z||0, r:pn.r, label:null, big:false,
+        generation: liveGen, createdAt: trace.createdAt, contributor: trace.contributor,
+        origin:'visitor', traceId: tid, dist:9999
+      });
+      var idx = parseInt(nn.id.slice(1), 10);
+      if(REMOVED_NODE_INDICES[idx]){
+        nodes.pop();
+        delete nodeById[nn.id];
+        delete degreeMap[nn.id];
+        removedIds[nn.id] = true;
+      } else {
+        idMap[pn.id] = nn.id;
+      }
+    });
+    trace.edges.forEach(function(pe){
+      var a = idMap[pe.a] || pe.a, b = idMap[pe.b] || pe.b;
+      if(removedIds[a] || removedIds[b] || !nodeById[a] || !nodeById[b]) return;
+      addEdge(a,b,{ generation: liveGen, createdAt: trace.createdAt, origin:'visitor' });
+    });
+  });
+  var CURRENT_MAX_GEN = liveGen;
+  var traceCountTotal = storeState.baselineTraceCount + (storeState.contributions||[]).length;
+
+  /* ========================================================================
+     Canvas + 3D orbit camera
+  ========================================================================= */
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+  var DPR = Math.min(window.devicePixelRatio||1, 2.5);
+  var W=0, H=0;
+
+  var FOCAL_BASE = 900;
+  var FOCAL = FOCAL_BASE;
+  var cam = { yaw:0.55, pitch:-0.28, dist:1000 };
+  var view = { yaw:0.55, pitch:-0.28 };            // cam + the mouse-inertia sway
+  var swayTarget = { x:0, y:0 }, sway = { x:0, y:0 };
+  var SWAY_MAX = 0.075;                            // radians at full deflection
+  var DIST_MIN = 60, DIST_MAX = 4000, DIST_REF = 1000;
+
+  function resize(){
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = W*DPR; canvas.height = H*DPR;
+    canvas.style.width = W+'px'; canvas.style.height = H+'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  function rotY(p,a){ var c=Math.cos(a), s=Math.sin(a); return { x:p.x*c+p.z*s, y:p.y, z:-p.x*s+p.z*c }; }
+  function rotX(p,a){ var c=Math.cos(a), s=Math.sin(a); return { x:p.x, y:p.y*c-p.z*s, z:p.y*s+p.z*c }; }
+  function toCameraSpace(p){ return rotX(rotY(p, view.yaw), view.pitch); }
+  function toWorldVector(v){ return rotY(rotX(v, -view.pitch), -view.yaw); }
+
+  // A light lean of the whole composition toward the cursor, eased so it
+  // trails the pointer rather than snapping to it.
+  function updateSway(){
+    var ease = reduceMotion ? 1 : 0.055;
+    sway.x += (swayTarget.x - sway.x) * ease;
+    sway.y += (swayTarget.y - sway.y) * ease;
+    var k = reduceMotion ? 0 : SETTINGS.inertia * SWAY_MAX;
+    view.yaw = cam.yaw + sway.x * k;
+    view.pitch = Math.max(-1.45, Math.min(1.45, cam.pitch + sway.y * k));
+  }
+  window.addEventListener('pointermove', function(ev){
+    swayTarget.x = (ev.clientX / Math.max(1, window.innerWidth)) * 2 - 1;
+    swayTarget.y = (ev.clientY / Math.max(1, window.innerHeight)) * 2 - 1;
+  });
+
+  // Recover a point's own depth from what is currently on screen. At a depth
+  // of zero there is nothing to recover, so the point simply sits on the plane.
+  function unscaleZ(z){ return SETTINGS.depth > 0.02 ? z/SETTINGS.depth : 0; }
+
+  // A longer lens flattens the perspective, a shorter one exaggerates it.
+  // The orbit distance moves with the focal length so the archive keeps the
+  // same size on screen — only the depth of the perspective changes.
+  function applyFov(){
+    var target = FOCAL_BASE * SETTINGS.fov;
+    var ratio = target / FOCAL;
+    FOCAL = target;
+    cam.dist *= ratio; DIST_MIN *= ratio; DIST_MAX *= ratio; DIST_REF *= ratio;
+    if(camPulse){ camPulse.fromDist *= ratio; camPulse.toDist *= ratio; }
+    updateZoomLabel();
+  }
+
+  // Re-scale every point's depth when the 3D-depth setting changes.
+  function applyDepth(){
+    var k = SETTINGS.depth;
+    for(var i=0;i<nodes.length;i++){ nodes[i].z = nodes[i].z0 * k; }
+    pending.nodes.forEach(function(pn){ pn.z = pn.z0 * k; });
+  }
+
+  function project(p){
+    var cs = toCameraSpace(p);
+    var viewZ = cs.z + cam.dist;
+    if(viewZ < 24) return null;
+    var scale = FOCAL/viewZ;
+    return { x: W/2 + cs.x*scale, y: H/2 - cs.y*scale, scale:scale, viewZ:viewZ };
+  }
+
+  // Every point is a tiny axis-aligned cube in world space, so it reads as
+  // a real 3D object rather than a flat dot when the composition rotates.
+  var CUBE_CORNERS = [
+    {x:-1,y:-1,z:-1},{x:1,y:-1,z:-1},{x:1,y:1,z:-1},{x:-1,y:1,z:-1},
+    {x:-1,y:-1,z: 1},{x:1,y:-1,z: 1},{x:1,y:1,z: 1},{x:-1,y:1,z: 1}
+  ];
+  var CUBE_EDGES = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+  function projectCube(center, halfSize){
+    var pts = new Array(8);
+    for(var i=0;i<8;i++){
+      var c = CUBE_CORNERS[i];
+      var p = project({ x:center.x+c.x*halfSize, y:center.y+c.y*halfSize, z:center.z+c.z*halfSize });
+      if(!p) return null;
+      pts[i] = p;
+    }
+    return pts;
+  }
+  /* ------------------------------------------------------------------
+     Cursor erosion — a line the cursor comes near stops being a line and
+     becomes the same cubic grain the points are made of: squares scattered
+     off its path, loosest where the cursor sits, closing back into a
+     stroke further along. Nothing is removed; it only comes apart.
+  ------------------------------------------------------------------- */
+  var ERODE_RADIUS = 55;    // px of influence at 100% zoom, default setting
+  var ERODE_MAX_EDGES = 14; // per frame, so a dense hub stays cheap
+  var erodeBuf = null;      // scratch influences, reused across edges
+
+  // The bite stays local to the drawing rather than to the screen: zoomed out
+  // it nibbles, zoomed in it takes a proportionate mouthful.
+  function erodeRadius(){
+    var z = Math.pow(DIST_REF/Math.max(1, cam.dist), 0.53);
+    return Math.max(24, Math.min(260, ERODE_RADIUS * z)) * SETTINGS.erode;
+  }
+
+  // How strongly the cursor bites into this segment: 0 leaves it alone.
+  function erodeBite(pa, pb){
+    if(!cursorScreen || erodeFade <= 0.01 || SETTINGS.erode <= 0) return 0;
+    var dx = pb.x-pa.x, dy = pb.y-pa.y;
+    var l2 = dx*dx + dy*dy;
+    if(l2 < 1) return 0;
+    var t = ((cursorScreen.x-pa.x)*dx + (cursorScreen.y-pa.y)*dy)/l2;
+    t = t < 0 ? 0 : (t > 1 ? 1 : t);
+    var d = Math.hypot(cursorScreen.x - (pa.x+dx*t), cursorScreen.y - (pa.y+dy*t));
+    var R = erodeRadius();
+    return d >= R ? 0 : (1 - d/R) * erodeFade;
+  }
+
+  // Grains land on whole device pixels: a square should read as a square,
+  // not as an antialiased smudge.
+  function snapPx(v){ return Math.round(v*DPR)/DPR; }
+
+  function strokeEroded(pa, pb, style, width, seed, breathe, grainCol, grainA){
+    var dx = pb.x-pa.x, dy = pb.y-pa.y;
+    var len = Math.hypot(dx, dy);
+    var R = erodeRadius(), spread = R * 0.26 * SETTINGS.grainSpread;
+    var n = Math.max(4, Math.min(520, Math.ceil(len/3.4)));
+    var CORE = 0.42;   // above this the line is fully dust, and denser
+
+    var drift = reduceMotion ? 0 : SETTINGS.grainDrift;
+    var lagX = 0, lagY = 0;
+    if(cursorLag && !reduceMotion){
+      lagX = (cursorLag.x - cursorScreen.x) * 0.85 * drift;
+      lagY = (cursorLag.y - cursorScreen.y) * 0.85 * drift;
+    }
+
+    if(!erodeBuf || erodeBuf.length < n+1) erodeBuf = new Float32Array(n+1);
+    var inf0 = erodeBuf;
+    // A cordon around each end: the line never comes apart where it meets a
+    // point, so a cube is never cut loose from the lines that hold it. The
+    // cordon tracks the cubes, growing with them as the view closes in.
+    var guardPx = 6 + 12*((pa.scale + pb.scale)/2);
+    var gT = Math.min(0.45, guardPx / Math.max(1, len));
+    for(var q=0;q<=n;q++){
+      var tq = q/n;
+      var ex = pa.x + dx*tq - cursorScreen.x, ey = pa.y + dy*tq - cursorScreen.y;
+      var dq = Math.sqrt(ex*ex + ey*ey);
+      var base = dq >= R ? 0 : Math.pow(1 - dq/R, 1.5) * erodeFade;
+      var g = Math.min(1, Math.min(tq, 1-tq) / gT);
+      inf0[q] = base * g*g*(3-2*g);
+    }
+
+    // Each grain keeps its own slow wander — its own frequency and phase, so
+    // the cloud never pulses in unison — and the whole bite is dragged toward
+    // where the cursor has been, which gives the dust a little weight.
+    function grain(i, inf, salt){
+      var k = seed + i*7 + salt;
+      var ph = hash2(k, 83)*Math.PI*2;
+      var w  = 0.4 + hash2(k, 71)*1.0;
+      // two incommensurate frequencies, so the wander never loops back on
+      // itself and no grain ever comes to rest
+      var ang = hash2(k, 11)*Math.PI*2 + breathe
+              + (Math.sin(erodeClock*w + ph)*0.8 + Math.sin(erodeClock*w*1.73 + ph*2.1)*0.42) * drift;
+      var rad = (0.14 + hash2(k, 29)*0.86) * inf*inf * spread
+              * (1 + (Math.sin(erodeClock*w*0.63 + ph*1.7)*0.34
+                    + Math.sin(erodeClock*w*0.29 + ph)*0.2) * drift);
+      var orbit = spread * 0.11 * drift;
+      var ox = Math.sin(erodeClock*w*0.83 + ph*3.1) * orbit;
+      var oy = Math.cos(erodeClock*w*0.61 + ph*1.9) * orbit;
+      var sz  = snapPx((1 + hash2(k, 47)*2.4 + inf*1.3) * SETTINGS.grainSize);
+      var t = i/n;
+      ctx.fillRect(snapPx(pa.x + dx*t + Math.cos(ang)*rad + ox + lagX*inf - sz/2),
+                   snapPx(pa.y + dy*t + Math.sin(ang)*rad + oy + lagY*inf - sz/2), sz, sz);
+    }
+
+    // what is still a line — drawn stretch by stretch through the same
+    // stroke engine, so an eroded line keeps the panel's character
+    var runStart = -1;
+    for(var i=0;i<=n;i++){
+      var quiet = inf0[i] < 0.06;
+      if(quiet && runStart < 0) runStart = i;
+      if((!quiet || i===n) && runStart >= 0){
+        var iEnd = quiet ? i : i-1;
+        if(iEnd > runStart){
+          var t0 = runStart/n, t1 = iEnd/n;
+          strokeSeg({ x:pa.x+dx*t0, y:pa.y+dy*t0, scale:pa.scale },
+                    { x:pa.x+dx*t1, y:pa.y+dy*t1, scale:pb.scale },
+                    style, width, seed + runStart);
+        }
+        runStart = -1;
+      }
+    }
+
+    // the fraying edge of the bite
+    ctx.fillStyle = rgba(grainCol, grainA*0.7);
+    for(var j=0;j<=n;j++){
+      var f = inf0[j];
+      if(f >= 0.06 && f < CORE) grain(j, f, 0);
+    }
+
+    // and its core, where the line is wholly grain
+    ctx.fillStyle = rgba(grainCol, Math.min(1, grainA*1.55));
+    for(var k2=0;k2<=n;k2++){
+      var g = inf0[k2];
+      if(g >= CORE){ grain(k2, g, 0); grain(k2, g, 101); }
+    }
+  }
+
+  // The pointer itself, in the piece's own square vocabulary.
+  function drawReticle(){
+    if(!cursorScreen || !cursorIsMouse) return;
+    var x = Math.round(cursorScreen.x) + 0.5, y = Math.round(cursorScreen.y) + 0.5;
+    var placing = (mode === 'placing');
+    var col = placing ? THEME.accent : THEME.ink;
+    var half = placing ? 8 : 6.5;
+    ctx.strokeStyle = rgba(col, placing ? 0.9 : 0.6);
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x-half, y-half, half*2, half*2);
+    ctx.fillStyle = rgba(col, placing ? 1 : 0.85);
+    ctx.fillRect(x-1.5, y-1.5, 2, 2);
+    if(placing){
+      ctx.strokeStyle = rgba(col, 0.45);
+      ctx.beginPath();
+      ctx.moveTo(x-half-4, y); ctx.lineTo(x-half-1, y);
+      ctx.moveTo(x+half+1, y); ctx.lineTo(x+half+4, y);
+      ctx.moveTo(x, y-half-4); ctx.lineTo(x, y-half-1);
+      ctx.moveTo(x, y+half+1); ctx.lineTo(x, y+half+4);
+      ctx.stroke();
+    }
+  }
+
+  /* ------------------------------------------------------------------
+     Stroke engine. Every line in the archive goes through strokeSeg, so
+     the Lines panel can restyle the whole drawing at once: weight,
+     opacity, dash, cap and join, plus the marks of a hand — a wobble off
+     true, a second pass beside the first, a taper toward the ends.
+
+     The wobble is seeded per edge and eases to nothing at the endpoints,
+     so lines never shimmer and never come loose from their points.
+  ------------------------------------------------------------------- */
+  var LINE_DEFAULTS = {
+    weight:0.35, opacity:1, cubeWeight:0.5,
+    jitter:1.5, grain:6, passes:3, dbl:0.75, taper:0.3, life:0.93, lifeSpeed:1.25,
+    dash:0, gap:6, cap:0, join:0,
+    beamWeight:0.45, beamOpacity:0.7, beamSpread:0.15
+  };
+  var LINES = Object.assign({}, LINE_DEFAULTS);
+  var CAP_MODES = ['butt','round','square'];
+  var JOIN_MODES = ['miter','round','bevel'];
+
+  // The plate's own rods are structural, but a share of the other lines can
+  // be promoted to one — deterministically, so a given line is always either
+  // a rod or not, and each carries its own gauge.
+  function hasBeam(e){
+    if(e.beam) return true;
+    return LINES.beamSpread > 0.001 && hash2(e.seed, 7) < LINES.beamSpread;
+  }
+  function beamGauge(e){ return 0.72 + hash2(e.seed, 23)*0.66; }
+
+  function applyStrokeState(width){
+    ctx.lineWidth = Math.max(0.05, width * LINES.weight);
+    ctx.lineCap = CAP_MODES[LINES.cap] || 'butt';
+    ctx.lineJoin = JOIN_MODES[LINES.join] || 'miter';
+    if(LINES.dash > 0.01) ctx.setLineDash([LINES.dash, Math.max(0.5, LINES.gap)]);
+    else ctx.setLineDash([]);
+  }
+  function clearStrokeState(){
+    ctx.setLineDash([]); ctx.lineCap = 'butt'; ctx.lineJoin = 'miter';
+  }
+
+  /* One wobbling polyline between two screen points.
+
+     With Thread life above zero the wobble becomes a travelling wave: the
+     pattern is sampled at a continuous position that creeps along the line,
+     interpolated between neighbouring hash values, so the shape slides down
+     the thread instead of shimmering in place. That is what animating the
+     grain would feel like, without ever changing the segment count — which
+     would pop. A second, slower sway per vertex keeps two lines from ever
+     drifting in step.
+
+     Thread life crossfades between the fixed wobble and the travelling one,
+     so 0 is dead still and 1 is entirely in motion.
+  */
+  function jitterPath(pa, pb, seed, salt, amp, steps, out){
+    var dx = pb.x-pa.x, dy = pb.y-pa.y;
+    var len = Math.hypot(dx, dy) || 1;
+    var nx = -dy/len, ny = dx/len;
+    var life = reduceMotion ? 0 : LINES.life;
+    var spd = LINES.lifeSpeed;
+    var t0 = life > 0 ? performance.now()/1000 : 0;
+    var dir = hash2(seed+salt, 79) < 0.5 ? -1 : 1;
+    // two octaves creeping at different rates, so it never reads as one
+    // sine sliding past
+    var creepA = life > 0 ? t0 * (0.30 + hash2(seed+salt, 71)*0.45) * spd * dir : 0;
+    var creepB = life > 0 ? t0 * (0.71 + hash2(seed+salt, 83)*0.9) * spd * -dir : 0;
+    out.length = 0;
+
+    function cell(u, salt2){
+      var i0 = Math.floor(u), f = smoothT(u - i0);
+      var a0 = hash2(seed + i0*31 + salt + salt2, 17)*2 - 1;
+      var a1 = hash2(seed + (i0+1)*31 + salt + salt2, 17)*2 - 1;
+      return a0 + (a1 - a0)*f;
+    }
+
+    for(var i=0;i<=steps;i++){
+      var t = i/steps;
+      var ease = Math.sin(Math.PI*t);                 // nothing at either end
+      var k = seed + i*31 + salt;
+      var stat = hash2(k, 17)*2 - 1;                  // the line at rest
+      var o = stat * amp;
+      if(life > 0){
+        // The moving part carries its own amplitude rather than borrowing from
+        // the resting wobble, so Thread life can push the threads well past
+        // their original swing instead of only reshuffling it.
+        var anim = (cell(i + creepA, 0) - stat)
+                 + (cell(i*0.6 + creepB, 4441)) * 0.55
+                 + Math.sin(t0*(0.19 + hash2(k, 97)*0.38)*spd + hash2(k, 103)*6.283) * 0.9;
+        o += anim * amp * life * 1.8;
+      }
+      o *= ease;
+      out.push({ x: pa.x + dx*t + nx*o, y: pa.y + dy*t + ny*o });
+    }
+    return out;
+  }
+
+  var _jp = [], _jp2 = [];
+  function strokeSeg(pa, pb, style, width, seed){
+    // Untouched settings take the plain path: no save/restore, no dash or cap
+    // state to set and unset. The panel only costs what it is actually using.
+    if(LINES.jitter <= 0.001 && LINES.taper <= 0.001 && (LINES.dbl <= 0.01 || LINES.passes < 2)
+       && LINES.dash <= 0.01 && LINES.cap === 0 && LINES.join === 0
+       && LINES.opacity > 0.999){
+      ctx.strokeStyle = style;
+      ctx.lineWidth = Math.max(0.05, width * LINES.weight);
+      ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y); ctx.stroke();
+      return;
+    }
+    var alpha = Math.max(0, Math.min(1, LINES.opacity));
+    var jit = LINES.jitter, tap = LINES.taper;
+    var steps = Math.max(2, Math.round(LINES.grain));
+    ctx.save();
+    ctx.strokeStyle = style;
+    if(alpha < 0.999) ctx.globalAlpha = alpha;
+    applyStrokeState(width);
+
+    function onePass(salt, widthMul, a){
+      var w = Math.max(0.05, width * LINES.weight * widthMul);
+      if(a < 0.999) ctx.globalAlpha = alpha * a;
+      if(jit <= 0.001 && tap <= 0.001){
+        ctx.lineWidth = w;
+        ctx.beginPath(); ctx.moveTo(pa.x,pa.y); ctx.lineTo(pb.x,pb.y); ctx.stroke();
+        return;
+      }
+      var pts = jitterPath(pa, pb, seed, salt, jit*1.7, steps, salt ? _jp2 : _jp);
+      if(tap <= 0.001){
+        ctx.lineWidth = w;
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for(var i=1;i<pts.length;i++) ctx.lineTo(pts[i].x, pts[i].y);
+        ctx.stroke();
+        return;
+      }
+      // a nib presses hardest in the middle of a stroke
+      for(var j=0;j<pts.length-1;j++){
+        var m = (j + 0.5)/(pts.length-1);
+        var swell = 1 - tap*(1 - Math.sin(Math.PI*m));
+        ctx.lineWidth = Math.max(0.05, w*swell);
+        ctx.beginPath();
+        ctx.moveTo(pts[j].x, pts[j].y);
+        ctx.lineTo(pts[j+1].x, pts[j+1].y);
+        ctx.stroke();
+      }
+    }
+
+    onePass(0, 1, 1);
+    if(LINES.dbl > 0.01){
+      // each further pass lies beside the last, a little thinner and fainter,
+      // with its own wobble seed
+      var extra = Math.max(0, Math.round(LINES.passes) - 1);
+      for(var k=0;k<extra;k++){
+        onePass(977 + k*613, 0.85 - k*0.09, Math.min(1, LINES.dbl*0.6*(1 - k*0.16)));
+      }
+    }
+
+    clearStrokeState();
+    ctx.restore();
+  }
+
+  function strokeCube(corners, style, width){
+    ctx.strokeStyle = style;
+    ctx.lineWidth = Math.max(0.05, width * LINES.cubeWeight);
+    ctx.beginPath();
+    for(var i=0;i<CUBE_EDGES.length;i++){
+      var e = CUBE_EDGES[i];
+      ctx.moveTo(corners[e[0]].x, corners[e[0]].y);
+      ctx.lineTo(corners[e[1]].x, corners[e[1]].y);
+    }
+    ctx.stroke();
+  }
+  function setDist(d){
+    cam.dist = Math.max(DIST_MIN, Math.min(DIST_MAX, d));
+    updateZoomLabel();
+  }
+  function updateZoomLabel(){
+    document.getElementById('zoomPct').textContent = Math.round((DIST_REF/cam.dist)*100) + '%';
+  }
+
+  // yaw/pitch that bring world point p to the exact center of the screen
+  function centeringAngles(p){
+    var yaw = Math.atan2(-p.x, p.z || 0.0001);
+    var qz = -p.x*Math.sin(yaw) + p.z*Math.cos(yaw);
+    var pitch = Math.atan2(p.y, qz || 0.0001);
+    return { yaw:yaw, pitch:pitch };
+  }
+
+  // smoothly re-frame the camera on newly created point(s), pulled in tight
+  // around them and their triangulation references — the "fires" behaviour.
+  function pulseCameraTo(focusNodes, neighborIds){
+    if(!focusNodes || !focusNodes.length) return;
+    var centroid = focusNodes.reduce(function(acc,n){ return add3(acc,n); }, {x:0,y:0,z:0});
+    centroid = scale3(centroid, 1/focusNodes.length);
+    var localR = 34;
+    focusNodes.forEach(function(n){ localR = Math.max(localR, dist3(centroid, n)); });
+    (neighborIds||[]).forEach(function(id){
+      var nb = nodeById[id];
+      if(nb) localR = Math.max(localR, dist3(centroid, nb));
+    });
+    localR *= 1.55;
+    var halfMin = Math.min(W,H)/2 || 1;
+    var targetDist = (localR*FOCAL)/(halfMin*0.5);
+    targetDist = Math.max(DIST_MIN, Math.min(DIST_REF*0.62, targetDist));
+    var ang = centeringAngles(centroid);
+    camPulse = {
+      fromYaw: cam.yaw, toYaw: ang.yaw,
+      fromPitch: cam.pitch, toPitch: ang.pitch,
+      fromDist: cam.dist, toDist: targetDist,
+      start: performance.now(), duration: reduceMotion ? 1 : 1500
+    };
+  }
+  function updateCamPulse(){
+    if(!camPulse) return;
+    var now = performance.now();
+    var t = Math.min(1, (now-camPulse.start)/camPulse.duration);
+    var eased = 1 - Math.pow(1-t, 3);
+    cam.yaw = lerp(camPulse.fromYaw, camPulse.toYaw, eased);
+    cam.pitch = lerp(camPulse.fromPitch, camPulse.toPitch, eased);
+    cam.dist = lerp(camPulse.fromDist, camPulse.toDist, eased);
+    updateZoomLabel();
+    if(t>=1) camPulse = null;
+  }
+
+  // keep the "your new point" tooltip pinned above it — independent of
+  // mouse position — while the camera settles onto it.
+  function pinTooltip(node, duration){
+    pinnedNode = node;
+    clearTimeout(pinnedTimer);
+    pinnedTimer = setTimeout(function(){
+      pinnedNode = null;
+      hoverNode = null; hoverTraceId = null; // force re-evaluation on the next real hover
+      tooltipEl.classList.remove('show');
+    }, duration);
+  }
+
+  /* ========================================================================
+     Color helpers
+  ========================================================================= */
+  function rootVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+  function hexToRgb(hex){
+    hex = hex.replace('#','');
+    if(hex.length===3) hex = hex.split('').map(function(c){return c+c;}).join('');
+    var num = parseInt(hex,16);
+    return { r:(num>>16)&255, g:(num>>8)&255, b:num&255 };
+  }
+  var THEME = { ink:null, ash:null, accent:null, paper:null };
+  function refreshTheme(){
+    THEME.ink = hexToRgb(rootVar('--ink') || '#1D1912');
+    THEME.ash = hexToRgb(rootVar('--ash') || '#8B8172');
+    THEME.accent = hexToRgb(rootVar('--accent') || '#A8402A');
+    THEME.paper = rootVar('--paper') || '#F2EDE1';
+  }
+  refreshTheme();
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', refreshTheme);
+
+  function lerp(a,b,t){ return a+(b-a)*t; }
+  function mixRgb(c1,c2,t){ return { r:lerp(c1.r,c2.r,t), g:lerp(c1.g,c2.g,t), b:lerp(c1.b,c2.b,t) }; }
+  function rgba(c,a){ return 'rgba('+Math.round(c.r)+','+Math.round(c.g)+','+Math.round(c.b)+','+Math.max(0,a)+')'; }
+
+  function ageFrac(n){
+    if(n.origin==='visitor') return 1;
+    return Math.max(0, Math.min(1, n.generation / MAX_GENERATION));
+  }
+  // Distance reads as opacity: the further back a thing sits, the more it
+  // gives way. The falloff setting decides how insistent that is.
+  function depthFade(viewZ){
+    var t = Math.max(0, Math.min(1, cam.dist*1.05/viewZ));
+    var f = Math.pow(t, 1.35);
+    return Math.max(0.08, 1 - (1-f) * SETTINGS.depthFalloff);
+  }
+
+  /* ------------------------------------------------------------------
+     Trace ageing — the more traces the archive holds, the fainter the
+     earliest ones render. They are never erased: 5% is the hard floor.
+  ------------------------------------------------------------------- */
+  var TRACE_FADE_FLOOR = 0.05;
+  function traceAlpha(el){
+    var ref = evolutionMode ? evoThreshold : CURRENT_MAX_GEN;
+    var behind = ref - (el.generation || 0);
+    if(behind <= 0) return 1;
+    var t = Math.min(1, behind / Math.max(1, SETTINGS.fadeSpan));
+    return TRACE_FADE_FLOOR + (1-TRACE_FADE_FLOOR) * Math.pow(1-t, 1.5);
+  }
+  function agedAlpha(el, a){ return Math.max(TRACE_FADE_FLOOR, a * traceAlpha(el)); }
+
+  function nodeColor(n, alphaMul){
+    alphaMul = alphaMul===undefined?1:alphaMul;
+    if(n._pending) return rgba(THEME.accent, 1*alphaMul);
+    if(n._settle !== undefined){
+      var t = n._settle;
+      return rgba(mixRgb(THEME.accent, THEME.ink, t), (0.85+0.15*t)*alphaMul);
+    }
+    if(n.isOriginal) return rgba(THEME.ink, agedAlpha(n, 0.92*alphaMul));
+    var f = ageFrac(n);
+    return rgba(mixRgb(THEME.ash, THEME.ink, 0.25+0.75*f), agedAlpha(n, (0.46+0.54*f)*alphaMul));
+  }
+  function edgeColor(e, alphaMul){
+    alphaMul = alphaMul===undefined?1:alphaMul;
+    if(e._pending) return rgba(THEME.accent, 0.9*alphaMul);
+    if(e._settle !== undefined){
+      var t = e._settle;
+      return rgba(mixRgb(THEME.accent, THEME.ink, t), (0.55+0.25*t)*alphaMul);
+    }
+    if(e.origin==='visitor') return rgba(THEME.ink, agedAlpha(e, 0.7*alphaMul));
+    if(e.generation===0) return rgba(THEME.ink, agedAlpha(e, 0.5*alphaMul));
+    var f = Math.max(0, Math.min(1, e.generation/MAX_GENERATION));
+    return rgba(mixRgb(THEME.ash, THEME.ink, f), agedAlpha(e, (0.16+0.34*f)*alphaMul));
+  }
+
+  /* ========================================================================
+     Interaction state
+  ========================================================================= */
+  var pointers = {};
+  var dragLast=null, dragStartScreen=null, dragMoved=false, pinchStartDist=null, pinchStartCamDist=null;
+  var tapEligible=false;
+  var mode = 'idle'; // idle | placing | triangulating | confirming | merging
+  var pending = { nodes:[], edges:[] };
+  var lastInteraction = 0;
+
+  var evolutionMode = false, evoThreshold = CURRENT_MAX_GEN, evoPlaying=false, evoTweenT=0, evoFrom=0, evoTo=0, evoStepIdx=0, evoCheckpoints=[];
+  var savedCam = null;
+
+  var lastProjected = {}; // nodeId -> {x,y,scale,viewZ}
+  var hoverNode = null, hoverTraceId = null;
+  var cursorScreen = null;   // drawn reticle + line erosion follow this
+  var cursorIsMouse = false;
+  var erodeFade = 0;         // eases the erosion in and out
+  var cursorLag = null;      // trails the cursor, so the dust has weight
+  var lagVel = { x:0, y:0 }; // its velocity — a spring, so it settles slowly
+  var erodeClock = 0;        // seconds, drives each grain's own wander
+  var ghostScreen = null; // cursor position driving the live placement preview
+  var ghost = null;       // { pos:{x,y,z}, refs:[{node,w}] }
+  var pinnedNode = null, pinnedTimer = null;
+  var camPulse = null;
+
+  function pickNear(sx, sy, pxRadius){
+    var best=null, bestD=pxRadius;
+    for(var id in lastProjected){
+      var p = lastProjected[id];
+      var d = Math.hypot(p.x-sx, p.y-sy);
+      if(d < bestD){ bestD=d; best=id; }
+    }
+    return best ? (nodeById[best] || pending.nodes.find(function(n){return n.id===best;})) : null;
+  }
+  function nearestAny(sx, sy){
+    var best=null, bestD=Infinity;
+    for(var id in lastProjected){
+      var p = lastProjected[id];
+      var d = Math.hypot(p.x-sx, p.y-sy);
+      if(d < bestD){ bestD=d; best=id; }
+    }
+    return best ? (nodeById[best] || pending.nodes.find(function(n){return n.id===best;})) : null;
+  }
+
+  function pendingLinkedCount(){
+    var adj = {};
+    function link(a,b){ (adj[a]=adj[a]||[]).push(b); (adj[b]=adj[b]||[]).push(a); }
+    pending.edges.forEach(function(e){ link(e.a,e.b); });
+    var linked = 0;
+    pending.nodes.forEach(function(pn){
+      var seen={}, stack=[pn.id], reached=false;
+      while(stack.length){
+        var id = stack.pop();
+        if(seen[id]) continue; seen[id]=true;
+        if(nodeById[id] !== undefined){ reached=true; break; }
+        (adj[id]||[]).forEach(function(nx){ if(!seen[nx]) stack.push(nx); });
+      }
+      if(reached) linked++;
+    });
+    return linked;
+  }
+  function pendingDegree(id){
+    var c = 0;
+    pending.edges.forEach(function(e){ if(e.a===id || e.b===id) c++; });
+    return c;
+  }
+  function pendingFullyTriangulated(){
+    return pending.nodes.length>0 && pending.nodes.every(function(pn){ return pendingDegree(pn.id) >= TRIANGULATION_REFS; });
+  }
+
+  /* ========================================================================
+     Rendering
+  ========================================================================= */
+  var tooltipEl = document.getElementById('nodeTip');
+
+  function fmtAgo(ts){
+    var days = (NOW-ts)/(1000*60*60*24);
+    if(days < 1) return 'today';
+    if(days < 30) return Math.round(days)+'d ago';
+    if(days < 365) return Math.round(days/30)+'mo ago';
+    return (days/365).toFixed(1)+'y ago';
+  }
+  function fmtNodeId(n){
+    var num = parseInt(String(n.id).replace(/^\D+/,''), 10) || 0;
+    return ('000'+num).slice(-3);
+  }
+  function fmtLiens(n){
+    var d = degree(n.id);
+    return d + (d===1 ? ' lien' : ' liens');
+  }
+  // Coordinates read as survey data: signed integers on the point's own
+  // axes, independent of the depth setting used to display them.
+  function fmtCoord(v){
+    var r = Math.round(v);
+    return (r < 0 ? '\u2212' : '+') + Math.abs(r);
+  }
+  function nodeZ(n){ return n.z0 !== undefined ? n.z0 : n.z; }
+  function coordText(x, y, z){
+    return 'X ' + fmtCoord(x) + '  Y ' + fmtCoord(y) + '  Z ' + fmtCoord(z);
+  }
+  function coordHTML(x, y, z){
+    return '<i><b>X</b>' + fmtCoord(x) + '</i>' +
+           '<i><b>Y</b>' + fmtCoord(y) + '</i>' +
+           '<i><b>Z</b>' + fmtCoord(z) + '</i>';
+  }
+  function tooltipHTML(n){
+    return '<div class="tip-main">' +
+      '<span class="tip-icon">✳</span>' +
+      '<span class="tip-id">' + fmtNodeId(n) + '</span>' +
+      '<span class="tip-sep">·</span>' +
+      '<span class="tip-liens">' + fmtLiens(n) + '</span>' +
+      '</div>' +
+      '<div class="tip-coord">' + coordHTML(n.x, n.y, nodeZ(n)) + '</div>';
+  }
+
+  /* ------------------------------------------------------------------
+     Ambient dust — motes hanging in the air of the room, not in the
+     archive. The composition turns; the dust does not. Each mote carries
+     its own depth, which drives its size, its opacity and how far it
+     swims, so the air still reads as a volume.
+  ------------------------------------------------------------------- */
+  var DUST_POOL = 900;   // built once; the count setting decides how many draw
+  var dust = [];
+  function buildDust(){
+    var r = mulberry32(90210);
+    for(var i=0;i<DUST_POOL;i++){
+      dust.push({
+        nx: r(), ny: r(),                          // normalised across the viewport
+        depth: 0.08 + Math.pow(r(), 0.8)*0.92,     // 0 far, 1 near
+        // a power law: mostly the finest grit, a scattering of bigger flecks
+        gauge: 0.5 + Math.pow(r(), 3.1)*4.2,
+        w: 0.04 + r()*0.17, ph: r()*Math.PI*2,
+        a: 0.14 + r()*0.55
+      });
+    }
+  }
+  buildDust();
+
+  function drawDust(){
+    var k = SETTINGS.dust;
+    var count = Math.min(dust.length, Math.round(SETTINGS.dustCount));
+    if(k <= 0 || count <= 0) return;
+    var t = reduceMotion ? 0 : performance.now()/1000;
+    // Dollying moves the camera through the field: near motes stream outward
+    // and swell faster than far ones. Orbiting leaves the dust where it is.
+    var zoomK = Math.max(0.05, DIST_REF / Math.max(1, cam.dist));
+    for(var i=0;i<count;i++){
+      var d = dust[i];
+      var par = Math.pow(zoomK, 0.5 * d.depth);
+      var amp = (10 + d.depth*46) * Math.min(3, par);
+      var x = W/2 + (d.nx-0.5)*W*par + Math.sin(t*d.w + d.ph)*amp;
+      var y = H/2 + (d.ny-0.5)*H*par + Math.cos(t*d.w*0.77 + d.ph*1.4)*amp*0.8;
+      x = ((x % W) + W) % W;                       // wrap, so nothing piles at an edge
+      y = ((y % H) + H) % H;
+      // the motes furthest off swell and thin out, the way an out-of-focus
+      // speck does, without paying for a real blur on 900 of them
+      var soften = Math.max(0, Math.min(1, (0.45 - d.depth)/0.45)) * SETTINGS.dof;
+      var sz = Math.max(1/DPR, snapPx(d.gauge * (0.45 + d.depth*0.9)
+                * Math.min(4.5, Math.pow(par, 0.85)) * SETTINGS.dustSize
+                * (1 + soften*1.7)));
+      ctx.fillStyle = rgba(THEME.ink, Math.min(0.6, d.a * (0.22 + d.depth*0.78)
+                * 0.5 * k * (1 - soften*0.55)));
+      ctx.fillRect(snapPx(x - sz/2), snapPx(y - sz/2), sz, sz);
+    }
+  }
+
+  /* ------------------------------------------------------------------
+     Depth of field. The scene is split into three shells by distance from
+     the orbit pivot; the two far shells are drawn into their own buffers
+     and composited back through a blur, so the archive recedes into soft
+     ground instead of staying uniformly sharp all the way back.
+
+     Those buffers are rendered at reduced resolution — they are about to
+     be blurred anyway, so the extra pixels would only be thrown away.
+  ------------------------------------------------------------------- */
+  var mainCtx = ctx;
+  var dofSupported = (function(){
+    try { return typeof document.createElement('canvas').getContext('2d').filter === 'string'; }
+    catch(e){ return false; }
+  })();
+  var LAYER_FAR = { cv:null, ctx:null, bl:null, blCtx:null, scale:0.38 };
+  var LAYER_MID = { cv:null, ctx:null, bl:null, blCtx:null, scale:0.62 };
+  var FAR_MIN = 0.55, MID_MIN = 0.10;    // shell edges, in units of WORLD_RADIUS
+
+  function beginLayer(L){
+    if(!L.cv){
+      L.cv = document.createElement('canvas'); L.ctx = L.cv.getContext('2d');
+      L.bl = document.createElement('canvas'); L.blCtx = L.bl.getContext('2d');
+    }
+    var w = Math.max(1, Math.round(W*DPR*L.scale)), h = Math.max(1, Math.round(H*DPR*L.scale));
+    if(L.cv.width !== w || L.cv.height !== h){
+      L.cv.width = w; L.cv.height = h; L.bl.width = w; L.bl.height = h;
+    }
+    L.ctx.setTransform(DPR*L.scale, 0, 0, DPR*L.scale, 0, 0);
+    L.ctx.clearRect(0, 0, W, H);
+    ctx = L.ctx;
+  }
+  // The blur runs at the layer's own small resolution — a fraction of the
+  // pixels — and the upscale back to full size does the rest of the
+  // softening for free.
+  function endLayer(L, blurPx){
+    ctx = mainCtx;
+    var small = blurPx * L.scale * DPR;
+    var src = L.cv;
+    if(small > 0.15){
+      L.blCtx.setTransform(1,0,0,1,0,0);
+      L.blCtx.clearRect(0, 0, L.bl.width, L.bl.height);
+      L.blCtx.filter = 'blur(' + small.toFixed(2) + 'px)';
+      L.blCtx.drawImage(L.cv, 0, 0);
+      L.blCtx.filter = 'none';
+      src = L.bl;
+    }
+    ctx.save();
+    // bilinear is plenty: the layer was blurred before it was scaled up, so
+    // there is no detail left for a costlier resampler to preserve
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'low';
+    ctx.drawImage(src, 0, 0, W, H);
+    ctx.restore();
+  }
+  function shellOf(viewZ){ return (viewZ - cam.dist) / Math.max(1, WORLD_RADIUS); }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    lastProjected = {};
+
+    var showLabels = cam.dist < DIST_REF*1.05;
+    var showCoords = cam.dist < DIST_REF*0.40;
+    var showFineStroke = cam.dist < DIST_REF*3.4;
+    var genCap = evolutionMode ? evoThreshold : Infinity;
+
+    var edgeDraw = [];
+    for(var i=0;i<edges.length;i++){
+      var e = edges[i];
+      if(e.generation > genCap) continue;
+      var a = nodeById[e.a], b = nodeById[e.b];
+      if(!a||!b) continue;
+      var pa = project(a), pb = project(b);
+      if(!pa||!pb) continue;
+      edgeDraw.push({ e:e, pa:pa, pb:pb, z:(pa.viewZ+pb.viewZ)/2 });
+    }
+    edgeDraw.sort(function(x,y){ return y.z-x.z; });
+    edgeDraw.forEach(function(d){ d.rel = shellOf(d.z); });
+    var dimming = hoverTraceId && hoverTraceId!=='GENESIS';
+    var erodeBudget = ERODE_MAX_EDGES;
+    var erodeBreathe = (reduceMotion || SETTINGS.grainDrift <= 0)
+      ? 0 : Math.sin(performance.now()*0.00045)*0.6*SETTINGS.grainDrift;
+    function renderEdges(relMin, relMax){
+    edgeDraw.forEach(function(d){
+      if(d.rel < relMin || d.rel >= relMax) return;
+      var fog = depthFade(d.z);
+      var aIn = dimming && nodeById[d.e.a] && nodeById[d.e.a].traceId===hoverTraceId;
+      var bIn = dimming && nodeById[d.e.b] && nodeById[d.e.b].traceId===hoverTraceId;
+      var hlBoth = aIn && bIn;
+      var hlOne = dimming && !hlBoth && (aIn || bIn);
+      var hl = hlBoth || hlOne;
+      var bite = erodeBudget > 0 ? erodeBite(d.pa, d.pb) : 0;
+      if(bite > 0.01) erodeBudget--;
+      var isBeam = hasBeam(d.e);
+      if(isBeam && !hl && bite <= 0.01 && LINES.beamOpacity > 0.005){
+        // shaded rod underlay — the thick connecting bars in the source plate
+        var midScale = (d.pa.scale + d.pb.scale) / 2;
+        ctx.save();
+        ctx.beginPath();
+        if(LINES.jitter > 0.001){
+          // the rod follows the same wobble as the hairline over it, from the
+          // same seed, so the two never part company
+          var bp = jitterPath(d.pa, d.pb, d.e.seed, 0, LINES.jitter*1.7,
+                              Math.max(2, Math.round(LINES.grain)), _jp);
+          ctx.moveTo(bp[0].x, bp[0].y);
+          for(var bi=1;bi<bp.length;bi++) ctx.lineTo(bp[bi].x, bp[bi].y);
+        } else {
+          ctx.moveTo(d.pa.x,d.pa.y); ctx.lineTo(d.pb.x,d.pb.y);
+        }
+        ctx.strokeStyle = rgba(THEME.ink, Math.min(1, agedAlpha(d.e, (dimming?0.08:0.2)*fog) * LINES.beamOpacity));
+        ctx.lineWidth = Math.max(0.4, 5*midScale*LINES.beamWeight*beamGauge(d.e));
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.stroke();
+        ctx.restore();
+      }
+      var eStyle = hlBoth ? rgba(THEME.accent, 0.95) : hlOne ? rgba(THEME.accent, 0.55) : edgeColor(d.e, dimming ? fog*0.22 : fog);
+      var eWidth = hlBoth ? 2 : hlOne ? 1.5 : (isBeam ? 1.1 : (d.e.origin==='visitor' ? 1 : (d.e.generation===0?0.9:0.6)));
+      if(bite > 0.01){
+        var grainCol = hl ? THEME.accent : THEME.ink;
+        var grainA = agedAlpha(d.e, (dimming && !hl ? 0.2 : 0.66) * fog);
+        strokeEroded(d.pa, d.pb, eStyle, eWidth, d.e.seed, erodeBreathe, grainCol, grainA);
+      } else {
+        strokeSeg(d.pa, d.pb, eStyle, eWidth, d.e.seed);
+      }
+    });
+    }
+
+    var nodeDraw = [];
+    for(var j=0;j<nodes.length;j++){
+      var n = nodes[j];
+      if(n.generation > genCap) continue;
+      var p = project(n);
+      if(!p) continue;
+      if(p.x<-30||p.x>W+30||p.y<-30||p.y>H+30) continue;
+      nodeDraw.push({ n:n, p:p });
+      lastProjected[n.id] = p;
+    }
+    nodeDraw.sort(function(x,y){ return y.p.viewZ-x.p.viewZ; });
+    nodeDraw.forEach(function(d){ d.rel = shellOf(d.p.viewZ); });
+
+    function renderNodes(relMin, relMax){
+    nodeDraw.forEach(function(d){
+      if(d.rel < relMin || d.rel >= relMax) return;
+      var n=d.n, p=d.p;
+      var fog = depthFade(p.viewZ);
+      var rr = Math.max(0.8, n.r*p.scale);
+      var isHoverGroup = dimming && n.traceId===hoverTraceId;
+      var nc = isHoverGroup ? rgba(THEME.accent, Math.min(1, 0.9+0.1*fog)) : nodeColor(n, dimming ? fog*0.22 : fog);
+      var halfSize = n.r * (n.big ? 0.95 : 0.8);
+      var corners = projectCube(n, halfSize);
+      if(corners){
+        if(isHoverGroup){
+          var halo = projectCube(n, halfSize*1.9);
+          if(halo) strokeCube(halo, rgba(THEME.accent, 0.45), 1.1);
+        }
+        strokeCube(corners, nc, n.big ? 1.3 : (showFineStroke ? 1 : 0.8));
+      } else {
+        // fallback for the rare case a corner is behind the near plane
+        ctx.beginPath(); ctx.arc(p.x,p.y,rr,0,Math.PI*2); ctx.fillStyle = nc; ctx.fill();
+      }
+      var textX = p.x + rr*1.45 + 6;
+      if(showLabels && n.label){
+        ctx.font = 'italic 12px Fraunces, Georgia, serif';
+        ctx.fillStyle = isHoverGroup ? rgba(THEME.accent, 0.95) : rgba(THEME.ink, agedAlpha(n, (dimming?0.25:0.6)*fog));
+        ctx.fillText(n.label, textX, p.y + 4);
+      }
+      if(showCoords){
+        // the surveyed position, in the manner of the plates this borrows from
+        ctx.font = '8px "Space Mono", ui-monospace, monospace';
+        ctx.fillStyle = isHoverGroup ? rgba(THEME.accent, 0.8) : rgba(THEME.ink, agedAlpha(n, (dimming?0.14:0.36)*fog));
+        ctx.fillText(coordText(n.x, n.y, nodeZ(n)), textX, p.y + (showLabels && n.label ? 15 : 4));
+      }
+    });
+    }
+
+    // ---- lay the shells down, far to near ----
+    var useDof = dofSupported && SETTINGS.dof > 0.01;
+    drawDust();
+    if(!useDof){
+      renderEdges(-Infinity, Infinity);
+      renderNodes(-Infinity, Infinity);
+    } else {
+      var zf = Math.max(0.7, Math.min(2.2, Math.pow(DIST_REF/Math.max(1, cam.dist), 0.35)));
+      var farEdge = FAR_MIN * SETTINGS.focusRange, midEdge = MID_MIN * SETTINGS.focusRange;
+      beginLayer(LAYER_FAR);
+      renderEdges(farEdge, Infinity);
+      renderNodes(farEdge, Infinity);
+      endLayer(LAYER_FAR, 2.2 * SETTINGS.dof * zf);
+
+      beginLayer(LAYER_MID);
+      renderEdges(midEdge, farEdge);
+      renderNodes(midEdge, farEdge);
+      endLayer(LAYER_MID, 0.8 * SETTINGS.dof * zf);
+
+      renderEdges(-Infinity, midEdge);
+      renderNodes(-Infinity, midEdge);
+    }
+
+    pending.edges.forEach(function(pe){
+      var a = nodeById[pe.a] || pending.nodes.find(function(n){return n.id===pe.a;});
+      var b = nodeById[pe.b] || pending.nodes.find(function(n){return n.id===pe.b;});
+      if(!a||!b) return;
+      var pa = project(a), pb = project(b);
+      if(!pa||!pb) return;
+      ctx.beginPath(); ctx.moveTo(pa.x,pa.y); ctx.lineTo(pb.x,pb.y);
+      ctx.strokeStyle = rgba(THEME.accent,0.85); ctx.lineWidth=1.2;
+      ctx.setLineDash([4,4]); ctx.stroke(); ctx.setLineDash([]);
+    });
+
+    pending.nodes.forEach(function(pn){
+      var p = project(pn);
+      if(!p) return;
+      lastProjected[pn.id] = p;
+      var haloC = projectCube(pn, Math.max(2.2, pn.r*0.8)*2.1);
+      if(haloC) strokeCube(haloC, rgba(THEME.accent,0.4), 1);
+      var mainC = projectCube(pn, Math.max(2.2, pn.r*0.8));
+      if(mainC) strokeCube(mainC, rgba(THEME.accent,1), 1.6);
+    });
+
+    drawGhost();
+    drawReticle();
+  }
+
+  // The point the cursor is about to leave, and the reference points it
+  // would be fixed against — everything dashed and hollow, so it reads as a
+  // proposal rather than something already in the archive.
+  function drawGhost(){
+    if(!ghost) return;
+    var gp = project(ghost.pos);
+    if(!gp) return;
+
+    ctx.setLineDash([3,5]);
+    ghost.refs.forEach(function(ref){
+      var rp = lastProjected[ref.node.id] || project(ref.node);
+      if(!rp) return;
+      ctx.beginPath();
+      ctx.moveTo(gp.x, gp.y); ctx.lineTo(rp.x, rp.y);
+      ctx.strokeStyle = rgba(THEME.accent, 0.5);
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+    ctx.setLineDash([]);
+
+    // ring the candidate anchors so the chosen references are unmistakable
+    ghost.refs.forEach(function(ref){
+      var halo = projectCube(ref.node, Math.max(2.6, ref.node.r*0.9)*1.75);
+      if(halo) strokeCube(halo, rgba(THEME.accent, 0.55), 1);
+    });
+
+    var half = 2.4;
+    var outer = projectCube(ghost.pos, half*2.1);
+    if(outer){
+      ctx.setLineDash([2,3]);
+      strokeCube(outer, rgba(THEME.accent, 0.3), 1);
+      ctx.setLineDash([]);
+    }
+    var main = projectCube(ghost.pos, half);
+    if(main){
+      ctx.setLineDash([2,2]);
+      strokeCube(main, rgba(THEME.accent, 0.85), 1.4);
+      ctx.setLineDash([]);
+    } else {
+      ctx.beginPath(); ctx.arc(gp.x, gp.y, 3, 0, Math.PI*2);
+      ctx.strokeStyle = rgba(THEME.accent, 0.85); ctx.lineWidth = 1.4; ctx.stroke();
+    }
+
+    ctx.font = '9px "Space Mono", ui-monospace, monospace';
+    ctx.fillStyle = rgba(THEME.accent, 0.9);
+    ctx.fillText(coordText(ghost.pos.x, ghost.pos.y, unscaleZ(ghost.pos.z)), gp.x + 13, gp.y - 23);
+    ctx.fillStyle = rgba(THEME.accent, 0.6);
+    ctx.fillText(ghost.refs.length + ' liens', gp.x + 13, gp.y - 12);
+  }
+
+  function updateErode(){
+    var target = (cursorScreen && cursorIsMouse) ? 1 : 0;
+    var ease = reduceMotion ? 1 : 0.16;
+    erodeFade += (target - erodeFade) * ease;
+    if(erodeFade < 0.004) erodeFade = 0;
+
+    erodeClock = performance.now()/1000;
+    if(cursorScreen){
+      if(!cursorLag){ cursorLag = { x:cursorScreen.x, y:cursorScreen.y }; lagVel.x = lagVel.y = 0; }
+      if(reduceMotion){
+        cursorLag.x = cursorScreen.x; cursorLag.y = cursorScreen.y;
+      } else if(SETTINGS.springback <= 0.02){
+        // no spring at all: the cloud sits exactly under the cursor
+        cursorLag.x = cursorScreen.x; cursorLag.y = cursorScreen.y;
+        lagVel.x = lagVel.y = 0;
+      } else {
+        // A spring with a brake. Stiffness decides how eagerly the dust
+        // chases the cursor; the brake decides how long it rings once it
+        // gets there — that overshoot is the rebound.
+        var k = 0.055 * SETTINGS.follow;
+        var damp = Math.max(0.4, Math.min(0.97, 1 - 0.10/Math.max(0.2, SETTINGS.springback)));
+        lagVel.x = (lagVel.x + (cursorScreen.x - cursorLag.x)*k) * damp;
+        lagVel.y = (lagVel.y + (cursorScreen.y - cursorLag.y)*k) * damp;
+        cursorLag.x += lagVel.x;
+        cursorLag.y += lagVel.y;
+      }
+    } else {
+      cursorLag = null; lagVel.x = lagVel.y = 0;
+    }
+  }
+
+  var fpsEl = document.getElementById('fpsTag');
+  var fpsFrames = 0, fpsSince = performance.now(), showFps = true;
+  function updateFps(){
+    fpsFrames++;
+    var now = performance.now();
+    if(now - fpsSince >= 500){
+      var v = Math.round(fpsFrames * 1000 / (now - fpsSince));
+      fpsFrames = 0; fpsSince = now;
+      if(showFps) fpsEl.textContent = v + ' fps';
+    }
+  }
+
+  function tick(){
+    updateFps();
+    updateSettleAnimations();
+    updateCamPulse();
+    updateAmbientRotation();
+    updateSway();
+    updateErode();
+    updateGhost();
+    draw();
+    updatePinnedTooltip();
+    updateEvolutionAutoplay();
+    requestAnimationFrame(tick);
+  }
+
+  function updatePinnedTooltip(){
+    if(!pinnedNode) return;
+    var p = lastProjected[pinnedNode.id];
+    if(!p) return;
+    tooltipEl.classList.add('show');
+    tooltipEl.innerHTML = tooltipHTML(pinnedNode);
+    tooltipEl.style.left = p.x+'px';
+    tooltipEl.style.top = p.y+'px';
+  }
+
+  var settling = [];
+  function updateSettleAnimations(){
+    if(!settling.length) return;
+    var now = performance.now();
+    settling = settling.filter(function(item){
+      var t = Math.min(1, (now-item.start)/item.duration);
+      var eased = 1 - Math.pow(1-t,3);
+      item.node._settle = eased;
+      if(t>=1){ delete item.node._settle; return false; }
+      return true;
+    });
+  }
+
+  function updateAmbientRotation(){
+    if(reduceMotion || mode!=='idle' || evolutionMode) return;
+    var idleFor = performance.now() - lastInteraction;
+    if(idleFor > 4000){ cam.yaw += 0.00035 * SETTINGS.rotSpeed; }
+  }
+
+  /* ========================================================================
+     Pointer / gesture handling — holding the wheel button (or the right
+     button, or a touch drag) rotates the composition; a plain left click
+     places a point.
+  ========================================================================= */
+  canvas.addEventListener('contextmenu', function(ev){ ev.preventDefault(); });
+  // keep the middle button for orbiting: no autoscroll, no aux navigation
+  canvas.addEventListener('mousedown', function(ev){ if(ev.button===1) ev.preventDefault(); });
+  canvas.addEventListener('auxclick', function(ev){ if(ev.button===1) ev.preventDefault(); });
+
+  canvas.addEventListener('pointerdown', function(ev){
+    canvas.setPointerCapture(ev.pointerId);
+    pointers[ev.pointerId] = { x:ev.clientX, y:ev.clientY };
+    lastInteraction = performance.now();
+    camPulse = null;
+    var count = Object.keys(pointers).length;
+    if(count===1){
+      var isTouch = ev.pointerType !== 'mouse';
+      var canRotate = isTouch || ev.button===1 || ev.button===2;
+      tapEligible = isTouch || ev.button===0;
+      dragStartScreen = { x:ev.clientX, y:ev.clientY };
+      dragMoved = false;
+      dragLast = canRotate ? { x:ev.clientX, y:ev.clientY } : null;
+      if(canRotate) canvas.classList.add('dragging');
+    } else if(count===2){
+      var pts = Object.values(pointers);
+      pinchStartDist = Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
+      pinchStartCamDist = cam.dist;
+    }
+  });
+
+  canvas.addEventListener('pointermove', function(ev){
+    if(pointers[ev.pointerId]) pointers[ev.pointerId] = { x:ev.clientX, y:ev.clientY };
+    var count = Object.keys(pointers).length;
+    lastInteraction = performance.now();
+
+    if(count===2 && pinchStartDist){
+      var pts = Object.values(pointers);
+      var d = Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
+      setDist(pinchStartCamDist * (pinchStartDist/Math.max(20,d)));
+      return;
+    }
+
+    if(count===1 && dragStartScreen){
+      if(Math.hypot(ev.clientX-dragStartScreen.x, ev.clientY-dragStartScreen.y) > 6) dragMoved = true;
+      if(dragLast && dragMoved){
+        var dx = ev.clientX - dragLast.x, dy = ev.clientY - dragLast.y;
+        cam.yaw += dx*0.0055;
+        cam.pitch = Math.max(-1.35, Math.min(1.35, cam.pitch + dy*0.0055));
+      }
+      if(dragLast){ dragLast = { x:ev.clientX, y:ev.clientY }; }
+    }
+
+    cursorIsMouse = (ev.pointerType !== 'touch');
+    if(cursorIsMouse) cursorScreen = { x:ev.clientX, y:ev.clientY };
+    canvas.classList.toggle('reticle', cursorIsMouse);
+
+    if(mode==='placing'){
+      // the preview belongs to hovering, not to dragging the camera
+      ghostScreen = (count===0) ? { x:ev.clientX, y:ev.clientY } : null;
+    }
+
+    if(mode==='idle' && !dragMoved && !pinnedNode){
+      var hn = pickNear(ev.clientX, ev.clientY, 13);
+      if(hn !== hoverNode){
+        hoverNode = hn;
+        hoverTraceId = hn ? hn.traceId : null;
+        if(hn){
+          tooltipEl.classList.add('show');
+          tooltipEl.innerHTML = tooltipHTML(hn);
+        } else {
+          tooltipEl.classList.remove('show');
+        }
+      }
+      if(hn){
+        var sp = lastProjected[hn.id];
+        if(sp){ tooltipEl.style.left = sp.x+'px'; tooltipEl.style.top = sp.y+'px'; }
+      }
+    }
+  });
+
+  function traceSize(tid){
+    var c=0; for(var i=0;i<nodes.length;i++){ if(nodes[i].traceId===tid) c++; } return c;
+  }
+
+  function endPointer(ev){
+    var wasSingle = Object.keys(pointers).length===1;
+    delete pointers[ev.pointerId];
+    canvas.classList.remove('dragging');
+    if(Object.keys(pointers).length<2){ pinchStartDist=null; }
+    if(wasSingle && tapEligible && !dragMoved){
+      handleCanvasTap(ev.clientX, ev.clientY);
+    }
+    if(Object.keys(pointers).length===0){ dragLast=null; dragStartScreen=null; tapEligible=false; }
+  }
+  canvas.addEventListener('pointerup', endPointer);
+  canvas.addEventListener('pointercancel', endPointer);
+  canvas.addEventListener('pointerleave', function(){
+    ghostScreen = null;
+    cursorScreen = null;
+    canvas.classList.remove('reticle');
+  });
+
+  canvas.addEventListener('wheel', function(ev){
+    ev.preventDefault();
+    lastInteraction = performance.now();
+    camPulse = null;
+    var unit = ev.deltaMode===1 ? 16 : (ev.deltaMode===2 ? 100 : 1);
+    setDist(cam.dist * Math.pow(1.0016, ev.deltaY*unit));
+  }, { passive:false });
+
+  /* ------------------------------------------------------------------
+     Where a new point settles in depth.
+
+     Aiming with the cursor fixes only two of three coordinates, so the
+     third comes from a smooth noise field laid over the screen: sweeping
+     the cursor glides the point forward and back through the archive
+     instead of snapping it between unrelated depths, and no two
+     neighbouring placements land on the same plane. Deterministic in the
+     cursor position, so the preview and the click agree exactly.
+  ------------------------------------------------------------------- */
+  var DEPTH_REACH = 0.55; // of the archive's radius, at the default setting
+
+  function hash2(ix, iy){
+    var h = (Math.imul(ix, 374761393) + Math.imul(iy, 668265263)) >>> 0;
+    h = (h ^ (h >>> 13)) >>> 0;
+    h = Math.imul(h, 1274126177) >>> 0;
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  }
+  function smoothT(t){ return t*t*(3-2*t); }
+  function valueNoise(x, y, salt){
+    var x0 = Math.floor(x), y0 = Math.floor(y);
+    var fx = smoothT(x-x0), fy = smoothT(y-y0);
+    var a = hash2(x0+salt, y0), b = hash2(x0+1+salt, y0);
+    var c = hash2(x0+salt, y0+1), d = hash2(x0+1+salt, y0+1);
+    return (a*(1-fx)+b*fx)*(1-fy) + (c*(1-fx)+d*fx)*fy;
+  }
+  // two octaves, signed — broad drifts with a finer grain riding on top
+  function organicField(sx, sy, salt){
+    var broad = valueNoise(sx/230, sy/230, salt*97);
+    var fine  = valueNoise(sx/71 + 13.7, sy/71 - 8.3, salt*97 + 31);
+    return ((broad*0.7 + fine*0.3) * 2 - 1);
+  }
+
+  // The depth the cursor is "resting on": every visible point pulls the base
+  // plane toward its own depth, weighted by screen proximity. Blending them
+  // all keeps the plane gliding — snapping to the single nearest point would
+  // teleport the preview whenever the cursor crossed between two neighbours.
+  function anchorDepth(sx, sy){
+    var sw = 0, sz = 0, any = false;
+    for(var id in lastProjected){
+      var p = lastProjected[id];
+      var d = Math.hypot(p.x-sx, p.y-sy) + 35;
+      var w = 1/(d*d);
+      sw += w; sz += w*p.viewZ; any = true;
+    }
+    return any ? sz/sw : null;
+  }
+
+  function unprojectNear(sx, sy){
+    var base = anchorDepth(sx, sy);
+    if(base === null){
+      var anchor = nearestAny(sx, sy);
+      if(!anchor) return { x:0, y:0, z:0 };
+      base = (lastProjected[anchor.id] || project(anchor)).viewZ;
+    }
+    var csZ = base - cam.dist;
+
+    var reach = WORLD_RADIUS * DEPTH_REACH * SETTINGS.reach;
+    var dz = organicField(sx, sy, 0) * reach;
+    // never let a point cross behind the near plane
+    var minZ = 60 - cam.dist;
+    if(csZ + dz < minZ) dz = minZ - csZ;
+    csZ += dz;
+
+    // solve the screen ray at the depth actually chosen, so the point stays
+    // under the cursor however far back or forward it ended up
+    var scale = FOCAL / Math.max(24, cam.dist + csZ);
+    var csX = (sx - W/2)/scale;
+    var csY = -(sy - H/2)/scale;
+
+    // a light lateral drift, so the lattice never reads as machined
+    var lateral = 7 + reach*0.05;
+    csX += organicField(sx, sy, 1) * lateral;
+    csY += organicField(sx, sy, 2) * lateral;
+
+    return toWorldVector({ x:csX, y:csY, z:csZ });
+  }
+
+  var MAX_POINTS = 3;
+  var pendingIdCounter = 0;
+
+  // Live placement preview. Recomputed every frame from the cursor's screen
+  // position so it keeps tracking the same spot even while the camera drifts,
+  // and so a click lands on exactly the point that was being previewed.
+  function updateGhost(){
+    if(mode!=='placing' || !ghostScreen || pending.nodes.length >= MAX_POINTS){ ghost = null; return; }
+    var w = unprojectNear(ghostScreen.x, ghostScreen.y);
+    var probe = { id:'__ghost', x:w.x, y:w.y, z:w.z };
+    ghost = { pos:w, refs: candidateRefsFor(probe, pending.nodes, MAX_DEGREE) };
+  }
+
+  function handleCanvasTap(sx, sy){
+    if(mode==='placing'){
+      if(pending.nodes.length >= MAX_POINTS) return;
+      // use the previewed position verbatim when the click lands on it
+      var w = (ghost && ghostScreen && Math.abs(ghostScreen.x-sx)<2 && Math.abs(ghostScreen.y-sy)<2)
+        ? ghost.pos : unprojectNear(sx, sy);
+      var pn = {
+        id: 'p'+(pendingIdCounter++),
+        x:w.x, y:w.y, z:w.z, z0: unscaleZ(w.z), r:2.4, label:null, big:false,
+        generation: CURRENT_MAX_GEN+1, createdAt: Date.now(),
+        contributor: storeState.contributorId, origin:'pending', _pending:true
+      };
+      pending.nodes.push(pn);
+      refreshPendingPreview();
+      if(pending.nodes.length >= MAX_POINTS){ enterTriangulating(); }
+      else { refreshContribUI(); }
+    }
+  }
+
+  // Recompute the dashed triangulation preview for whatever points are
+  // pending right now — shared by the live "placing" preview and the final
+  // "triangulating" step, so the lines never jump between the two.
+  function refreshPendingPreview(){
+    var chosen = computeTriangulation(pending.nodes, MAX_DEGREE);
+    pending.edges = chosen.map(function(c){ return { a:c.a, b:c.b, _pending:true }; });
+  }
+
+  /* ========================================================================
+     Parameters panel — live controls for tuning the piece in place
+  ========================================================================= */
+  var settingsPanel = document.getElementById('settingsPanel');
+  var settingsToggle = document.getElementById('settingsToggle');
+  var x2 = function(v){ return v.toFixed(2)+'\u00D7'; };
+  var SETTING_CONTROLS = [
+    { key:'fov',          input:'setFov',      out:'valFov',      fmt:x2, onChange:applyFov },
+    { key:'depth',        input:'setDepth',    out:'valDepth',    fmt:x2, onChange:applyDepth },
+    { key:'depthFalloff', input:'setFalloff',  out:'valFalloff',  fmt:x2 },
+    { key:'dof',          input:'setDof',      out:'valDof',      fmt:x2 },
+    { key:'focusRange',   input:'setFocus',    out:'valFocus',    fmt:x2 },
+    { key:'reach',        input:'setReach',    out:'valReach',    fmt:x2 },
+    { key:'rotSpeed',     input:'setRot',      out:'valRot',      fmt:function(v){ return v.toFixed(1)+'\u00D7'; } },
+    { key:'inertia',      input:'setInertia',  out:'valInertia',  fmt:function(v){ return v.toFixed(2); } },
+    { key:'erode',        input:'setErode',    out:'valErode',    fmt:x2 },
+    { key:'springback',   input:'setSpring',   out:'valSpring',   fmt:x2 },
+    { key:'follow',       input:'setFollow',   out:'valFollow',   fmt:x2 },
+    { key:'grainSpread',  input:'setSpread',   out:'valSpread',   fmt:x2 },
+    { key:'grainSize',    input:'setGrain',    out:'valGrain',    fmt:x2 },
+    { key:'grainDrift',   input:'setDrift',    out:'valDrift',    fmt:x2 },
+    { key:'dust',         input:'setDust',     out:'valDust',     fmt:x2 },
+    { key:'dustCount',    input:'setDustN',    out:'valDustN',    fmt:function(v){ return String(Math.round(v)); } },
+    { key:'dustSize',     input:'setDustSz',   out:'valDustSz',   fmt:x2 },
+    { key:'fadeSpan',     input:'setFade',     out:'valFade',     fmt:function(v){ return String(Math.round(v)); } }
+  ];
+
+
+  function syncSettingsUI(){
+    SETTING_CONTROLS.forEach(function(c){
+      var el = document.getElementById(c.input);
+      var out = document.getElementById(c.out);
+      if(el) el.value = SETTINGS[c.key];
+      if(out) out.textContent = c.fmt(SETTINGS[c.key]);
+    });
+  }
+
+  SETTING_CONTROLS.forEach(function(c){
+    var el = document.getElementById(c.input);
+    if(!el) return;
+    el.addEventListener('input', function(){
+      SETTINGS[c.key] = parseFloat(el.value);
+      var out = document.getElementById(c.out);
+      if(out) out.textContent = c.fmt(SETTINGS[c.key]);
+      if(c.onChange) c.onChange();
+      saveTuning();
+    });
+  });
+
+  function setSettingsOpen(open){
+    settingsPanel.hidden = !open;
+    settingsToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  settingsToggle.addEventListener('click', function(){ setSettingsOpen(settingsPanel.hidden); });
+  document.getElementById('settingsClose').addEventListener('click', function(){ setSettingsOpen(false); });
+  var fpsToggle = document.getElementById('fpsToggle');
+  fpsToggle.addEventListener('click', function(){
+    showFps = !showFps;
+    fpsEl.hidden = !showFps;
+    fpsToggle.textContent = showFps ? 'Hide FPS' : 'Show FPS';
+  });
+
+  document.getElementById('settingsReset').addEventListener('click', function(){
+    SETTINGS = Object.assign({}, SETTINGS_DEFAULTS);
+    applyFov();
+    applyDepth();
+    syncSettingsUI();
+    saveTuning();
+  });
+  window.addEventListener('keydown', function(ev){
+    if(ev.key !== 'Escape') return;
+    if(!settingsPanel.hidden) setSettingsOpen(false);
+    if(!linesPanel.hidden) setLinesOpen(false);
+  });
+  syncSettingsUI();
+
+  /* ========================================================================
+     Line rendering panel
+  ========================================================================= */
+  var linesPanel = document.getElementById('linesPanel');
+  var linesToggle = document.getElementById('linesToggle');
+  var px0 = function(v){ return Math.round(v) + ' px'; };
+  var LINE_CONTROLS = [
+    { key:'weight',      input:'lnWeight',  out:'valLnWeight',  fmt:x2 },
+    { key:'opacity',     input:'lnOpacity', out:'valLnOpacity', fmt:x2 },
+    { key:'cubeWeight',  input:'lnCube',    out:'valLnCube',    fmt:x2 },
+    { key:'jitter',      input:'lnJitter',  out:'valLnJitter',  fmt:x2 },
+    { key:'grain',       input:'lnGrain',   out:'valLnGrain',   fmt:function(v){ return String(Math.round(v)); } },
+    { key:'passes',      input:'lnPasses',  out:'valLnPasses',  fmt:function(v){ return String(Math.round(v)); } },
+    { key:'dbl',         input:'lnDbl',     out:'valLnDbl',     fmt:x2 },
+    { key:'taper',       input:'lnTaper',   out:'valLnTaper',   fmt:x2 },
+    { key:'life',        input:'lnLife',    out:'valLnLife',    fmt:x2 },
+    { key:'lifeSpeed',   input:'lnLifeSpd', out:'valLnLifeSpd', fmt:x2 },
+    { key:'dash',        input:'lnDash',    out:'valLnDash',    fmt:px0 },
+    { key:'gap',         input:'lnGap',     out:'valLnGap',     fmt:px0 },
+    { key:'beamWeight',  input:'lnBeamW',   out:'valLnBeamW',   fmt:x2 },
+    { key:'beamOpacity', input:'lnBeamO',   out:'valLnBeamO',   fmt:x2 },
+    { key:'beamSpread',  input:'lnBeamS',   out:'valLnBeamS',   fmt:function(v){ return Math.round(v*100)+'%'; } }
+  ];
+  var LINE_CYCLERS = [
+    { key:'cap',  btn:'lnCap',  labels:['Butt','Round','Square'] },
+    { key:'join', btn:'lnJoin', labels:['Miter','Round','Bevel'] }
+  ];
+
+  function syncLinesUI(){
+    LINE_CONTROLS.forEach(function(c){
+      var el = document.getElementById(c.input), out = document.getElementById(c.out);
+      if(el) el.value = LINES[c.key];
+      if(out) out.textContent = c.fmt(LINES[c.key]);
+    });
+    LINE_CYCLERS.forEach(function(c){
+      var b = document.getElementById(c.btn);
+      if(b) b.textContent = c.labels[LINES[c.key]] || c.labels[0];
+    });
+  }
+
+  LINE_CONTROLS.forEach(function(c){
+    var el = document.getElementById(c.input);
+    if(!el) return;
+    el.addEventListener('input', function(){
+      LINES[c.key] = parseFloat(el.value);
+      var out = document.getElementById(c.out);
+      if(out) out.textContent = c.fmt(LINES[c.key]);
+      saveTuning();
+    });
+  });
+  LINE_CYCLERS.forEach(function(c){
+    var b = document.getElementById(c.btn);
+    if(!b) return;
+    b.addEventListener('click', function(){
+      LINES[c.key] = (LINES[c.key] + 1) % c.labels.length;
+      b.textContent = c.labels[LINES[c.key]];
+      saveTuning();
+    });
+  });
+
+  function setLinesOpen(open){
+    linesPanel.hidden = !open;
+    linesToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  linesToggle.addEventListener('click', function(){ setLinesOpen(linesPanel.hidden); });
+  document.getElementById('linesClose').addEventListener('click', function(){ setLinesOpen(false); });
+  document.getElementById('linesReset').addEventListener('click', function(){
+    LINES = Object.assign({}, LINE_DEFAULTS);
+    syncLinesUI();
+    saveTuning();
+  });
+  syncLinesUI();
+
+  /* ========================================================================
+     Tuning — the two panels' values live alongside the traces, so a
+     composition you have dialled in survives a reload and a reboot.
+  ========================================================================= */
+  var saveTuningTimer = null;
+  function saveTuning(){
+    if(saveTuningTimer) clearTimeout(saveTuningTimer);
+    saveTuningTimer = setTimeout(function(){
+      storeState.tuning = { settings: SETTINGS, lines: LINES };
+      persist();
+    }, 350);
+  }
+  function loadTuning(){
+    var t = storeState && storeState.tuning;
+    if(!t) return;
+    if(t.settings) for(var k in SETTINGS_DEFAULTS){
+      var v = parseFloat(t.settings[k]);
+      if(isFinite(v)) SETTINGS[k] = v;
+    }
+    if(t.lines) for(var j in LINE_DEFAULTS){
+      var w = parseFloat(t.lines[j]);
+      if(isFinite(w)) LINES[j] = w;
+    }
+  }
+  function tuningJSON(){
+    return JSON.stringify({ settings: SETTINGS, lines: LINES }, null, 2);
+  }
+  function copyTuning(btn){
+    var text = tuningJSON(), done = function(){
+      var was = btn.textContent;
+      btn.textContent = 'Copied';
+      setTimeout(function(){ btn.textContent = was; }, 1400);
+    };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done, function(){ fallback(); });
+    } else fallback();
+    function fallback(){
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.setAttribute('readonly','');
+      ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); done(); }catch(e){ btn.textContent = 'Copy failed'; }
+      document.body.removeChild(ta);
+    }
+  }
+  document.getElementById('settingsCopy').addEventListener('click', function(){ copyTuning(this); });
+  document.getElementById('linesCopy').addEventListener('click', function(){ copyTuning(this); });
+
+  /* ========================================================================
+     Zoom buttons
+  ========================================================================= */
+  document.getElementById('zoomIn').addEventListener('click', function(){ lastInteraction=performance.now(); setDist(cam.dist/1.45); });
+  document.getElementById('zoomOut').addEventListener('click', function(){ lastInteraction=performance.now(); setDist(cam.dist*1.45); });
+
+  /* ========================================================================
+     Intro
+  ========================================================================= */
+  var introEl = document.getElementById('intro');
+  document.getElementById('enterBtn').addEventListener('click', function(){
+    introEl.classList.add('hidden');
+    storeState.seenIntro = true; persist();
+  });
+
+  /* ========================================================================
+     Contribution flow — Add points → Triangulate (automatic) → Confirm
+  ========================================================================= */
+  var contribBar = document.getElementById('contribBar');
+  var leaveTraceBtn = document.getElementById('leaveTraceBtn');
+  var contribStep = document.getElementById('contribStep');
+  var contribMsg = document.getElementById('contribMsg');
+  var contribSub = document.getElementById('contribSub');
+  var contribRight = document.getElementById('contribRight');
+
+  function resetPending(){
+    pending = { nodes:[], edges:[] };
+  }
+  function enterPlacing(){
+    mode = 'placing';
+    resetPending();
+    canvas.classList.add('crosshair');
+    leaveTraceBtn.classList.add('active');
+    contribBar.hidden = false;
+    refreshContribUI();
+  }
+  function enterTriangulating(){
+    mode = 'triangulating';
+    canvas.classList.remove('crosshair');
+    refreshPendingPreview();
+    refreshContribUI();
+  }
+  function enterConfirming(){
+    mode = 'confirming';
+    refreshContribUI();
+  }
+  function exitContribution(discard){
+    if(discard){ pending.nodes = []; pending.edges = []; }
+    mode = 'idle';
+    canvas.classList.remove('crosshair');
+    leaveTraceBtn.classList.remove('active');
+    contribBar.hidden = true;
+  }
+  function tryAgain(){
+    mode = 'placing';
+    resetPending();
+    canvas.classList.add('crosshair');
+    refreshContribUI();
+  }
+  function removeLastPoint(){
+    pending.nodes.pop();
+    refreshPendingPreview();
+    refreshContribUI();
+  }
+
+  function refreshContribUI(){
+    contribRight.innerHTML = '';
+    if(mode==='placing'){
+      var remaining = MAX_POINTS - pending.nodes.length;
+      contribStep.textContent = 'STEP 1 — ADD YOUR POINTS';
+      contribMsg.textContent = remaining + (remaining===1 ? ' point remaining' : ' points remaining');
+      contribSub.textContent = pending.nodes.length
+        ? 'Click to add another point, or continue.'
+        : 'Click anywhere in the archive to place your first point.';
+      addRightButton('Done adding', enterTriangulating, pending.nodes.length===0);
+      addRightButton('Remove last point', removeLastPoint, pending.nodes.length===0, true);
+      addRightButton('Cancel', function(){ exitContribution(true); }, false, true);
+    } else if(mode==='triangulating'){
+      var linked = pendingLinkedCount() === pending.nodes.length;
+      var full = linked && pendingFullyTriangulated();
+      var multi = pending.nodes.length > 1;
+      contribStep.textContent = 'STEP 2 — TRIANGULATION';
+      contribMsg.textContent = full
+        ? (multi ? 'Your points are located.' : 'Your point is located.')
+        : (multi ? 'Some points could not be located.' : 'Your point could not be located.');
+      contribSub.textContent = full
+        ? (multi ? 'Each point fixed by lines to its nearest points in the archive.' : 'Fixed by lines to its four nearest points in the archive.')
+        : 'This spot is too crowded to triangulate — try again.';
+      addRightButton('Continue', enterConfirming, !full);
+      addRightButton('Try again', tryAgain, false, true);
+      addRightButton('Cancel', function(){ exitContribution(true); }, false, true);
+    } else if(mode==='confirming'){
+      contribStep.textContent = 'STEP 3 — CONFIRM';
+      contribMsg.textContent = 'Your trace will become part of the archive.';
+      contribSub.textContent = 'It cannot be erased.';
+      addRightButton('Back', function(){ mode='triangulating'; refreshContribUI(); }, false, true);
+      addRightButton('Add to the archive', confirmContribution, false);
+    }
+  }
+  function addRightButton(label, onClick, disabled, isText){
+    var btn = document.createElement('button');
+    btn.textContent = label;
+    btn.className = isText ? 'btn-text' : 'btn-primary';
+    btn.disabled = !!disabled;
+    btn.addEventListener('click', onClick);
+    contribRight.appendChild(btn);
+  }
+
+  leaveTraceBtn.addEventListener('click', function(){
+    if(mode==='idle'){ enterPlacing(); } else { exitContribution(true); }
+  });
+
+  window.addEventListener('keydown', function(ev){
+    if(ev.key==='Escape'){
+      if(mode!=='idle') exitContribution(true);
+      if(evolutionMode) closeEvolution();
+    }
+  });
+
+  function confirmContribution(){
+    mode = 'merging';
+    contribBar.hidden = true;
+    leaveTraceBtn.classList.remove('active');
+
+    CURRENT_MAX_GEN++;
+    var genNow = CURRENT_MAX_GEN;
+    var createdAt = Date.now();
+    var tid = 'T-live-' + createdAt;
+    var realNodes = pending.nodes.map(function(pn){
+      return addNode({
+        x:pn.x, y:pn.y, z0:pn.z0, r:pn.r, label:null, big:false,
+        generation:genNow, createdAt:createdAt, contributor:storeState.contributorId,
+        origin:'visitor', traceId:tid
+      });
+    });
+    var idMap = {};
+    pending.nodes.forEach(function(pn,i){ idMap[pn.id] = realNodes[i].id; });
+    var newNodeIds = {};
+    realNodes.forEach(function(n){ newNodeIds[n.id] = true; });
+    var neighborIds = [];
+    pending.edges.forEach(function(pe){
+      var a = idMap[pe.a] || pe.a, b = idMap[pe.b] || pe.b;
+      addEdge(a,b,{ generation:genNow, createdAt:createdAt, origin:'visitor' });
+      if(!newNodeIds[a]) neighborIds.push(a);
+      if(!newNodeIds[b]) neighborIds.push(b);
+    });
+
+    var dur = reduceMotion ? 1 : 1800;
+    realNodes.forEach(function(n){ settling.push({ node:n, start:performance.now(), duration:dur }); });
+
+    if(realNodes.length){
+      // pin the tooltip on whichever new point ended up best-connected
+      var anchorNode = realNodes.slice().sort(function(a,b){ return degree(b.id)-degree(a.id); })[0];
+      pulseCameraTo(realNodes, neighborIds);
+      pinTooltip(anchorNode, 3600);
+    }
+
+    storeState.contributions.push({
+      createdAt: createdAt, contributor: storeState.contributorId, traceId: tid,
+      nodes: pending.nodes.map(function(pn){ return { id:pn.id, x:pn.x, y:pn.y, z:pn.z0, r:pn.r }; }),
+      edges: pending.edges.map(function(pe){ return { a:pe.a, b:pe.b }; })
+    });
+    traceCountTotal++;
+    persist();
+    animateTraceCount();
+
+    pending = { nodes:[], edges:[] };
+
+    showToast();
+    setTimeout(function(){ mode = 'idle'; }, 700);
+    setTimeout(showNudge, 3800);
+  }
+
+  function animateTraceCount(){
+    document.getElementById('traceCount').textContent = traceCountTotal.toLocaleString() + ' traces';
+  }
+  animateTraceCount();
+
+  var toastEl = document.getElementById('toast');
+  var toastTimer = null;
+  function showToast(){
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, 3400);
+  }
+  var nudgeEl = document.getElementById('nudge');
+  function showNudge(){
+    nudgeEl.classList.add('show');
+    setTimeout(function(){ nudgeEl.classList.remove('show'); }, 4200);
+  }
+
+  /* ========================================================================
+     Evolution mode
+  ========================================================================= */
+  var evoPanel = document.getElementById('evoPanel');
+  var evoSlider = document.getElementById('evoSlider');
+  var evoLabel = document.getElementById('evoLabel');
+  var evoCaption = document.getElementById('evoCaption');
+  var evoPlayBtn = document.getElementById('evoPlay');
+  var evolutionBtn = document.getElementById('evolutionBtn');
+
+  function computeCheckpoints(){
+    var raw = [0,10,50,100,CURRENT_MAX_GEN], out = [];
+    raw.forEach(function(v){ v=Math.min(v,CURRENT_MAX_GEN); if(out.indexOf(v)===-1) out.push(v); });
+    if(out[out.length-1] !== CURRENT_MAX_GEN) out.push(CURRENT_MAX_GEN);
+    return out;
+  }
+
+  function openEvolution(){
+    evolutionMode = true;
+    savedCam = { yaw:cam.yaw, pitch:cam.pitch, dist:cam.dist };
+    evoCheckpoints = computeCheckpoints();
+    evoThreshold = evoCheckpoints[0];
+    evoSlider.min = 0; evoSlider.max = CURRENT_MAX_GEN; evoSlider.value = evoThreshold;
+    evoPanel.hidden = false;
+    evolutionBtn.classList.add('active');
+    if(mode!=='idle') exitContribution(true);
+    setDist(DIST_REF*1.4);
+    updateEvoLabel();
+  }
+  function closeEvolution(){
+    evolutionMode = false;
+    evoPlaying = false;
+    evoPlayBtn.textContent = '▶ Play';
+    evoPanel.hidden = true;
+    evolutionBtn.classList.remove('active');
+    if(savedCam){ cam.yaw=savedCam.yaw; cam.pitch=savedCam.pitch; cam.dist=savedCam.dist; updateZoomLabel(); }
+  }
+  evolutionBtn.addEventListener('click', function(){ evolutionMode ? closeEvolution() : openEvolution(); });
+  document.getElementById('evoClose').addEventListener('click', closeEvolution);
+
+  function updateEvoLabel(){
+    evoLabel.textContent = 'GEN ' + Math.round(evoThreshold) + ' / ' + CURRENT_MAX_GEN;
+    evoCaption.textContent = evoThreshold >= CURRENT_MAX_GEN ? 'Current state' : ('Generation ' + Math.round(evoThreshold));
+  }
+  evoSlider.addEventListener('input', function(){
+    evoPlaying=false; evoPlayBtn.textContent='▶ Play';
+    evoThreshold = parseFloat(evoSlider.value);
+    updateEvoLabel();
+  });
+  evoPlayBtn.addEventListener('click', function(){
+    if(evoPlaying){ evoPlaying=false; evoPlayBtn.textContent='▶ Play'; return; }
+    evoStepIdx=0; evoThreshold=evoCheckpoints[0];
+    evoFrom=evoCheckpoints[0]; evoTo=evoCheckpoints[0]; evoTweenT=1;
+    evoPlaying=true; evoPlayBtn.textContent='❙❙ Pause';
+  });
+
+  var evoPauseUntil=0, evoTweenStart=0;
+  function updateEvolutionAutoplay(){
+    if(!evolutionMode || !evoPlaying) return;
+    var now = performance.now();
+    if(now < evoPauseUntil) return;
+    if(evoTweenT >= 1){
+      if(evoStepIdx >= evoCheckpoints.length-1){ evoPlaying=false; evoPlayBtn.textContent='▶ Play'; return; }
+      evoFrom = evoCheckpoints[evoStepIdx]; evoTo = evoCheckpoints[evoStepIdx+1];
+      evoStepIdx++; evoTweenT=0; evoTweenStart=now;
+    }
+    var dur = reduceMotion ? 1 : 1400;
+    var t = Math.min(1, (now-evoTweenStart)/dur);
+    evoTweenT = t;
+    var eased = t<0.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2;
+    evoThreshold = lerp(evoFrom, evoTo, eased);
+    evoSlider.value = evoThreshold;
+    updateEvoLabel();
+    var camT = evoThreshold/CURRENT_MAX_GEN;
+    cam.dist = lerp(DIST_REF*0.55, DIST_REF*1.4, camT);
+    cam.yaw += reduceMotion ? 0 : 0.002;
+    updateZoomLabel();
+    if(t>=1) evoPauseUntil = now + 1100;
+  }
+
+  /* ========================================================================
+     Boot — fit the orbit distance to the archive's actual extent
+  ========================================================================= */
+  var halfMin = Math.min(W,H)/2;
+  DIST_REF = (WORLD_RADIUS*FOCAL) / (halfMin*0.6);
+  cam.dist = DIST_REF;
+  DIST_MIN = DIST_REF*0.045;
+  DIST_MAX = DIST_REF*1.55;
+
+  // whatever was dialled in last time, brought back before the first frame
+  loadTuning();
+  applyFov();
+  applyDepth();
+  syncSettingsUI();
+  syncLinesUI();
+
+  updateZoomLabel();
+  requestAnimationFrame(tick);
+})();
+</script>
+
+</body>
+</html>
