@@ -643,54 +643,54 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Field of view</span>
-          <span class="setting-val" id="valFov">1.00×</span>
+          <span class="setting-val" id="valFov">0.35×</span>
         </div>
-        <input type="range" id="setFov" min="0.35" max="3" step="0.05" value="1" aria-label="Field of view">
-        <span class="setting-note">A short lens exaggerates the depth, a long one flattens it.</span>
+        <input type="range" id="setFov" min="0.28" max="6" step="0.02" value="0.35" aria-label="Field of view">
+        <span class="setting-note">A short lens throws the depth open, a long one presses it flat. It cannot go much wider than this — the lens would end up inside the archive.</span>
       </div>
 
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">3D depth</span>
-          <span class="setting-val" id="valDepth">1.00×</span>
+          <span class="setting-val" id="valDepth">0.60×</span>
         </div>
-        <input type="range" id="setDepth" min="0" max="2.5" step="0.05" value="1" aria-label="3D depth">
+        <input type="range" id="setDepth" min="0" max="2.5" step="0.05" value="0.6" aria-label="3D depth">
         <span class="setting-note">How far the points spread along Z.</span>
       </div>
 
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Depth falloff</span>
-          <span class="setting-val" id="valFalloff">1.20×</span>
+          <span class="setting-val" id="valFalloff">1.45×</span>
         </div>
-        <input type="range" id="setFalloff" min="0" max="2.5" step="0.05" value="1.2" aria-label="Depth falloff">
+        <input type="range" id="setFalloff" min="0" max="2.5" step="0.05" value="1.45" aria-label="Depth falloff">
         <span class="setting-note">How much the points furthest back give way.</span>
       </div>
 
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Blur amount</span>
-          <span class="setting-val" id="valDof">1.00×</span>
+          <span class="setting-val" id="valDof">2.25×</span>
         </div>
-        <input type="range" id="setDof" min="0" max="3" step="0.05" value="1" aria-label="Blur amount">
+        <input type="range" id="setDof" min="0" max="3" step="0.05" value="2.25" aria-label="Blur amount">
         <span class="setting-note">How soft the background goes. Zero is sharp all the way back.</span>
       </div>
 
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Focus range</span>
-          <span class="setting-val" id="valFocus">1.00×</span>
+          <span class="setting-val" id="valFocus">0.60×</span>
         </div>
-        <input type="range" id="setFocus" min="0.2" max="2.5" step="0.05" value="1" aria-label="Focus range">
+        <input type="range" id="setFocus" min="0.2" max="2.5" step="0.05" value="0.6" aria-label="Focus range">
         <span class="setting-note">How far back the sharp zone reaches before the blur starts.</span>
       </div>
 
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Placement depth</span>
-          <span class="setting-val" id="valReach">1.00×</span>
+          <span class="setting-val" id="valReach">0.55×</span>
         </div>
-        <input type="range" id="setReach" min="0" max="2.5" step="0.05" value="1" aria-label="Placement depth">
+        <input type="range" id="setReach" min="0" max="2.5" step="0.05" value="0.55" aria-label="Placement depth">
         <span class="setting-note">How deep a new point can settle behind or in front of its neighbours.</span>
       </div>
     </div>
@@ -767,6 +767,15 @@
 
       <div class="setting">
         <div class="setting-top">
+          <span class="setting-name">Noise amount</span>
+          <span class="setting-val" id="valNoise">0.50×</span>
+        </div>
+        <input type="range" id="setNoise" min="0" max="3" step="0.05" value="0.5" aria-label="Noise amount">
+        <span class="setting-note">A 3D noise field displaces the active grains on all three axes. Anchored in the archive, so it turns with it.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
           <span class="setting-name">Particle drift</span>
           <span class="setting-val" id="valDrift">1.00×</span>
         </div>
@@ -826,6 +835,7 @@
       <div><dt>Right-drag</dt><dd>orbit</dd></div>
       <div><dt>Wheel</dt><dd>zoom</dd></div>
       <div><dt>Left click</dt><dd>place a point</dd></div>
+      <div><dt>Hold space</dt><dd>see it all</dd></div>
     </dl>
   </aside>
 
@@ -874,10 +884,10 @@
   /* ------------------------------------------------------------------
      Live parameters — exposed through the on-screen settings panel.
   ------------------------------------------------------------------- */
-  var SETTINGS_DEFAULTS = { rotSpeed:1, fov:1, depth:1, depthFalloff:1.2, inertia:0.5, reach:1,
+  var SETTINGS_DEFAULTS = { rotSpeed:1, fov:0.35, depth:0.6, depthFalloff:1.45, inertia:0.5, reach:0.55,
     erode:1, grainSpread:1, grainSize:1, grainDrift:1,
-    dust:1, dustCount:260, dustSize:1, dof:1, focusRange:1, fadeSpan:60,
-    springback:1, follow:1 };
+    dust:1, dustCount:260, dustSize:1, dof:2.25, focusRange:0.6, fadeSpan:60,
+    springback:1, follow:1, grainNoise:0.5 };
   var SETTINGS = Object.assign({}, SETTINGS_DEFAULTS);
 
   function v3(x,y,z){ return {x:x,y:y,z:z}; }
@@ -1219,6 +1229,9 @@
     var target = FOCAL_BASE * SETTINGS.fov;
     var ratio = target / FOCAL;
     FOCAL = target;
+    // The orbit distance follows the focal length exactly, which is what keeps
+    // the archive the same size on screen while the perspective changes under
+    // it. Exact is also what makes the control reversible.
     cam.dist *= ratio; DIST_MIN *= ratio; DIST_MAX *= ratio; DIST_REF *= ratio;
     if(camPulse){ camPulse.fromDist *= ratio; camPulse.toDist *= ratio; }
     updateZoomLabel();
@@ -1290,7 +1303,7 @@
   // not as an antialiased smudge.
   function snapPx(v){ return Math.round(v*DPR)/DPR; }
 
-  function strokeEroded(pa, pb, style, width, seed, breathe, grainCol, grainA){
+  function strokeEroded(pa, pb, style, width, seed, breathe, grainCol, grainA, wa, wb){
     var dx = pb.x-pa.x, dy = pb.y-pa.y;
     var len = Math.hypot(dx, dy);
     var R = erodeRadius(), spread = R * 0.26 * SETTINGS.grainSpread;
@@ -1298,6 +1311,12 @@
     var CORE = 0.42;   // above this the line is fully dust, and denser
 
     var drift = reduceMotion ? 0 : SETTINGS.grainDrift;
+    // the active grains wander through a 3D noise field anchored in world
+    // space, so the cloud turns with the archive instead of sitting flat on
+    // the screen
+    var nAmt = (reduceMotion || !wa || !wb) ? 0 : SETTINGS.grainNoise;
+    var nFreq = 0.012, nDriftZ = erodeClock * 0.35;
+    var wdx = wa ? wb.x-wa.x : 0, wdy = wa ? wb.y-wa.y : 0, wdz = wa ? wb.z-wa.z : 0;
     var lagX = 0, lagY = 0;
     if(cursorLag && !reduceMotion){
       lagX = (cursorLag.x - cursorScreen.x) * 0.85 * drift;
@@ -1331,14 +1350,35 @@
       // itself and no grain ever comes to rest
       var ang = hash2(k, 11)*Math.PI*2 + breathe
               + (Math.sin(erodeClock*w + ph)*0.8 + Math.sin(erodeClock*w*1.73 + ph*2.1)*0.42) * drift;
-      var rad = (0.14 + hash2(k, 29)*0.86) * inf*inf * spread
+      // Each grain lerps out from the line to its own scattered place, and the
+      // further it has to go the faster it covers the ground — so the whole
+      // cloud lands together instead of the near grains arriving first and the
+      // far ones straggling. reach is this grain's share of the spread; ramp is
+      // how much of that it has already travelled.
+      var reach = 0.14 + hash2(k, 29)*0.86;
+      var ramp = Math.min(1, inf * (0.6 + reach*1.2));
+      var rad = reach * ramp*ramp * spread
               * (1 + (Math.sin(erodeClock*w*0.63 + ph*1.7)*0.34
                     + Math.sin(erodeClock*w*0.29 + ph)*0.2) * drift);
       var orbit = spread * 0.11 * drift;
       var ox = Math.sin(erodeClock*w*0.83 + ph*3.1) * orbit;
       var oy = Math.cos(erodeClock*w*0.61 + ph*1.9) * orbit;
-      var sz  = snapPx((1 + hash2(k, 47)*2.4 + inf*1.3) * SETTINGS.grainSize);
+      var szMul = 1;
       var t = i/n;
+      if(nAmt > 0.001){
+        var wx = wa.x + wdx*t, wy = wa.y + wdy*t, wz = wa.z + wdz*t;
+        var sx3 = wx*nFreq, sy3 = wy*nFreq, sz3 = wz*nFreq + nDriftZ;
+        var d3 = { x:noise3(sx3, sy3, sz3),
+                   y:noise3(sx3 + 31.7, sy3, sz3),
+                   z:noise3(sx3, sy3 + 17.3, sz3) };
+        // turned into the camera's frame, so orbiting rotates the displacement
+        var csn = rotX(rotY(d3, view.yaw), view.pitch);
+        var mag = nAmt * 34 * (pa.scale + pb.scale)*0.5 * ramp;
+        ox += csn.x * mag;
+        oy -= csn.y * mag;
+        szMul += csn.z * nAmt * 0.22;      // depth read as a touch of gauge
+      }
+      var sz  = snapPx((1 + hash2(k, 47)*2.4 + inf*1.3) * SETTINGS.grainSize * Math.max(0.4, szMul));
       ctx.fillRect(snapPx(pa.x + dx*t + Math.cos(ang)*rad + ox + lagX*inf - sz/2),
                    snapPx(pa.y + dy*t + Math.sin(ang)*rad + oy + lagY*inf - sz/2), sz, sz);
     }
@@ -1567,6 +1607,72 @@
     }
     ctx.stroke();
   }
+  /* ------------------------------------------------------------------
+     Hold space to see the whole archive. The angles are left alone — only
+     the orbit distance pulls back, so releasing puts you back exactly
+     where you were looking. The fit is measured from the real extent of
+     the graph, not the genesis radius, so it keeps working as the archive
+     grows past its original bounds.
+  ------------------------------------------------------------------- */
+  var fitTween = null, distBeforeFit = null;
+
+  // Solved rather than estimated: the projected size of a point depends on its
+  // own depth, so a formula on the bounding radius overshoots or undershoots
+  // depending on which way the archive is turned. A few iterations scaling the
+  // distance by the current overflow converge on a real fit.
+  function fitAllDistance(){
+    var half = Math.min(W, H)/2 * 0.86;      // leaves a border
+    var d = cam.dist;
+    for(var it=0; it<14; it++){
+      var maxOff = 0, clipped = false;
+      for(var i=0;i<nodes.length;i++){
+        var cs = toCameraSpace(nodes[i]);
+        var vz = cs.z + d;
+        if(vz < 24){ clipped = true; break; }
+        var sc = FOCAL/vz;
+        var o = Math.max(Math.abs(cs.x*sc), Math.abs(cs.y*sc));
+        if(o > maxOff) maxOff = o;
+      }
+      if(clipped){ d *= 1.6; continue; }
+      if(maxOff < 1) break;
+      var err = maxOff/half;
+      if(Math.abs(err - 1) < 0.01) break;
+      d *= err;
+    }
+    return d;
+  }
+
+  function beginFit(){
+    if(distBeforeFit !== null) return;      // already held
+    distBeforeFit = cam.dist;
+    var to = fitAllDistance();
+    if(reduceMotion){ cam.dist = to; fitTween = null; updateZoomLabel(); return; }
+    fitTween = { from:cam.dist, to:to, t:0, dur:26, back:false };
+  }
+  function endFit(){
+    if(distBeforeFit === null) return;
+    var to = distBeforeFit;
+    distBeforeFit = null;
+    if(reduceMotion){ cam.dist = to; fitTween = null; updateZoomLabel(); return; }
+    fitTween = { from:cam.dist, to:to, t:0, dur:26, back:true };
+  }
+  // A counted tween, not an asymptote: it lands on the exact distance it was
+  // given, so releasing returns to the very number you left and repeated
+  // presses cannot drift.
+  function updateFit(){
+    if(!fitTween) return;
+    fitTween.t++;
+    var u = Math.min(1, fitTween.t/fitTween.dur);
+    var e = u<0.5 ? 2*u*u : 1-Math.pow(-2*u+2,2)/2;
+    cam.dist = fitTween.from + (fitTween.to - fitTween.from)*e;
+    updateZoomLabel();
+    if(u >= 1){
+      cam.dist = fitTween.to;
+      updateZoomLabel();
+      fitTween = null;
+    }
+  }
+
   function setDist(d){
     cam.dist = Math.max(DIST_MIN, Math.min(DIST_MAX, d));
     updateZoomLabel();
@@ -1991,7 +2097,8 @@
       if(bite > 0.01){
         var grainCol = hl ? THEME.accent : THEME.ink;
         var grainA = agedAlpha(d.e, (dimming && !hl ? 0.2 : 0.66) * fog);
-        strokeEroded(d.pa, d.pb, eStyle, eWidth, d.e.seed, erodeBreathe, grainCol, grainA);
+        strokeEroded(d.pa, d.pb, eStyle, eWidth, d.e.seed, erodeBreathe, grainCol, grainA,
+                     nodeById[d.e.a], nodeById[d.e.b]);
       } else {
         strokeSeg(d.pa, d.pb, eStyle, eWidth, d.e.seed);
       }
@@ -2192,6 +2299,7 @@
     updateSettleAnimations();
     updateCamPulse();
     updateAmbientRotation();
+    updateFit();
     updateSway();
     updateErode();
     updateGhost();
@@ -2332,6 +2440,11 @@
     cursorScreen = null;
     canvas.classList.remove('reticle');
   });
+  window.addEventListener('keyup', function(ev){
+    if(ev.code === 'Space' || ev.key === ' ') endFit();
+  });
+  // a lost keyup — tabbing away mid-hold — must not strand the view pulled back
+  window.addEventListener('blur', endFit);
 
   canvas.addEventListener('wheel', function(ev){
     ev.preventDefault();
@@ -2360,6 +2473,26 @@
     return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
   }
   function smoothT(t){ return t*t*(3-2*t); }
+  function hash3(ix, iy, iz){
+    var h = (Math.imul(ix, 374761393) + Math.imul(iy, 668265263) + Math.imul(iz, 1274126177)) >>> 0;
+    h = (h ^ (h >>> 13)) >>> 0;
+    h = Math.imul(h, 1274126177) >>> 0;
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  }
+  // trilinear value noise, signed. Time is folded into z, which is the cheap
+  // way to make a 3D field drift without going to four dimensions.
+  function noise3(x, y, z){
+    var xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+    var fx = smoothT(x-xi), fy = smoothT(y-yi), fz = smoothT(z-zi);
+    var c000 = hash3(xi,yi,zi),     c100 = hash3(xi+1,yi,zi);
+    var c010 = hash3(xi,yi+1,zi),   c110 = hash3(xi+1,yi+1,zi);
+    var c001 = hash3(xi,yi,zi+1),   c101 = hash3(xi+1,yi,zi+1);
+    var c011 = hash3(xi,yi+1,zi+1), c111 = hash3(xi+1,yi+1,zi+1);
+    var x00 = c000 + (c100-c000)*fx, x10 = c010 + (c110-c010)*fx;
+    var x01 = c001 + (c101-c001)*fx, x11 = c011 + (c111-c011)*fx;
+    var y0 = x00 + (x10-x00)*fy, y1 = x01 + (x11-x01)*fy;
+    return (y0 + (y1-y0)*fz)*2 - 1;
+  }
   function valueNoise(x, y, salt){
     var x0 = Math.floor(x), y0 = Math.floor(y);
     var fx = smoothT(x-x0), fy = smoothT(y-y0);
@@ -2479,6 +2612,7 @@
     { key:'follow',       input:'setFollow',   out:'valFollow',   fmt:x2 },
     { key:'grainSpread',  input:'setSpread',   out:'valSpread',   fmt:x2 },
     { key:'grainSize',    input:'setGrain',    out:'valGrain',    fmt:x2 },
+    { key:'grainNoise',   input:'setNoise',    out:'valNoise',    fmt:x2 },
     { key:'grainDrift',   input:'setDrift',    out:'valDrift',    fmt:x2 },
     { key:'dust',         input:'setDust',     out:'valDust',     fmt:x2 },
     { key:'dustCount',    input:'setDustN',    out:'valDustN',    fmt:function(v){ return String(Math.round(v)); } },
@@ -2529,6 +2663,13 @@
     saveTuning();
   });
   window.addEventListener('keydown', function(ev){
+    if(ev.code === 'Space' || ev.key === ' '){
+      var a = document.activeElement, tag = a ? a.tagName : '';
+      if(tag === 'BUTTON' || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      ev.preventDefault();
+      if(!ev.repeat) beginFit();
+      return;
+    }
     if(ev.key !== 'Escape') return;
     if(!settingsPanel.hidden) setSettingsOpen(false);
     if(!linesPanel.hidden) setLinesOpen(false);
