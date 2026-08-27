@@ -186,6 +186,7 @@
   .enter-btn:hover .arrow{ transform: translateX(3px); }
 
   /* ---------- Contribution bar ---------- */
+  .contrib-bar.signing{ grid-template-columns:1fr auto auto; }
   .contrib-bar{
     position:fixed; left:0; right:0; bottom:0; z-index:30;
     background: var(--paper); border-top:1px solid var(--line);
@@ -200,6 +201,19 @@
   }
   .contrib-msg{ font-family:"Fraunces", Georgia, serif; font-size:16px; color:var(--ink); text-wrap:balance; }
   .contrib-sub{ font-family:"Archivo", sans-serif; font-size:12.5px; color:var(--ink); opacity:0.55; }
+  .contrib-sign{ display:flex; flex-direction:column; gap:5px; justify-self:center; min-width:210px; }
+  .contrib-sign-label{
+    font-size:9.5px; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--accent); opacity:0.85;
+  }
+  .contrib-sign-input{
+    font-family:"Fraunces", Georgia, serif; font-size:15px;
+    color:var(--ink); background:transparent;
+    border:0; border-bottom:1px solid var(--line);
+    padding:3px 1px; width:100%;
+  }
+  .contrib-sign-input::placeholder{ font-style:italic; opacity:0.34; }
+  .contrib-sign-input:focus{ outline:none; border-bottom-color:var(--accent); }
   .contrib-right{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; justify-content:flex-end; }
   .btn-text{
     background:none; border:none; font-family:"Archivo",sans-serif; font-size:12px;
@@ -245,6 +259,10 @@
   }
   #nodeTip .tip-sep{ margin:0 6px; color:var(--ash); opacity:0.7; }
   #nodeTip .tip-liens{ font-style:italic; color:var(--ash); }
+  #nodeTip .tip-sign{
+    margin-top:3px; font-family:"Fraunces", Georgia, serif; font-style:italic;
+    font-size:13px; color:var(--accent); opacity:0.9;
+  }
   #nodeTip .tip-coord{
     margin-top:4px; padding-top:4px; border-top:1px solid var(--line-soft);
     font-family:"Space Mono", ui-monospace, monospace; font-size:9.5px;
@@ -448,6 +466,11 @@
       <div class="contrib-step mono" id="contribStep">STEP 1 — ADD YOUR POINTS</div>
       <div class="contrib-msg serif" id="contribMsg">3 points remaining</div>
       <div class="contrib-sub" id="contribSub">Click anywhere in the archive to place your first point.</div>
+    </div>
+    <div class="contrib-sign" id="contribSign" hidden>
+      <label class="contrib-sign-label mono" for="signInput">Sign it</label>
+      <input class="contrib-sign-input" id="signInput" type="text" maxlength="24"
+             autocomplete="off" spellcheck="false" placeholder="your name, or leave it blank" />
     </div>
     <div class="contrib-right" id="contribRight"></div>
   </div>
@@ -1152,7 +1175,8 @@
       var nn = addNode({
         x:pn.x, y:pn.y, z:pn.z||0, r:pn.r, label:null, big:false,
         generation: liveGen, createdAt: trace.createdAt, contributor: trace.contributor,
-        origin:'visitor', traceId: tid, dist:9999
+        origin:'visitor', traceId: tid, dist:9999,
+        signature: cleanSignature(trace.signature)
       });
       var idx = parseInt(nn.id.slice(1), 10);
       if(REMOVED_NODE_INDICES[idx]){
@@ -1918,12 +1942,14 @@
            '<i><b>Z</b>' + fmtCoord(z) + '</i>';
   }
   function tooltipHTML(n){
+    var sig = n.signature ? cleanSignature(n.signature) : '';
     return '<div class="tip-main">' +
       '<span class="tip-icon">✳</span>' +
       '<span class="tip-id">' + fmtNodeId(n) + '</span>' +
       '<span class="tip-sep">·</span>' +
       '<span class="tip-liens">' + fmtLiens(n) + '</span>' +
       '</div>' +
+      (sig ? '<div class="tip-sign">' + escapeHTML(sig) + '</div>' : '') +
       '<div class="tip-coord">' + coordHTML(n.x, n.y, nodeZ(n)) + '</div>';
   }
 
@@ -2821,6 +2847,25 @@
   var contribMsg = document.getElementById('contribMsg');
   var contribSub = document.getElementById('contribSub');
   var contribRight = document.getElementById('contribRight');
+  var signWrap = document.getElementById('contribSign');
+  var signInput = document.getElementById('signInput');
+  // Enter validates from the field, which is where the hand already is
+  signInput.addEventListener('keydown', function(ev){
+    if(ev.key === 'Enter'){ ev.preventDefault(); if(mode==='confirming') confirmContribution(); }
+  });
+
+  // Names are shown in a tooltip built with innerHTML, and once the archive is
+  // shared they come from strangers. Strip the control characters, cap the
+  // length, and escape on the way out.
+  function cleanSignature(v){
+    return String(v || '').replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
+      .replace(/\s+/g, ' ').trim().slice(0, 24);
+  }
+  function escapeHTML(v){
+    return String(v).replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+    });
+  }
 
   function resetPending(){
     pending = { nodes:[], edges:[] };
@@ -2864,6 +2909,8 @@
 
   function refreshContribUI(){
     contribRight.innerHTML = '';
+    signWrap.hidden = true;
+    contribBar.classList.remove('signing');
     if(mode==='placing'){
       var remaining = MAX_POINTS - pending.nodes.length;
       contribStep.textContent = 'STEP 1 — ADD YOUR POINTS';
@@ -2891,7 +2938,11 @@
     } else if(mode==='confirming'){
       contribStep.textContent = 'STEP 3 — CONFIRM';
       contribMsg.textContent = 'Your trace will become part of the archive.';
-      contribSub.textContent = 'It cannot be erased.';
+      contribSub.textContent = 'It cannot be erased. A name is optional — it stays with your points.';
+      signWrap.hidden = false;
+      contribBar.classList.add('signing');
+      signInput.value = storeState.signature || '';
+      setTimeout(function(){ try{ signInput.focus(); }catch(e){} }, 40);
       addRightButton('Back', function(){ mode='triangulating'; refreshContribUI(); }, false, true);
       addRightButton('Add to the archive', confirmContribution, false);
     }
@@ -2925,11 +2976,13 @@
     var genNow = CURRENT_MAX_GEN;
     var createdAt = Date.now();
     var tid = 'T-live-' + createdAt;
+    var signature = cleanSignature(signInput.value);
+    storeState.signature = signature;
     var realNodes = pending.nodes.map(function(pn){
       return addNode({
         x:pn.x, y:pn.y, z0:pn.z0, r:pn.r, label:null, big:false,
         generation:genNow, createdAt:createdAt, contributor:storeState.contributorId,
-        origin:'visitor', traceId:tid
+        origin:'visitor', traceId:tid, signature:signature
       });
     });
     var idMap = {};
@@ -2956,6 +3009,7 @@
 
     storeState.contributions.push({
       createdAt: createdAt, contributor: storeState.contributorId, traceId: tid,
+      signature: signature,
       nodes: pending.nodes.map(function(pn){ return { id:pn.id, x:pn.x, y:pn.y, z:pn.z0, r:pn.r }; }),
       edges: pending.edges.map(function(pe){ return { a:pe.a, b:pe.b }; })
     });
