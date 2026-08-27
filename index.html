@@ -790,6 +790,14 @@
 
       <div class="setting">
         <div class="setting-top">
+          <span class="setting-name">Grain shape</span>
+          <button class="setting-cycle" id="setShape">Cube</button>
+        </div>
+        <span class="setting-note">Filled squares, or little wireframe cubes sharing the archive's orientation. Grains under 3.4 px stay square either way — a cube that small is only mush.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
           <span class="setting-name">Noise amount</span>
           <span class="setting-val" id="valNoise">0.50×</span>
         </div>
@@ -910,7 +918,7 @@
   var SETTINGS_DEFAULTS = { rotSpeed:1, fov:0.35, depth:0.6, depthFalloff:1.45, inertia:0.5, reach:0.55,
     erode:1, grainSpread:1, grainSize:1, grainDrift:1,
     dust:1, dustCount:260, dustSize:1, dof:2.25, focusRange:0.6, fadeSpan:60,
-    springback:1, follow:1, grainNoise:0.5 };
+    springback:1, follow:1, grainNoise:0.5, grainShape:1 };
   var SETTINGS = Object.assign({}, SETTINGS_DEFAULTS);
 
   function v3(x,y,z){ return {x:x,y:y,z:z}; }
@@ -1311,6 +1319,32 @@
   }
 
   // How strongly the cursor bites into this segment: 0 leaves it alone.
+  /* ------------------------------------------------------------------
+     Interaction follows focus. What the lens has let go soft is not
+     something the cursor can take hold of, and a line behind another can
+     never be taken in preference to the one in front. A floor is kept so
+     nothing becomes wholly unreachable when there is nothing in front of
+     it — it simply always loses to anything nearer.
+  ------------------------------------------------------------------- */
+  var FOCUS_FLOOR = 0.15;
+  function focusWeight(viewZ){
+    if(!(dofSupported && SETTINGS.dof > 0.01)) return 1;
+    var rel = shellOf(viewZ);
+    var midEdge = MID_MIN * SETTINGS.focusRange;
+    var farEdge = FAR_MIN * SETTINGS.focusRange;
+    if(rel <= midEdge) return 1;
+    if(rel >= farEdge) return FOCUS_FLOOR;
+    var t = (rel - midEdge)/Math.max(1e-6, farEdge - midEdge);
+    return 1 - smoothT(t)*(1 - FOCUS_FLOOR);
+  }
+  // how much a candidate at depth z still counts, given the nearest candidate
+  function depthGate(z, frontZ){
+    if(frontZ === null) return 1;
+    var span = Math.max(40, WORLD_RADIUS*0.35);
+    var t = (z - frontZ)/span;
+    return t <= 0 ? 1 : (t >= 1 ? 0 : 1 - smoothT(t));
+  }
+
   function erodeBite(pa, pb){
     if(!cursorScreen || erodeFade <= 0.01 || SETTINGS.erode <= 0) return 0;
     var dx = pb.x-pa.x, dy = pb.y-pa.y;
@@ -1339,6 +1373,11 @@
     // space, so the cloud turns with the archive instead of sitting flat on
     // the screen
     var nAmt = (reduceMotion || !wa || !wb) ? 0 : SETTINGS.grainNoise;
+    var asCube = SETTINGS.grainShape > 0.5;
+    var cubesPending = false;
+    // one width for the whole tier: batching is worth far more than a
+    // per-grain hairline difference nobody can see
+    var cubeLine = Math.max(0.5, Math.min(2.2, 1 + SETTINGS.grainSize*0.16));
     var nFreq = 0.012, nDriftZ = erodeClock * 0.35;
     var wdx = wa ? wb.x-wa.x : 0, wdy = wa ? wb.y-wa.y : 0, wdz = wa ? wb.z-wa.z : 0;
     var lagX = 0, lagY = 0;
@@ -1402,9 +1441,18 @@
         oy -= csn.y * mag;
         szMul += csn.z * nAmt * 0.22;      // depth read as a touch of gauge
       }
-      var sz  = snapPx((1 + hash2(k, 47)*2.4 + inf*1.3) * SETTINGS.grainSize * Math.max(0.4, szMul));
-      ctx.fillRect(snapPx(pa.x + dx*t + Math.cos(ang)*rad + ox + lagX*inf - sz/2),
-                   snapPx(pa.y + dy*t + Math.sin(ang)*rad + oy + lagY*inf - sz/2), sz, sz);
+      var sz = snapPx((1 + hash2(k, 47)*2.4 + inf*1.3) * SETTINGS.grainSize * Math.max(0.4, szMul));
+      var gx = pa.x + dx*t + Math.cos(ang)*rad + ox + lagX*inf;
+      var gy = pa.y + dy*t + Math.sin(ang)*rad + oy + lagY*inf;
+      // Cubes only append to the open path; the caller strokes the whole tier
+      // in one go. fillRect does not touch the path, so the small grains can
+      // keep filling in the same pass.
+      if(asCube && sz >= GRAIN_CUBE_MIN){
+        strokeGrainCube(gx, gy, sz*0.5);
+        cubesPending = true;
+      } else {
+        ctx.fillRect(snapPx(gx - sz/2), snapPx(gy - sz/2), sz, sz);
+      }
     }
 
     // what is still a line — drawn stretch by stretch through the same
@@ -1427,17 +1475,27 @@
 
     // the fraying edge of the bite
     ctx.fillStyle = rgba(grainCol, grainA*0.7);
+    ctx.strokeStyle = ctx.fillStyle;
+    ctx.lineWidth = cubeLine;
+    cubesPending = false;
+    ctx.beginPath();
     for(var j=0;j<=n;j++){
       var f = inf0[j];
       if(f >= 0.06 && f < CORE) grain(j, f, 0);
     }
+    if(cubesPending) ctx.stroke();
 
     // and its core, where the line is wholly grain
     ctx.fillStyle = rgba(grainCol, Math.min(1, grainA*1.55));
+    ctx.strokeStyle = ctx.fillStyle;
+    ctx.lineWidth = cubeLine;
+    cubesPending = false;
+    ctx.beginPath();
     for(var k2=0;k2<=n;k2++){
       var g = inf0[k2];
       if(g >= CORE){ grain(k2, g, 0); grain(k2, g, 101); }
     }
+    if(cubesPending) ctx.stroke();
   }
 
   // The pointer itself, in the piece's own square vocabulary.
@@ -1620,6 +1678,31 @@
     ctx.restore();
   }
 
+  /* ------------------------------------------------------------------
+     Grains as little cubes. Projecting eight corners per grain would be
+     wasteful and pointless: every grain is a cube in the same world, so
+     they all share one silhouette. It is solved once per frame from the
+     camera basis — orthographic, since perspective across a five-pixel
+     cube is nothing — and each grain then only offsets and scales it.
+     Twelve line segments per grain, no projection at all.
+  ------------------------------------------------------------------- */
+  var GRAIN_CUBE = new Float32Array(16);      // 8 corners, x/y screen offsets
+  var GRAIN_CUBE_MIN = 3.4;                   // below this a cube is only mush
+  function updateGrainCube(){
+    for(var i=0;i<8;i++){
+      var cs = rotX(rotY(CUBE_CORNERS[i], view.yaw), view.pitch);
+      GRAIN_CUBE[i*2]   =  cs.x;
+      GRAIN_CUBE[i*2+1] = -cs.y;
+    }
+  }
+  function strokeGrainCube(cx, cy, half){
+    for(var i=0;i<CUBE_EDGES.length;i++){
+      var a = CUBE_EDGES[i][0]*2, b = CUBE_EDGES[i][1]*2;
+      ctx.moveTo(cx + GRAIN_CUBE[a]*half, cy + GRAIN_CUBE[a+1]*half);
+      ctx.lineTo(cx + GRAIN_CUBE[b]*half, cy + GRAIN_CUBE[b+1]*half);
+    }
+  }
+
   function strokeCube(corners, style, width){
     ctx.strokeStyle = style;
     ctx.lineWidth = Math.max(0.05, width * LINES.cubeWeight);
@@ -1671,22 +1754,21 @@
     distBeforeFit = cam.dist;
     var to = fitAllDistance();
     if(reduceMotion){ cam.dist = to; fitTween = null; updateZoomLabel(); return; }
-    fitTween = { from:cam.dist, to:to, t:0, dur:26, back:false };
+    fitTween = { from:cam.dist, to:to, t0:performance.now(), dur:430 };
   }
   function endFit(){
     if(distBeforeFit === null) return;
     var to = distBeforeFit;
     distBeforeFit = null;
     if(reduceMotion){ cam.dist = to; fitTween = null; updateZoomLabel(); return; }
-    fitTween = { from:cam.dist, to:to, t:0, dur:26, back:true };
+    fitTween = { from:cam.dist, to:to, t0:performance.now(), dur:430 };
   }
-  // A counted tween, not an asymptote: it lands on the exact distance it was
-  // given, so releasing returns to the very number you left and repeated
-  // presses cannot drift.
+  // Timed, not frame-counted, and it lands on the exact distance it was given:
+  // releasing returns to the very number you left, repeated presses cannot
+  // drift, and the gesture takes the same time on a slow machine as a fast one.
   function updateFit(){
     if(!fitTween) return;
-    fitTween.t++;
-    var u = Math.min(1, fitTween.t/fitTween.dur);
+    var u = Math.min(1, (performance.now() - fitTween.t0)/fitTween.dur);
     var e = u<0.5 ? 2*u*u : 1-Math.pow(-2*u+2,2)/2;
     cam.dist = fitTween.from + (fitTween.to - fitTween.from)*e;
     updateZoomLabel();
@@ -1861,12 +1943,19 @@
   var pinnedNode = null, pinnedTimer = null;
   var camPulse = null;
 
+  // Front-most wins, the way it does in anything with depth: among the points
+  // under the cursor the nearest is taken, not merely the closest on screen.
+  // Focus breaks a tie between two at the same depth.
   function pickNear(sx, sy, pxRadius){
-    var best=null, bestD=pxRadius;
+    var best = null, bestZ = Infinity, bestD = Infinity;
     for(var id in lastProjected){
       var p = lastProjected[id];
       var d = Math.hypot(p.x-sx, p.y-sy);
-      if(d < bestD){ bestD=d; best=id; }
+      if(d > pxRadius) continue;
+      var z = p.viewZ;
+      if(z < bestZ - 0.5 || (Math.abs(z-bestZ) <= 0.5 && d < bestD)){
+        bestZ = z; bestD = d; best = id;
+      }
     }
     return best ? (nodeById[best] || pending.nodes.find(function(n){return n.id===best;})) : null;
   }
@@ -2063,6 +2152,7 @@
   function draw(){
     ctx.clearRect(0,0,W,H);
     lastProjected = {};
+    updateGrainCube();
 
     var showLabels = cam.dist < DIST_REF*1.05;
     var showCoords = cam.dist < DIST_REF*0.40;
@@ -2082,7 +2172,28 @@
     edgeDraw.sort(function(x,y){ return y.z-x.z; });
     edgeDraw.forEach(function(d){ d.rel = shellOf(d.z); });
     var dimming = hoverTraceId && hoverTraceId!=='GENESIS';
-    var erodeBudget = ERODE_MAX_EDGES;
+    // Resolve the bite before drawing: measure every candidate, find the
+    // nearest of them, then let depth and focus decide which actually give
+    // way. Doing it up front also fixes a budget bug — edgeDraw runs far to
+    // near, so a first-come budget spent itself on the background.
+    var frontZ = null;
+    for(var bi=0; bi<edgeDraw.length; bi++){
+      var bd = edgeDraw[bi];
+      bd.bite2d = erodeBite(bd.pa, bd.pb);
+      if(bd.bite2d > 0.01 && (frontZ === null || bd.z < frontZ)) frontZ = bd.z;
+    }
+    var biteCands = [];
+    for(var bj=0; bj<edgeDraw.length; bj++){
+      var cd = edgeDraw[bj];
+      cd.bite = cd.bite2d > 0.01
+        ? cd.bite2d * focusWeight(cd.z) * depthGate(cd.z, frontZ)
+        : 0;
+      if(cd.bite > 0.01) biteCands.push(cd);
+    }
+    if(biteCands.length > ERODE_MAX_EDGES){
+      biteCands.sort(function(x,y){ return y.bite - x.bite; });
+      for(var bk=ERODE_MAX_EDGES; bk<biteCands.length; bk++) biteCands[bk].bite = 0;
+    }
     var erodeBreathe = (reduceMotion || SETTINGS.grainDrift <= 0)
       ? 0 : Math.sin(performance.now()*0.00045)*0.6*SETTINGS.grainDrift;
     function renderEdges(relMin, relMax){
@@ -2094,8 +2205,7 @@
       var hlBoth = aIn && bIn;
       var hlOne = dimming && !hlBoth && (aIn || bIn);
       var hl = hlBoth || hlOne;
-      var bite = erodeBudget > 0 ? erodeBite(d.pa, d.pb) : 0;
-      if(bite > 0.01) erodeBudget--;
+      var bite = d.bite || 0;
       var isBeam = hasBeam(d.e);
       if(isBeam && !hl && bite <= 0.01 && LINES.beamOpacity > 0.005){
         // shaded rod underlay — the thick connecting bars in the source plate
@@ -2647,7 +2757,15 @@
   ];
 
 
+  var SETTING_CYCLERS = [
+    { key:'grainShape', btn:'setShape', labels:['Square','Cube'] }
+  ];
+
   function syncSettingsUI(){
+    SETTING_CYCLERS.forEach(function(c){
+      var bb = document.getElementById(c.btn);
+      if(bb) bb.textContent = c.labels[Math.round(SETTINGS[c.key])] || c.labels[0];
+    });
     SETTING_CONTROLS.forEach(function(c){
       var el = document.getElementById(c.input);
       var out = document.getElementById(c.out);
@@ -2664,6 +2782,16 @@
       var out = document.getElementById(c.out);
       if(out) out.textContent = c.fmt(SETTINGS[c.key]);
       if(c.onChange) c.onChange();
+      saveTuning();
+    });
+  });
+
+  SETTING_CYCLERS.forEach(function(c){
+    var bb = document.getElementById(c.btn);
+    if(!bb) return;
+    bb.addEventListener('click', function(){
+      SETTINGS[c.key] = (Math.round(SETTINGS[c.key]) + 1) % c.labels.length;
+      bb.textContent = c.labels[SETTINGS[c.key]];
       saveTuning();
     });
   });
@@ -3127,9 +3255,19 @@
   ========================================================================= */
   var halfMin = Math.min(W,H)/2;
   DIST_REF = (WORLD_RADIUS*FOCAL) / (halfMin*0.6);
-  cam.dist = DIST_REF;
   DIST_MIN = DIST_REF*0.045;
   DIST_MAX = DIST_REF*1.55;
+  // The piece opens from inside the archive rather than at arm's length: the
+  // lines cross the whole frame and you are already among them. Holding space
+  // is what pulls back to see the whole of it.
+  //
+  // But that view only reads once there is something to be among. On a young
+  // archive it would be two cubes in an empty field, so below a threshold the
+  // opening frames the whole drawing instead and the piece grows into the
+  // close view as visitors fill it.
+  var OPEN_ZOOM = 3.7, OPEN_DENSE_NODES = 60;
+  cam.dist = DIST_REF;
+  if(nodes.length >= OPEN_DENSE_NODES) cam.dist = DIST_REF/OPEN_ZOOM;
 
   // whatever was dialled in last time, brought back before the first frame
   loadTuning();
