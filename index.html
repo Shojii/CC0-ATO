@@ -419,8 +419,8 @@
   }
 </style>
 </head>
-<body>
 
+<body>
 <div id="app">
   <canvas id="stage"></canvas>
   <div id="grain"></div>
@@ -790,14 +790,6 @@
 
       <div class="setting">
         <div class="setting-top">
-          <span class="setting-name">Grain shape</span>
-          <button class="setting-cycle" id="setShape">Cube</button>
-        </div>
-        <span class="setting-note">Filled squares, or little wireframe cubes sharing the archive's orientation. Grains under 3.4 px stay square either way — a cube that small is only mush.</span>
-      </div>
-
-      <div class="setting">
-        <div class="setting-top">
           <span class="setting-name">Noise amount</span>
           <span class="setting-val" id="valNoise">0.50×</span>
         </div>
@@ -843,6 +835,23 @@
         </div>
         <input type="range" id="setDustSz" min="0.3" max="4" step="0.05" value="1" aria-label="Dust size">
         <span class="setting-note">Scales the whole spread of gauges, from grit to flecks.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Dust shape</span>
+          <button class="setting-cycle" id="setShape">Solid</button>
+        </div>
+        <span class="setting-note">Flat flecks, hollow cubes, or solid ones — three faces filled at three values, lit from overhead. Either cube is drawn in perspective and tumbles on its own axis. The finest grit and the motes furthest out of focus stay flat, since a cube that small is only mush.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Dust tumble</span>
+          <span class="setting-val" id="valDustSpin">1.00×</span>
+        </div>
+        <input type="range" id="setDustSpin" min="0" max="3" step="0.05" value="1" aria-label="Dust tumble">
+        <span class="setting-note">How fast the cubes turn on themselves. At zero they hang still, each at its own angle.</span>
       </div>
 
       <div class="setting">
@@ -918,7 +927,7 @@
   var SETTINGS_DEFAULTS = { rotSpeed:1, fov:0.35, depth:0.6, depthFalloff:1.45, inertia:0.5, reach:0.55,
     erode:1, grainSpread:1, grainSize:1, grainDrift:1,
     dust:1, dustCount:260, dustSize:1, dof:2.25, focusRange:0.6, fadeSpan:60,
-    springback:1, follow:1, grainNoise:0.5, grainShape:1 };
+    springback:1, follow:1, grainNoise:0.5, dustShape:2, dustSpin:1 };
   var SETTINGS = Object.assign({}, SETTINGS_DEFAULTS);
 
   function v3(x,y,z){ return {x:x,y:y,z:z}; }
@@ -1161,7 +1170,6 @@
     storeState = {
       contributorId: 'V-' + Math.floor(1000+rand()*8999) + '-' + Math.floor(rand()*90+10),
       contributions: [],
-      baselineTraceCount: 0,
       seenIntro: false
     };
   }
@@ -1203,7 +1211,11 @@
     });
   });
   var CURRENT_MAX_GEN = liveGen;
-  var traceCountTotal = storeState.baselineTraceCount + (storeState.contributions||[]).length;
+  // The archive the piece opens with is already this long. It belongs in the
+  // code, not in a visitor's storage — a browser that has never been here
+  // before still inherits the whole history.
+  var BASELINE_TRACES = 1284;
+  var traceCountTotal = BASELINE_TRACES + (storeState.contributions||[]).length;
 
   /* ========================================================================
      Canvas + 3D orbit camera
@@ -1309,6 +1321,7 @@
   ------------------------------------------------------------------- */
   var ERODE_RADIUS = 55;    // px of influence at 100% zoom, default setting
   var ERODE_MAX_EDGES = 14; // per frame, so a dense hub stays cheap
+  var ERODE_ON = 0.05;      // under this the edge simply holds together
   var erodeBuf = null;      // scratch influences, reused across edges
 
   // The bite stays local to the drawing rather than to the screen: zoomed out
@@ -1326,7 +1339,7 @@
      nothing becomes wholly unreachable when there is nothing in front of
      it — it simply always loses to anything nearer.
   ------------------------------------------------------------------- */
-  var FOCUS_FLOOR = 0.15;
+  var FOCUS_FLOOR = 0;
   function focusWeight(viewZ){
     if(!(dofSupported && SETTINGS.dof > 0.01)) return 1;
     var rel = shellOf(viewZ);
@@ -1337,12 +1350,16 @@
     var t = (rel - midEdge)/Math.max(1e-6, farEdge - midEdge);
     return 1 - smoothT(t)*(1 - FOCUS_FLOOR);
   }
-  // how much a candidate at depth z still counts, given the nearest candidate
-  function depthGate(z, frontZ){
+  // How much of its claim a candidate keeps once something stands in front of
+  // it. The foreground wins outright: an edge clearly behind the nearest line
+  // the cursor is over gives up its bite entirely, however squarely the cursor
+  // sits on it in screen terms. Only the separation is smoothed, so lines at
+  // much the same depth still come apart together.
+  function depthShield(z, frontZ){
     if(frontZ === null) return 1;
-    var span = Math.max(40, WORLD_RADIUS*0.35);
-    var t = (z - frontZ)/span;
-    return t <= 0 ? 1 : (t >= 1 ? 0 : 1 - smoothT(t));
+    var span = Math.max(36, WORLD_RADIUS*0.28);
+    var sep = (z - frontZ)/span;
+    return sep <= 0 ? 1 : (sep >= 1 ? 0 : 1 - smoothT(sep));
   }
 
   function erodeBite(pa, pb){
@@ -1361,7 +1378,7 @@
   // not as an antialiased smudge.
   function snapPx(v){ return Math.round(v*DPR)/DPR; }
 
-  function strokeEroded(pa, pb, style, width, seed, breathe, grainCol, grainA, wa, wb){
+  function strokeEroded(pa, pb, style, width, seed, breathe, grainCol, grainA, wa, wb, gate){
     var dx = pb.x-pa.x, dy = pb.y-pa.y;
     var len = Math.hypot(dx, dy);
     var R = erodeRadius(), spread = R * 0.26 * SETTINGS.grainSpread;
@@ -1373,11 +1390,11 @@
     // space, so the cloud turns with the archive instead of sitting flat on
     // the screen
     var nAmt = (reduceMotion || !wa || !wb) ? 0 : SETTINGS.grainNoise;
-    var asCube = SETTINGS.grainShape > 0.5;
-    var cubesPending = false;
-    // one width for the whole tier: batching is worth far more than a
-    // per-grain hairline difference nobody can see
-    var cubeLine = Math.max(0.5, Math.min(2.2, 1 + SETTINGS.grainSize*0.16));
+    // How much of the bite this edge has actually been granted, once depth
+    // and focus have had their say. Screen proximity alone is not consent: a
+    // line lying in the background does not come apart because the cursor
+    // happens to pass over it on the way to something in front.
+    var gk = (gate === undefined || gate === null) ? 1 : Math.max(0, Math.min(1, gate));
     var nFreq = 0.012, nDriftZ = erodeClock * 0.35;
     var wdx = wa ? wb.x-wa.x : 0, wdy = wa ? wb.y-wa.y : 0, wdz = wa ? wb.z-wa.z : 0;
     var lagX = 0, lagY = 0;
@@ -1399,7 +1416,7 @@
       var dq = Math.sqrt(ex*ex + ey*ey);
       var base = dq >= R ? 0 : Math.pow(1 - dq/R, 1.5) * erodeFade;
       var g = Math.min(1, Math.min(tq, 1-tq) / gT);
-      inf0[q] = base * g*g*(3-2*g);
+      inf0[q] = base * g*g*(3-2*g) * gk;
     }
 
     // Each grain keeps its own slow wander — its own frequency and phase, so
@@ -1444,15 +1461,7 @@
       var sz = snapPx((1 + hash2(k, 47)*2.4 + inf*1.3) * SETTINGS.grainSize * Math.max(0.4, szMul));
       var gx = pa.x + dx*t + Math.cos(ang)*rad + ox + lagX*inf;
       var gy = pa.y + dy*t + Math.sin(ang)*rad + oy + lagY*inf;
-      // Cubes only append to the open path; the caller strokes the whole tier
-      // in one go. fillRect does not touch the path, so the small grains can
-      // keep filling in the same pass.
-      if(asCube && sz >= GRAIN_CUBE_MIN){
-        strokeGrainCube(gx, gy, sz*0.5);
-        cubesPending = true;
-      } else {
-        ctx.fillRect(snapPx(gx - sz/2), snapPx(gy - sz/2), sz, sz);
-      }
+      ctx.fillRect(snapPx(gx - sz/2), snapPx(gy - sz/2), sz, sz);
     }
 
     // what is still a line — drawn stretch by stretch through the same
@@ -1475,27 +1484,17 @@
 
     // the fraying edge of the bite
     ctx.fillStyle = rgba(grainCol, grainA*0.7);
-    ctx.strokeStyle = ctx.fillStyle;
-    ctx.lineWidth = cubeLine;
-    cubesPending = false;
-    ctx.beginPath();
     for(var j=0;j<=n;j++){
       var f = inf0[j];
       if(f >= 0.06 && f < CORE) grain(j, f, 0);
     }
-    if(cubesPending) ctx.stroke();
 
     // and its core, where the line is wholly grain
     ctx.fillStyle = rgba(grainCol, Math.min(1, grainA*1.55));
-    ctx.strokeStyle = ctx.fillStyle;
-    ctx.lineWidth = cubeLine;
-    cubesPending = false;
-    ctx.beginPath();
     for(var k2=0;k2<=n;k2++){
       var g = inf0[k2];
       if(g >= CORE){ grain(k2, g, 0); grain(k2, g, 101); }
     }
-    if(cubesPending) ctx.stroke();
   }
 
   // The pointer itself, in the piece's own square vocabulary.
@@ -1676,31 +1675,6 @@
 
     clearStrokeState();
     ctx.restore();
-  }
-
-  /* ------------------------------------------------------------------
-     Grains as little cubes. Projecting eight corners per grain would be
-     wasteful and pointless: every grain is a cube in the same world, so
-     they all share one silhouette. It is solved once per frame from the
-     camera basis — orthographic, since perspective across a five-pixel
-     cube is nothing — and each grain then only offsets and scales it.
-     Twelve line segments per grain, no projection at all.
-  ------------------------------------------------------------------- */
-  var GRAIN_CUBE = new Float32Array(16);      // 8 corners, x/y screen offsets
-  var GRAIN_CUBE_MIN = 3.4;                   // below this a cube is only mush
-  function updateGrainCube(){
-    for(var i=0;i<8;i++){
-      var cs = rotX(rotY(CUBE_CORNERS[i], view.yaw), view.pitch);
-      GRAIN_CUBE[i*2]   =  cs.x;
-      GRAIN_CUBE[i*2+1] = -cs.y;
-    }
-  }
-  function strokeGrainCube(cx, cy, half){
-    for(var i=0;i<CUBE_EDGES.length;i++){
-      var a = CUBE_EDGES[i][0]*2, b = CUBE_EDGES[i][1]*2;
-      ctx.moveTo(cx + GRAIN_CUBE[a]*half, cy + GRAIN_CUBE[a+1]*half);
-      ctx.lineTo(cx + GRAIN_CUBE[b]*half, cy + GRAIN_CUBE[b+1]*half);
-    }
   }
 
   function strokeCube(corners, style, width){
@@ -2059,20 +2033,77 @@
         // a power law: mostly the finest grit, a scattering of bigger flecks
         gauge: 0.5 + Math.pow(r(), 3.1)*4.2,
         w: 0.04 + r()*0.17, ph: r()*Math.PI*2,
-        a: 0.14 + r()*0.55
+        a: 0.14 + r()*0.55,
+        // Its own axis and its own rate, so the field never turns in unison
+        // and never turns with the archive either. The starting angles are
+        // kept off the square: a cube caught face-on is just a square, so the
+        // field is seeded three-quarter-on and only passes through the flat
+        // views as it tumbles.
+        yaw: (0.22 + r()*0.56) * Math.PI/2 + Math.floor(r()*4) * Math.PI/2,
+        pitch: (r() < 0.5 ? 1 : -1) * (0.28 + r()*0.34) * Math.PI/2,
+        sy: (r()*2-1)*0.30, sp: (r()*2-1)*0.22
       });
     }
   }
   buildDust();
+
+  /* Each mote is its own cube on its own axis, so it cannot borrow a shared
+     silhouette the way the archive's own cubes do. Solved without allocating:
+     the corners are all ±1, so the two rotations fold down to sums of the
+     basis terms. Then a short perspective divide — pushed away from the eye
+     first, so the near corners spread and the far ones taper without the
+     divide ever blowing up. That taper is the whole reason a cube reads as a
+     volume where a square reads as a speck. */
+  var _dcx = new Float64Array(8), _dcy = new Float64Array(8);
+  var _dn  = new Float64Array(9);   // the three axis normals, rotated
+  // A near mote is a nearer subject, so it takes the wider angle. Kept gentle:
+  // past about a fifth the foreshortening stops reading as a cube and starts
+  // reading as a wedge.
+  function DUST_PERSP(depth){ return 0.07 + depth*0.11; }
+  function dustCube(yaw, pitch, persp){
+    var cy = Math.cos(yaw), sy = Math.sin(yaw);
+    var cp = Math.cos(pitch), sp = Math.sin(pitch);
+    var norm = 1 + 1.75*persp;
+    for(var i=0;i<8;i++){
+      var c = CUBE_CORNERS[i];
+      var x1 =  c.x*cy + c.z*sy, z1 = -c.x*sy + c.z*cy;
+      var y2 =  c.y*cp - z1*sp,  z2 =  c.y*sp + z1*cp;
+      var k = norm/(1 + (z2 + 1.75)*persp);
+      _dcx[i] = x1*k; _dcy[i] = -y2*k;
+    }
+    // The face normals are just the three axes put through the same rotation.
+    // Their depth says which of each opposing pair the eye can see; their
+    // height says how squarely that face is turned to the light.
+    _dn[0] = cy;          _dn[1] = sy*sp;        _dn[2] = -sy*cp;   // +x
+    _dn[3] = 0;           _dn[4] = cp;           _dn[5] = sp;       // +y
+    _dn[6] = sy;          _dn[7] = -cy*sp;       _dn[8] = cy*cp;    // +z
+  }
+  // the quad on the positive and the negative side of each axis
+  var CUBE_FACE_POS = [[1,2,6,5],[3,2,6,7],[4,5,6,7]];
+  var CUBE_FACE_NEG = [[0,3,7,4],[0,1,5,4],[0,1,2,3]];
+
+  // Cubes are stroked, and one stroke per mote is exactly what cost the grains
+  // their frame rate. So the field is quantised into a handful of alpha tiers,
+  // and each tier goes down as a single path with a single width.
+  var DUST_TIERS = 5, DUST_A_MAX = 0.6, DUST_CUBE_MIN = 2.2, DUST_CUBE_HALF = 1.7;
+  var D_X = new Float32Array(DUST_POOL), D_Y = new Float32Array(DUST_POOL),
+      D_S = new Float32Array(DUST_POOL), D_A = new Float32Array(DUST_POOL),
+      D_YAW = new Float32Array(DUST_POOL), D_PIT = new Float32Array(DUST_POOL),
+      D_TIER = new Int8Array(DUST_POOL);   // -1 flat, else its cube tier
 
   function drawDust(){
     var k = SETTINGS.dust;
     var count = Math.min(dust.length, Math.round(SETTINGS.dustCount));
     if(k <= 0 || count <= 0) return;
     var t = reduceMotion ? 0 : performance.now()/1000;
+    var shape = Math.round(SETTINGS.dustShape);        // 0 flat, 1 wireframe, 2 solid
+    var asCube = shape > 0;
+    var spin = reduceMotion ? 0 : SETTINGS.dustSpin;
     // Dollying moves the camera through the field: near motes stream outward
     // and swell faster than far ones. Orbiting leaves the dust where it is.
     var zoomK = Math.max(0.05, DIST_REF / Math.max(1, cam.dist));
+    var step = DUST_A_MAX / DUST_TIERS;
+    var anyCube = false;
     for(var i=0;i<count;i++){
       var d = dust[i];
       var par = Math.pow(zoomK, 0.5 * d.depth);
@@ -2086,11 +2117,129 @@
       var soften = Math.max(0, Math.min(1, (0.45 - d.depth)/0.45)) * SETTINGS.dof;
       var sz = Math.max(1/DPR, snapPx(d.gauge * (0.45 + d.depth*0.9)
                 * Math.min(4.5, Math.pow(par, 0.85)) * SETTINGS.dustSize
-                * (1 + soften*1.7)));
-      ctx.fillStyle = rgba(THEME.ink, Math.min(0.6, d.a * (0.22 + d.depth*0.78)
-                * 0.5 * k * (1 - soften*0.55)));
-      ctx.fillRect(snapPx(x - sz/2), snapPx(y - sz/2), sz, sz);
+                * (1 + soften*1.7) * (asCube ? 1.3 : 1)));
+      var al = Math.min(DUST_A_MAX, d.a * (0.22 + d.depth*0.78) * 0.5 * k * (1 - soften*0.55));
+      D_X[i] = x; D_Y[i] = y; D_S[i] = sz; D_A[i] = al;
+      // A cube only where a cube can be read: big enough on screen, and near
+      // enough to still be in focus. Everything further back stays a soft
+      // fleck, which is what depth of field would have made of it anyway.
+      if(asCube && sz >= DUST_CUBE_MIN && soften < 0.4 && al > 0.012){
+        D_YAW[i] = d.yaw + t*d.sy*spin;
+        D_PIT[i] = d.pitch + t*d.sp*spin*0.8;
+        D_TIER[i] = Math.max(0, Math.min(DUST_TIERS-1, Math.floor(al/step)));
+        anyCube = true;
+        if(shape === 2) solveFaces(i, d);
+      } else {
+        D_TIER[i] = -1;
+      }
     }
+    // the flat grit first, so the cubes read over it
+    for(var f=0;f<count;f++){
+      if(D_TIER[f] >= 0) continue;
+      ctx.fillStyle = rgba(THEME.ink, D_A[f]);
+      ctx.fillRect(snapPx(D_X[f] - D_S[f]/2), snapPx(D_Y[f] - D_S[f]/2), D_S[f], D_S[f]);
+    }
+    if(!anyCube) return;
+    if(shape === 2){ paintSolidCubes(count, step); return; }
+    ctx.save();
+    ctx.lineWidth = Math.max(0.5, Math.min(1.4, 0.55 + SETTINGS.dustSize*0.12));
+    ctx.lineJoin = 'miter'; ctx.lineCap = 'butt';
+    for(var tier=0; tier<DUST_TIERS; tier++){
+      var open = false;
+      for(var c2=0;c2<count;c2++){
+        if(D_TIER[c2] !== tier) continue;
+        if(!open){ ctx.beginPath(); open = true; }
+        var half = Math.max(DUST_CUBE_HALF, D_S[c2]*0.62);
+        var dd = dust[c2];
+        dustCube(D_YAW[c2], D_PIT[c2], DUST_PERSP(dd.depth));
+        var cx = D_X[c2], cy2 = D_Y[c2];
+        for(var e=0;e<CUBE_EDGES.length;e++){
+          var a = CUBE_EDGES[e][0], b = CUBE_EDGES[e][1];
+          ctx.moveTo(cx + _dcx[a]*half, cy2 + _dcy[a]*half);
+          ctx.lineTo(cx + _dcx[b]*half, cy2 + _dcy[b]*half);
+        }
+      }
+      if(open){
+        ctx.strokeStyle = rgba(THEME.ink, (tier + 0.62) * step);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  /* A solid mote. Three faces of a cube face the eye at any one time; filling
+     just those three covers the silhouette exactly, and giving each its own
+     value — by how squarely it is turned to a light overhead — is what makes
+     the thing read as a block rather than a blot. The quads are solved in the
+     measuring pass and stored, then drawn grouped by value and by depth, so
+     the whole field costs a couple of dozen fills however many motes there
+     are. */
+  var D_FQ = new Float64Array(DUST_POOL*24);   // 3 faces x 4 corners x (x,y)
+  var D_FS = new Int8Array(DUST_POOL*3);       // which value band each face is in
+  var SOLID_SHADES = 3;
+  var SOLID_TONE = [0.42, 0.68, 0.98];         // share of the ink: lit face palest
+  function solveFaces(i, d){
+    var half = Math.max(DUST_CUBE_HALF*0.92, D_S[i]*0.58);
+    dustCube(D_YAW[i], D_PIT[i], DUST_PERSP(d.depth));
+    var cx = D_X[i], cy = D_Y[i], base = i*24;
+    for(var a=0; a<3; a++){
+      var nz = _dn[a*3+2], ny = _dn[a*3+1];
+      var q, up;
+      if(nz < 0){ q = CUBE_FACE_POS[a]; up = ny; }
+      else      { q = CUBE_FACE_NEG[a]; up = -ny; }
+      var o = base + a*8;
+      for(var k=0;k<4;k++){
+        D_FQ[o+k*2]   = cx + _dcx[q[k]]*half;
+        D_FQ[o+k*2+1] = cy + _dcy[q[k]]*half;
+      }
+      var lit = 0.5 + 0.5*up;                  // 1 turned to the light, 0 away
+      D_FS[i*3+a] = Math.max(0, Math.min(SOLID_SHADES-1,
+                      Math.floor((1-lit)*SOLID_SHADES)));
+    }
+  }
+  function paintSolidCubes(count, step){
+    // On paper the lit face is the one that takes the least ink. On a dark
+    // ground the ink is the light, so the order has to turn over or the whole
+    // field ends up lit from underneath.
+    var inkIsLight = (THEME.ink.r + THEME.ink.g + THEME.ink.b) > 384;
+    ctx.save();
+    ctx.lineJoin = 'miter'; ctx.lineCap = 'butt';
+    ctx.lineWidth = Math.max(0.4, Math.min(1, 0.45 + SETTINGS.dustSize*0.08));
+    for(var tier=0; tier<DUST_TIERS; tier++){
+      var tierA = (tier + 0.62) * step;
+      for(var sh=0; sh<SOLID_SHADES; sh++){
+        var open = false;
+        for(var i=0;i<count;i++){
+          if(D_TIER[i] !== tier) continue;
+          for(var a=0;a<3;a++){
+            if(D_FS[i*3+a] !== sh) continue;
+            var o = i*24 + a*8;
+            var x0=D_FQ[o],   y0=D_FQ[o+1], x1=D_FQ[o+2], y1=D_FQ[o+3],
+                x2=D_FQ[o+4], y2=D_FQ[o+5], x3=D_FQ[o+6], y3=D_FQ[o+7];
+            if(!open){ ctx.beginPath(); open = true; }
+            // wound the same way on screen whichever way the cube is turned,
+            // so overlapping faces union under the non-zero rule instead of
+            // cancelling each other into holes
+            if((x1-x0)*(y2-y1) - (y1-y0)*(x2-x1) >= 0){
+              ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.lineTo(x2,y2); ctx.lineTo(x3,y3);
+            } else {
+              ctx.moveTo(x0,y0); ctx.lineTo(x3,y3); ctx.lineTo(x2,y2); ctx.lineTo(x1,y1);
+            }
+            ctx.closePath();
+          }
+        }
+        if(open){
+          var tone = SOLID_TONE[inkIsLight ? SOLID_SHADES-1-sh : sh];
+          ctx.fillStyle = rgba(THEME.ink, tierA * tone);
+          ctx.fill();
+          // the seams, a shade firmer than the face they belong to — not than
+          // the cube, or a lit face ends up ringed in ink and reads dark
+          ctx.strokeStyle = rgba(THEME.ink, Math.min(1, tierA * tone * 1.45));
+          ctx.stroke();
+        }
+      }
+    }
+    ctx.restore();
   }
 
   /* ------------------------------------------------------------------
@@ -2152,7 +2301,6 @@
   function draw(){
     ctx.clearRect(0,0,W,H);
     lastProjected = {};
-    updateGrainCube();
 
     var showLabels = cam.dist < DIST_REF*1.05;
     var showCoords = cam.dist < DIST_REF*0.40;
@@ -2176,19 +2324,31 @@
     // nearest of them, then let depth and focus decide which actually give
     // way. Doing it up front also fixes a budget bug — edgeDraw runs far to
     // near, so a first-come budget spent itself on the background.
-    var frontZ = null;
+    // What counts as the thing being pointed at: the nearest edge the cursor
+    // is properly over, not merely the nearest one it grazes — otherwise a
+    // line at the very edge of reach could veto everything behind it.
+    var reach = [];
     for(var bi=0; bi<edgeDraw.length; bi++){
       var bd = edgeDraw[bi];
       bd.bite2d = erodeBite(bd.pa, bd.pb);
-      if(bd.bite2d > 0.01 && (frontZ === null || bd.z < frontZ)) frontZ = bd.z;
+      bd.gate = 0; bd.bite = 0;
+      if(bd.bite2d > 0.01) reach.push(bd);
+    }
+    // The nearest line the cursor is properly over — not merely grazing at the
+    // edge of reach, and not one the lens has already let go soft, since what
+    // is out of focus is out of reach as well. Everything behind it defers.
+    var frontZ = null;
+    for(var bf=0; bf<reach.length; bf++){
+      var rf = reach[bf];
+      if(rf.bite2d < 0.12 || focusWeight(rf.z) < 0.5) continue;
+      if(frontZ === null || rf.z < frontZ) frontZ = rf.z;
     }
     var biteCands = [];
-    for(var bj=0; bj<edgeDraw.length; bj++){
-      var cd = edgeDraw[bj];
-      cd.bite = cd.bite2d > 0.01
-        ? cd.bite2d * focusWeight(cd.z) * depthGate(cd.z, frontZ)
-        : 0;
-      if(cd.bite > 0.01) biteCands.push(cd);
+    for(var bj=0; bj<reach.length; bj++){
+      var cd = reach[bj];
+      cd.gate = focusWeight(cd.z) * depthShield(cd.z, frontZ);
+      cd.bite = cd.bite2d * cd.gate;
+      if(cd.bite > ERODE_ON) biteCands.push(cd); else { cd.bite = 0; cd.gate = 0; }
     }
     if(biteCands.length > ERODE_MAX_EDGES){
       biteCands.sort(function(x,y){ return y.bite - x.bite; });
@@ -2207,7 +2367,7 @@
       var hl = hlBoth || hlOne;
       var bite = d.bite || 0;
       var isBeam = hasBeam(d.e);
-      if(isBeam && !hl && bite <= 0.01 && LINES.beamOpacity > 0.005){
+      if(isBeam && !hl && bite <= 0 && LINES.beamOpacity > 0.005){
         // shaded rod underlay — the thick connecting bars in the source plate
         var midScale = (d.pa.scale + d.pb.scale) / 2;
         ctx.save();
@@ -2230,11 +2390,11 @@
       }
       var eStyle = hlBoth ? rgba(THEME.accent, 0.95) : hlOne ? rgba(THEME.accent, 0.55) : edgeColor(d.e, dimming ? fog*0.22 : fog);
       var eWidth = hlBoth ? 2 : hlOne ? 1.5 : (isBeam ? 1.1 : (d.e.origin==='visitor' ? 1 : (d.e.generation===0?0.9:0.6)));
-      if(bite > 0.01){
+      if(bite > 0){
         var grainCol = hl ? THEME.accent : THEME.ink;
         var grainA = agedAlpha(d.e, (dimming && !hl ? 0.2 : 0.66) * fog);
         strokeEroded(d.pa, d.pb, eStyle, eWidth, d.e.seed, erodeBreathe, grainCol, grainA,
-                     nodeById[d.e.a], nodeById[d.e.b]);
+                     nodeById[d.e.a], nodeById[d.e.b], d.gate);
       } else {
         strokeSeg(d.pa, d.pb, eStyle, eWidth, d.e.seed);
       }
@@ -2753,12 +2913,13 @@
     { key:'dust',         input:'setDust',     out:'valDust',     fmt:x2 },
     { key:'dustCount',    input:'setDustN',    out:'valDustN',    fmt:function(v){ return String(Math.round(v)); } },
     { key:'dustSize',     input:'setDustSz',   out:'valDustSz',   fmt:x2 },
+    { key:'dustSpin',     input:'setDustSpin', out:'valDustSpin', fmt:x2 },
     { key:'fadeSpan',     input:'setFade',     out:'valFade',     fmt:function(v){ return String(Math.round(v)); } }
   ];
 
 
   var SETTING_CYCLERS = [
-    { key:'grainShape', btn:'setShape', labels:['Square','Cube'] }
+    { key:'dustShape', btn:'setShape', labels:['Flat','Wireframe','Solid'] }
   ];
 
   function syncSettingsUI(){
