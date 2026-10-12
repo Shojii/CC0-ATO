@@ -318,10 +318,10 @@
   .settings-toggle:focus-visible{ outline:1px solid var(--accent); outline-offset:3px; }
 
   .settings-panel{
-    position:fixed; top:100px; right:26px; z-index:32; width:236px;
+    position:fixed; top:130px; right:26px; z-index:32; width:236px;
     display:flex; flex-direction:column; gap:16px;
     padding:16px 16px 14px; pointer-events:auto;
-    max-height:calc(100vh - 176px); overflow-y:auto; overscroll-behavior:contain;
+    max-height:calc(100vh - 206px); overflow-y:auto; overscroll-behavior:contain;
     background:var(--paper-2); border:1px solid var(--line);
     box-shadow:0 12px 34px -22px rgba(0,0,0,0.5);
   }
@@ -488,9 +488,9 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Line weight</span>
-          <span class="setting-val" id="valLnWeight">0.35×</span>
+          <span class="setting-val" id="valLnWeight">0.20×</span>
         </div>
-        <input type="range" id="lnWeight" min="0.2" max="5" step="0.05" value="0.35" aria-label="Line weight">
+        <input type="range" id="lnWeight" min="0.2" max="5" step="0.05" value="0.2" aria-label="Line weight">
         <span class="setting-note">Multiplies every line width in the archive.</span>
       </div>
 
@@ -499,16 +499,16 @@
           <span class="setting-name">Line opacity</span>
           <span class="setting-val" id="valLnOpacity">1.00×</span>
         </div>
-        <input type="range" id="lnOpacity" min="0.05" max="1" step="0.05" value="1.00" aria-label="Line opacity">
+        <input type="range" id="lnOpacity" min="0.05" max="1" step="0.05" value="1" aria-label="Line opacity">
         <span class="setting-note">Ink density, over and above the depth and age fades.</span>
       </div>
 
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Point weight</span>
-          <span class="setting-val" id="valLnCube">0.50×</span>
+          <span class="setting-val" id="valLnCube">0.60×</span>
         </div>
-        <input type="range" id="lnCube" min="0.2" max="5" step="0.05" value="0.5" aria-label="Point weight">
+        <input type="range" id="lnCube" min="0.2" max="5" step="0.05" value="0.6" aria-label="Point weight">
         <span class="setting-note">The twelve edges of each point cube.</span>
       </div>
     </div>
@@ -519,64 +519,95 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Wobble</span>
-          <span class="setting-val" id="valLnJitter">1.50×</span>
+          <span class="setting-val" id="valLnJitter">4.90×</span>
         </div>
-        <input type="range" id="lnJitter" min="0" max="6" step="0.05" value="1.5" aria-label="Wobble">
+        <input type="range" id="lnJitter" min="0" max="6" step="0.05" value="4.9" aria-label="Wobble">
         <span class="setting-note">Departure from true, eased to nothing at both ends.</span>
       </div>
 
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Wobble grain</span>
-          <span class="setting-val" id="valLnGrain">6</span>
+          <span class="setting-val" id="valLnGrain">10</span>
         </div>
-        <input type="range" id="lnGrain" min="2" max="24" step="1" value="6" aria-label="Wobble grain">
+        <input type="range" id="lnGrain" min="2" max="24" step="1" value="10" aria-label="Wobble grain">
         <span class="setting-note">Segments per line. Few is angular, many is fluid.</span>
       </div>
 
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Strokes per line</span>
-          <span class="setting-val" id="valLnPasses">3</span>
+          <span class="setting-val" id="valLnPasses">4</span>
         </div>
-        <input type="range" id="lnPasses" min="1" max="4" step="1" value="3" aria-label="Strokes per line">
+        <input type="range" id="lnPasses" min="1" max="4" step="1" value="4" aria-label="Strokes per line">
         <span class="setting-note">How many times the nib goes over the same line.</span>
       </div>
 
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Extra stroke ink</span>
-          <span class="setting-val" id="valLnDbl">0.75×</span>
+          <span class="setting-val" id="valLnDbl">1.50×</span>
         </div>
-        <input type="range" id="lnDbl" min="0" max="1.5" step="0.05" value="0.75" aria-label="Extra stroke ink">
+        <input type="range" id="lnDbl" min="0" max="1.5" step="0.05" value="1.5" aria-label="Extra stroke ink">
         <span class="setting-note">Weight of the passes after the first. Zero leaves a single stroke.</span>
       </div>
 
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Thread life</span>
-          <span class="setting-val" id="valLnLife">0.93×</span>
+          <span class="setting-val" id="valLnLife">1.23×</span>
         </div>
-        <input type="range" id="lnLife" min="0" max="5" step="0.01" value="0.93" aria-label="Thread life">
+        <input type="range" id="lnLife" min="0" max="5" step="0.01" value="1.23" aria-label="Thread life">
         <span class="setting-note">How wide the threads swing as they stir. The moving part has its own reach, so this goes well past the resting wobble.</span>
       </div>
 
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Thread speed</span>
-          <span class="setting-val" id="valLnLifeSpd">1.25×</span>
+          <span class="setting-val" id="valLnLifeSpd">0.75×</span>
         </div>
-        <input type="range" id="lnLifeSpd" min="0.1" max="4" step="0.05" value="1.25" aria-label="Thread speed">
+        <input type="range" id="lnLifeSpd" min="0.1" max="4" step="0.05" value="0.75" aria-label="Thread speed">
         <span class="setting-note">How fast it travels. This is the one to push if the stirring reads too slow.</span>
       </div>
 
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Nib taper</span>
-          <span class="setting-val" id="valLnTaper">0.30×</span>
+          <span class="setting-val" id="valLnTaper">0.60×</span>
         </div>
-        <input type="range" id="lnTaper" min="0" max="1" step="0.05" value="0.3" aria-label="Nib taper">
+        <input type="range" id="lnTaper" min="0" max="1" step="0.05" value="0.6" aria-label="Nib taper">
         <span class="setting-note">Thin at the ends, full in the middle.</span>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <span class="settings-group-name">Undulation</span>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Undulation</span>
+          <span class="setting-val" id="valLnWave">12.5 px</span>
+        </div>
+        <input type="range" id="lnWave" min="0" max="24" step="0.5" value="12.5" aria-label="Undulation">
+        <span class="setting-note">A slow wave along the whole length of each thread, on top of the hand's wobble. Longer threads swing wider, the way a longer string does.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Waves per line</span>
+          <span class="setting-val" id="valLnWaves">1.50</span>
+        </div>
+        <input type="range" id="lnWaves" min="0.5" max="6" step="0.25" value="1.5" aria-label="Waves per line">
+        <span class="setting-note">How many crests a thread carries. One is a single bow, three or more a serpent.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Wave speed</span>
+          <span class="setting-val" id="valLnWaveSpd">0.10×</span>
+        </div>
+        <input type="range" id="lnWaveSpd" min="0" max="3" step="0.05" value="0.1" aria-label="Wave speed">
+        <span class="setting-note">How fast the crests travel along each thread, each in its own direction. Zero holds them still.</span>
       </div>
     </div>
 
@@ -595,9 +626,9 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Dash gap</span>
-          <span class="setting-val" id="valLnGap">6 px</span>
+          <span class="setting-val" id="valLnGap">1 px</span>
         </div>
-        <input type="range" id="lnGap" min="0.5" max="30" step="0.5" value="6" aria-label="Dash gap">
+        <input type="range" id="lnGap" min="0.5" max="30" step="0.5" value="0.5" aria-label="Dash gap">
         <span class="setting-note">Only matters once the dash length is above zero.</span>
       </div>
 
@@ -624,27 +655,27 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Beam weight</span>
-          <span class="setting-val" id="valLnBeamW">0.45×</span>
+          <span class="setting-val" id="valLnBeamW">0.65×</span>
         </div>
-        <input type="range" id="lnBeamW" min="0" max="4" step="0.05" value="0.45" aria-label="Beam weight">
+        <input type="range" id="lnBeamW" min="0" max="4" step="0.05" value="0.65" aria-label="Beam weight">
         <span class="setting-note">The thick shaded rods of the genesis plate.</span>
       </div>
 
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Beam opacity</span>
-          <span class="setting-val" id="valLnBeamO">0.70×</span>
+          <span class="setting-val" id="valLnBeamO">0.25×</span>
         </div>
-        <input type="range" id="lnBeamO" min="0" max="2" step="0.05" value="0.7" aria-label="Beam opacity">
+        <input type="range" id="lnBeamO" min="0" max="2" step="0.05" value="0.25" aria-label="Beam opacity">
         <span class="setting-note">Zero removes the rods and leaves the hairlines.</span>
       </div>
 
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Beam spread</span>
-          <span class="setting-val" id="valLnBeamS">15%</span>
+          <span class="setting-val" id="valLnBeamS">17%</span>
         </div>
-        <input type="range" id="lnBeamS" min="0" max="1" step="0.01" value="0.15" aria-label="Beam spread">
+        <input type="range" id="lnBeamS" min="0" max="1" step="0.01" value="0.17" aria-label="Beam spread">
         <span class="setting-note">Share of the other lines promoted to a rod, each with its own gauge.</span>
       </div>
     </div>
@@ -667,54 +698,54 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Field of view</span>
-          <span class="setting-val" id="valFov">0.35×</span>
+          <span class="setting-val" id="valFov">1.00×</span>
         </div>
-        <input type="range" id="setFov" min="0.28" max="6" step="0.02" value="0.35" aria-label="Field of view">
+        <input type="range" id="setFov" min="0.28" max="6" step="0.02" value="1" aria-label="Field of view">
         <span class="setting-note">A short lens throws the depth open, a long one presses it flat. It cannot go much wider than this — the lens would end up inside the archive.</span>
       </div>
 
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">3D depth</span>
-          <span class="setting-val" id="valDepth">0.60×</span>
+          <span class="setting-val" id="valDepth">1.00×</span>
         </div>
-        <input type="range" id="setDepth" min="0" max="2.5" step="0.05" value="0.6" aria-label="3D depth">
+        <input type="range" id="setDepth" min="0" max="2.5" step="0.05" value="1" aria-label="3D depth">
         <span class="setting-note">How far the points spread along Z.</span>
       </div>
 
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Depth falloff</span>
-          <span class="setting-val" id="valFalloff">1.45×</span>
+          <span class="setting-val" id="valFalloff">1.20×</span>
         </div>
-        <input type="range" id="setFalloff" min="0" max="2.5" step="0.05" value="1.45" aria-label="Depth falloff">
+        <input type="range" id="setFalloff" min="0" max="2.5" step="0.05" value="1.2" aria-label="Depth falloff">
         <span class="setting-note">How much the points furthest back give way.</span>
       </div>
 
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Blur amount</span>
-          <span class="setting-val" id="valDof">2.25×</span>
+          <span class="setting-val" id="valDof">1.00×</span>
         </div>
-        <input type="range" id="setDof" min="0" max="3" step="0.05" value="2.25" aria-label="Blur amount">
+        <input type="range" id="setDof" min="0" max="3" step="0.05" value="1" aria-label="Blur amount">
         <span class="setting-note">How soft the background goes. Zero is sharp all the way back.</span>
       </div>
 
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Focus range</span>
-          <span class="setting-val" id="valFocus">0.60×</span>
+          <span class="setting-val" id="valFocus">1.00×</span>
         </div>
-        <input type="range" id="setFocus" min="0.2" max="2.5" step="0.05" value="0.6" aria-label="Focus range">
+        <input type="range" id="setFocus" min="0.2" max="2.5" step="0.05" value="1" aria-label="Focus range">
         <span class="setting-note">How far back the sharp zone reaches before the blur starts.</span>
       </div>
 
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Placement depth</span>
-          <span class="setting-val" id="valReach">0.55×</span>
+          <span class="setting-val" id="valReach">1.00×</span>
         </div>
-        <input type="range" id="setReach" min="0" max="2.5" step="0.05" value="0.55" aria-label="Placement depth">
+        <input type="range" id="setReach" min="0" max="2.5" step="0.05" value="1" aria-label="Placement depth">
         <span class="setting-note">How deep a new point can settle behind or in front of its neighbours.</span>
       </div>
     </div>
@@ -742,6 +773,36 @@
     </div>
 
     <div class="settings-group">
+      <span class="settings-group-name">Cursor</span>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Reticle</span>
+          <button class="setting-cycle" id="setReticle">Square</button>
+        </div>
+        <span class="setting-note">The pointer itself: a square, a circle, a cross, or nothing at all — then the dust is the cursor. Placing a point always shows the square.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Reticle size</span>
+          <span class="setting-val" id="valReticleSz">1.00×</span>
+        </div>
+        <input type="range" id="setReticleSz" min="0.5" max="3" step="0.05" value="1" aria-label="Reticle size">
+        <span class="setting-note">How large the pointer is drawn.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Highlight dim</span>
+          <span class="setting-val" id="valHoverDim">22%</span>
+        </div>
+        <input type="range" id="setHoverDim" min="0" max="1" step="0.01" value="0.22" aria-label="Highlight dim">
+        <span class="setting-note">Resting on a point lights its whole trace and lets the rest of the archive fall back to this. 100% leaves the rest untouched.</span>
+      </div>
+    </div>
+
+    <div class="settings-group">
       <span class="settings-group-name">Cursor erosion</span>
 
       <div class="setting">
@@ -755,21 +816,61 @@
 
       <div class="setting">
         <div class="setting-top">
-          <span class="setting-name">Springback</span>
-          <span class="setting-val" id="valSpring">1.00×</span>
+          <span class="setting-name">Edge softness</span>
+          <span class="setting-val" id="valErodeSoft">1.50</span>
         </div>
-        <input type="range" id="setSpring" min="0" max="2" step="0.05" value="1" aria-label="Springback">
+        <input type="range" id="setErodeSoft" min="0.3" max="4" step="0.05" value="1.5" aria-label="Edge softness">
+        <span class="setting-note">How the bite fades toward its rim. Low is a hard-edged hole; high is a soft gradient that only really gives way at the centre.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Dissolve threshold</span>
+          <span class="setting-val" id="valErodeCore">0.42</span>
+        </div>
+        <input type="range" id="setErodeCore" min="0.1" max="1" step="0.01" value="0.42" aria-label="Dissolve threshold">
+        <span class="setting-note">Where a fraying line turns wholly to dust. Lower dissolves more of the bite completely; at the top it only ever frays.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Wake</span>
+          <span class="setting-val" id="valWake">0.00×</span>
+        </div>
+        <input type="range" id="setWake" min="0" max="2" step="0.05" value="0" aria-label="Wake">
+        <span class="setting-note">Stretches the bite back along the path the cursor has just taken, so a quick sweep cuts a trail through the threads that knits shut behind it.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Point cordon</span>
+          <span class="setting-val" id="valCordon">1.00×</span>
+        </div>
+        <input type="range" id="setCordon" min="0" max="3" step="0.05" value="1" aria-label="Point cordon">
+        <span class="setting-note">How much of each line stays whole where it meets a point, so the cubes are never cut loose. Zero lets the dust reach right into them.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Springback</span>
+          <span class="setting-val" id="valSpring">0.15×</span>
+        </div>
+        <input type="range" id="setSpring" min="0" max="2" step="0.05" value="0.15" aria-label="Springback">
         <span class="setting-note">How far the cloud overshoots the cursor and how long it rings. Zero pins it.</span>
       </div>
 
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Follow speed</span>
-          <span class="setting-val" id="valFollow">1.00×</span>
+          <span class="setting-val" id="valFollow">0.50×</span>
         </div>
-        <input type="range" id="setFollow" min="0.2" max="3" step="0.05" value="1" aria-label="Follow speed">
+        <input type="range" id="setFollow" min="0.2" max="3" step="0.05" value="0.5" aria-label="Follow speed">
         <span class="setting-note">How eagerly it chases. Low trails far behind, high stays close.</span>
       </div>
+    </div>
+
+    <div class="settings-group">
+      <span class="settings-group-name">Particles</span>
 
       <div class="setting">
         <div class="setting-top">
@@ -786,7 +887,50 @@
           <span class="setting-val" id="valGrain">1.00×</span>
         </div>
         <input type="range" id="setGrain" min="0.2" max="12" step="0.1" value="1" aria-label="Particle size">
-        <span class="setting-note">Square grains, snapped to whole pixels. Push it and they read as blocks.</span>
+        <span class="setting-note">Grains snap to whole pixels. Push it and they read as blocks.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Size variety</span>
+          <span class="setting-val" id="valGrainVar">1.00×</span>
+        </div>
+        <input type="range" id="setGrainVar" min="0" max="3" step="0.05" value="1" aria-label="Size variety">
+        <span class="setting-note">Zero makes every grain the same gauge; higher mixes fine grit with larger chips.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Particle density</span>
+          <span class="setting-val" id="valGrainDen">1.00×</span>
+        </div>
+        <input type="range" id="setGrainDen" min="0.25" max="3" step="0.05" value="1" aria-label="Particle density">
+        <span class="setting-note">How many grains a line breaks into.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Particle opacity</span>
+          <span class="setting-val" id="valGrainA">1.00×</span>
+        </div>
+        <input type="range" id="setGrainA" min="0" max="2" step="0.05" value="1" aria-label="Particle opacity">
+        <span class="setting-note">How much ink each grain carries.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Particle colour</span>
+          <button class="setting-cycle" id="setGrainCol">Ink</button>
+        </div>
+        <span class="setting-note">Ink like the line, the accent colour, or a mix of the two.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Particle shape</span>
+          <button class="setting-cycle" id="setGrainShape">Square</button>
+        </div>
+        <span class="setting-note">Square grains, round dots, or small crosses like the marks on a plate.</span>
       </div>
 
       <div class="setting">
@@ -809,39 +953,70 @@
     </div>
 
     <div class="settings-group">
+      <span class="settings-group-name">Particle forces</span>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Gravity</span>
+          <span class="setting-val" id="valGravity">0.00</span>
+        </div>
+        <input type="range" id="setGravity" min="-2" max="2" step="0.05" value="0" aria-label="Gravity">
+        <span class="setting-note">Positive and the dust sinks as it comes away; negative and it rises, like ash.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Swirl</span>
+          <span class="setting-val" id="valSwirl">0.00</span>
+        </div>
+        <input type="range" id="setSwirl" min="-2" max="2" step="0.05" value="0" aria-label="Swirl">
+        <span class="setting-note">Twists the cloud around the cursor, one way or the other, strongest near the centre.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Push / pull</span>
+          <span class="setting-val" id="valPush">0.00</span>
+        </div>
+        <input type="range" id="setPush" min="-2" max="2" step="0.05" value="0" aria-label="Push / pull">
+        <span class="setting-note">Positive blows the dust away from the cursor; negative draws it in.</span>
+      </div>
+    </div>
+
+    <div class="settings-group">
       <span class="settings-group-name">Environment</span>
 
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Ambient dust</span>
-          <span class="setting-val" id="valDust">1.00×</span>
+          <span class="setting-val" id="valDust">2.55×</span>
         </div>
-        <input type="range" id="setDust" min="0" max="3" step="0.05" value="1" aria-label="Ambient dust">
+        <input type="range" id="setDust" min="0" max="3" step="0.05" value="2.55" aria-label="Ambient dust">
         <span class="setting-note">Motes hanging in the air of the room. They drift on their own and never turn with the form.</span>
       </div>
 
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Dust count</span>
-          <span class="setting-val" id="valDustN">260</span>
+          <span class="setting-val" id="valDustN">340</span>
         </div>
-        <input type="range" id="setDustN" min="0" max="900" step="10" value="260" aria-label="Dust count">
+        <input type="range" id="setDustN" min="0" max="900" step="10" value="340" aria-label="Dust count">
         <span class="setting-note">How many motes are in the air.</span>
       </div>
 
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Dust size</span>
-          <span class="setting-val" id="valDustSz">1.00×</span>
+          <span class="setting-val" id="valDustSz">0.70×</span>
         </div>
-        <input type="range" id="setDustSz" min="0.3" max="4" step="0.05" value="1" aria-label="Dust size">
+        <input type="range" id="setDustSz" min="0.3" max="4" step="0.05" value="0.7" aria-label="Dust size">
         <span class="setting-note">Scales the whole spread of gauges, from grit to flecks.</span>
       </div>
 
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Dust shape</span>
-          <button class="setting-cycle" id="setShape">Dot</button>
+          <button class="setting-cycle" id="setShape">Square</button>
         </div>
         <span class="setting-note">Plain round points, square flecks, hollow cubes or solid ones. The cubes are drawn in perspective and tumble on their own axis; the finest grit stays flat whichever you pick.</span>
       </div>
@@ -854,6 +1029,19 @@
         <input type="range" id="setDustSpin" min="0" max="3" step="0.05" value="1" aria-label="Dust tumble">
         <span class="setting-note">How fast the cubes turn on themselves. Only does anything once the shape is a cube.</span>
       </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Trace fade</span>
+          <span class="setting-val" id="valFade">60</span>
+        </div>
+        <input type="range" id="setFade" min="5" max="200" step="5" value="60" aria-label="Trace fade">
+        <span class="setting-note">Traces before an old one reaches 5% — its floor.</span>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <span class="settings-group-name">Sound</span>
 
       <div class="setting">
         <div class="setting-top">
@@ -875,11 +1063,29 @@
 
       <div class="setting">
         <div class="setting-top">
-          <span class="setting-name">Trace fade</span>
-          <span class="setting-val" id="valFade">60</span>
+          <span class="setting-name">Point notes</span>
+          <span class="setting-val" id="valNotes">1.00×</span>
         </div>
-        <input type="range" id="setFade" min="5" max="200" step="5" value="60" aria-label="Trace fade">
-        <span class="setting-note">Traces before an old one reaches 5% — its floor.</span>
+        <input type="range" id="setNotes" min="0" max="2" step="0.05" value="1" aria-label="Point notes">
+        <span class="setting-note">How loud a point sings when the cursor finds it, when it is placed, and when a trace sounds its chord. Higher in the archive is higher in pitch.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Gesture response</span>
+          <span class="setting-val" id="valGesture">1.00×</span>
+        </div>
+        <input type="range" id="setGesture" min="0" max="2" step="0.05" value="1" aria-label="Gesture response">
+        <span class="setting-note">How much the hand shapes the sound: a quick sweep opens it up and lifts the air, and the pad leans toward the cursor's side.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Camera space</span>
+          <span class="setting-val" id="valSpace">1.00×</span>
+        </div>
+        <input type="range" id="setSpace" min="0" max="2" step="0.05" value="1" aria-label="Camera space">
+        <span class="setting-note">How much the view shapes the room: close in is dry and near, far out is wide; spinning the form makes it shimmer, holding space opens a chord across the sky.</span>
       </div>
     </div>
 
@@ -943,11 +1149,14 @@
   /* ------------------------------------------------------------------
      Live parameters — exposed through the on-screen settings panel.
   ------------------------------------------------------------------- */
-  var SETTINGS_DEFAULTS = { rotSpeed:1, fov:0.35, depth:0.6, depthFalloff:1.45, inertia:0.5, reach:0.55,
+  var SETTINGS_DEFAULTS = { rotSpeed:1, fov:1, depth:1, depthFalloff:1.2, inertia:0.5, reach:1,
     erode:1, grainSpread:1, grainSize:1, grainDrift:1,
-    dust:1, dustCount:260, dustSize:1, dof:2.25, focusRange:0.6, fadeSpan:60,
-    springback:1, follow:1, grainNoise:0.5, dustForm:0, dustSpin:1,
-    sound:1, volume:0.7, chimes:1 };
+    dust:2.55, dustCount:340, dustSize:0.7, dof:1, focusRange:1, fadeSpan:60,
+    springback:0.15, follow:0.5, grainNoise:0.5, dustForm:1, dustSpin:1,
+    sound:0, volume:0.7, chimes:1, noteVol:1, gestureAmt:1, spaceAmt:1,
+    reticle:0, reticleSize:1, hoverDim:0.22, erodeSoft:1.5, erodeCore:0.42, erodeWake:0, cordon:1,
+    grainVar:1, grainDensity:1, grainAlpha:1, grainColour:0, grainForm:0,
+    grainGravity:0, grainSwirl:0, grainPush:0 };
   var SETTINGS = Object.assign({}, SETTINGS_DEFAULTS);
 
   function v3(x,y,z){ return {x:x,y:y,z:z}; }
@@ -1387,11 +1596,21 @@
     var dx = pb.x-pa.x, dy = pb.y-pa.y;
     var l2 = dx*dx + dy*dy;
     if(l2 < 1) return 0;
-    var t = ((cursorScreen.x-pa.x)*dx + (cursorScreen.y-pa.y)*dy)/l2;
-    t = t < 0 ? 0 : (t > 1 ? 1 : t);
-    var d = Math.hypot(cursorScreen.x - (pa.x+dx*t), cursorScreen.y - (pa.y+dy*t));
     var R = erodeRadius();
-    return d >= R ? 0 : (1 - d/R) * erodeFade;
+    function from(cx, cy, w){
+      var t = ((cx-pa.x)*dx + (cy-pa.y)*dy)/l2;
+      t = t < 0 ? 0 : (t > 1 ? 1 : t);
+      var d = Math.hypot(cx - (pa.x+dx*t), cy - (pa.y+dy*t));
+      return d >= R ? 0 : (1 - d/R) * w;
+    }
+    var b = from(cursorScreen.x, cursorScreen.y, 1);
+    if(WAKE.on){
+      // a line the cursor has just swept across still counts, a little less
+      // the further back along the wake it lies
+      b = Math.max(b, from(cursorScreen.x + WAKE.vx*0.5, cursorScreen.y + WAKE.vy*0.5, 0.72),
+                      from(cursorScreen.x + WAKE.vx,     cursorScreen.y + WAKE.vy,     0.45));
+    }
+    return b * erodeFade;
   }
 
   // Grains land on whole device pixels: a square should read as a square,
@@ -1402,8 +1621,11 @@
     var dx = pb.x-pa.x, dy = pb.y-pa.y;
     var len = Math.hypot(dx, dy);
     var R = erodeRadius(), spread = R * 0.26 * SETTINGS.grainSpread;
-    var n = Math.max(4, Math.min(520, Math.ceil(len/3.4)));
-    var CORE = 0.42;   // above this the line is fully dust, and denser
+    var den = Math.max(0.25, SETTINGS.grainDensity);
+    var n = Math.max(4, Math.min(Math.round(520*Math.min(2, den)), Math.ceil(len*den/3.4)));
+    // above this the line is fully dust, and denser
+    var CORE = Math.max(0.08, Math.min(1.01, SETTINGS.erodeCore));
+    var soft = Math.max(0.2, SETTINGS.erodeSoft);
 
     var drift = reduceMotion ? 0 : SETTINGS.grainDrift;
     // the active grains wander through a 3D noise field anchored in world
@@ -1428,16 +1650,32 @@
     // A cordon around each end: the line never comes apart where it meets a
     // point, so a cube is never cut loose from the lines that hold it. The
     // cordon tracks the cubes, growing with them as the view closes in.
-    var guardPx = 6 + 12*((pa.scale + pb.scale)/2);
+    var guardPx = (6 + 12*((pa.scale + pb.scale)/2)) * Math.max(0, SETTINGS.cordon);
     var gT = Math.min(0.45, guardPx / Math.max(1, len));
+    // the bite is a capsule: the cursor, stretched back along its wake
+    var cx0 = cursorScreen.x, cy0 = cursorScreen.y;
+    var wvx = WAKE.on ? WAKE.vx : 0, wvy = WAKE.on ? WAKE.vy : 0;
+    var wl2 = wvx*wvx + wvy*wvy;
     for(var q=0;q<=n;q++){
       var tq = q/n;
-      var ex = pa.x + dx*tq - cursorScreen.x, ey = pa.y + dy*tq - cursorScreen.y;
+      var qx = pa.x + dx*tq, qy = pa.y + dy*tq;
+      var u = wl2 > 1 ? ((qx-cx0)*wvx + (qy-cy0)*wvy)/wl2 : 0;
+      u = u < 0 ? 0 : (u > 1 ? 1 : u);
+      var ex = qx - (cx0 + wvx*u), ey = qy - (cy0 + wvy*u);
       var dq = Math.sqrt(ex*ex + ey*ey);
-      var base = dq >= R ? 0 : Math.pow(1 - dq/R, 1.5) * erodeFade;
-      var g = Math.min(1, Math.min(tq, 1-tq) / gT);
+      var base = dq >= R ? 0 : Math.pow(1 - dq/R, soft) * erodeFade * (1 - u*0.55);
+      var g = gT > 0.0001 ? Math.min(1, Math.min(tq, 1-tq) / gT) : 1;
       inf0[q] = base * g*g*(3-2*g) * gk;
     }
+
+    var vary = Math.max(0, SETTINGS.grainVar);
+    var form = Math.round(SETTINGS.grainForm);       // 0 square, 1 dot, 2 cross
+    var colMode = Math.round(SETTINGS.grainColour);  // 0 ink, 1 accent, 2 mixed
+    var grav = SETTINGS.grainGravity, swirl = SETTINGS.grainSwirl, push = SETTINGS.grainPush;
+    var forces = Math.abs(swirl) > 0.004 || Math.abs(push) > 0.004;
+    // grains are gathered first and drawn per colour, so a mixed cloud still
+    // costs only a couple of fills
+    _gn = 0;
 
     // Each grain keeps its own slow wander — its own frequency and phase, so
     // the cloud never pulses in unison — and the whole bite is dragged toward
@@ -1483,10 +1721,65 @@
         oy -= csn.y * mag;
         szMul += csn.z * nAmt * 0.22;      // depth read as a touch of gauge
       }
-      var sz = snapPx((1 + hash2(k, 47)*2.4 + inf*1.3) * SETTINGS.grainSize * Math.max(0.4, szMul));
+      var sz = snapPx((1 + hash2(k, 47)*2.4*vary + inf*1.3) * SETTINGS.grainSize * Math.max(0.4, szMul));
       var gx = pa.x + dx*t + Math.cos(ang)*rad + ox + lagX*inf;
       var gy = pa.y + dy*t + Math.sin(ang)*rad + oy + lagY*inf;
-      ctx.fillRect(snapPx(gx - sz/2), snapPx(gy - sz/2), sz, sz);
+      // forces, measured from the cursor: a twist around it, and a breath
+      // that blows the dust away from it or draws it in
+      if(forces){
+        var rx = gx - cx0, ry = gy - cy0;
+        var rd = Math.sqrt(rx*rx + ry*ry) || 0.0001;
+        var nearC = Math.max(0, 1 - rd/R);
+        if(swirl){
+          var a2 = swirl * (0.35 + 0.65*ramp) * (0.3 + nearC) * (1.6 + 0.5*Math.sin(erodeClock*0.7 + ph)*drift);
+          var ca = Math.cos(a2), sa = Math.sin(a2);
+          var tx = rx*ca - ry*sa; ry = rx*sa + ry*ca; rx = tx;
+        }
+        if(push){
+          var mv = push * (0.3 + 0.7*ramp) * spread * (0.8 + nearC) * 1.3;
+          if(mv < 0) mv = Math.max(mv, -rd*0.85);       // drawn in, never through
+          rx += rx/rd * mv; ry += ry/rd * mv;
+        }
+        gx = cx0 + rx; gy = cy0 + ry;
+      }
+      // the further a grain travels, the more it falls (or rises)
+      if(grav) gy += grav * (0.25 + 0.75*ramp) * spread * (0.5 + reach) * 2.2;
+      var c = colMode === 1 ? 1 : (colMode === 2 && hash2(k, 59) < 0.38 ? 1 : 0);
+      _gx[_gn] = gx; _gy[_gn] = gy; _gs[_gn] = sz; _gc[_gn] = c; _gn++;
+    }
+
+    function flushGrains(alpha){
+      if(!_gn) return;
+      var cols = [grainCol, THEME.accent];
+      for(var c=0;c<2;c++){
+        var any = false;
+        for(var a=0;a<_gn;a++) if(_gc[a] === c){ any = true; break; }
+        if(!any) continue;
+        ctx.fillStyle = rgba(cols[c], alpha);
+        if(form === 1){
+          ctx.beginPath();
+          for(var b=0;b<_gn;b++){
+            if(_gc[b] !== c) continue;
+            var r = Math.max(0.5, _gs[b]*0.55);
+            ctx.moveTo(_gx[b] + r, _gy[b]);
+            ctx.arc(_gx[b], _gy[b], r, 0, 6.2832);
+          }
+          ctx.fill();
+        } else if(form === 2){
+          for(var e=0;e<_gn;e++){
+            if(_gc[e] !== c) continue;
+            var L = snapPx(Math.max(2, _gs[e]*1.6)), th = Math.max(1/DPR, snapPx(_gs[e]*0.36));
+            ctx.fillRect(snapPx(_gx[e] - L/2), snapPx(_gy[e] - th/2), L, th);
+            ctx.fillRect(snapPx(_gx[e] - th/2), snapPx(_gy[e] - L/2), th, L);
+          }
+        } else {
+          for(var f2=0;f2<_gn;f2++){
+            if(_gc[f2] !== c) continue;
+            ctx.fillRect(snapPx(_gx[f2] - _gs[f2]/2), snapPx(_gy[f2] - _gs[f2]/2), _gs[f2], _gs[f2]);
+          }
+        }
+      }
+      _gn = 0;
     }
 
     // what is still a line — drawn stretch by stretch through the same
@@ -1507,31 +1800,48 @@
       }
     }
 
+    var gA = Math.max(0, SETTINGS.grainAlpha);
     // the fraying edge of the bite
-    ctx.fillStyle = rgba(grainCol, grainA*0.7);
     for(var j=0;j<=n;j++){
       var f = inf0[j];
       if(f >= 0.06 && f < CORE) grain(j, f, 0);
     }
+    flushGrains(Math.min(1, grainA*0.7*gA));
 
     // and its core, where the line is wholly grain
-    ctx.fillStyle = rgba(grainCol, Math.min(1, grainA*1.55));
     for(var k2=0;k2<=n;k2++){
       var g = inf0[k2];
       if(g >= CORE){ grain(k2, g, 0); grain(k2, g, 101); }
     }
+    flushGrains(Math.min(1, grainA*1.55*gA));
   }
+  var _gx = [], _gy = [], _gs = [], _gc = [], _gn = 0;
 
   // The pointer itself, in the piece's own square vocabulary.
   function drawReticle(){
     if(!cursorScreen || !cursorIsMouse) return;
     var x = Math.round(cursorScreen.x) + 0.5, y = Math.round(cursorScreen.y) + 0.5;
     var placing = (mode === 'placing');
+    // placing a point is a precision job, so it always gets the square
+    var shape = placing ? 0 : Math.round(SETTINGS.reticle);
+    if(shape === 3) return;                       // hidden: the dust is the cursor
     var col = placing ? THEME.accent : THEME.ink;
-    var half = placing ? 8 : 6.5;
+    var half = placing ? 8 : 6.5 * Math.max(0.3, SETTINGS.reticleSize);
     ctx.strokeStyle = rgba(col, placing ? 0.9 : 0.6);
     ctx.lineWidth = 1;
-    ctx.strokeRect(x-half, y-half, half*2, half*2);
+    if(shape === 1){
+      ctx.beginPath(); ctx.arc(x, y, half, 0, Math.PI*2); ctx.stroke();
+    } else if(shape === 2){
+      var gap = Math.max(2, half*0.32);
+      ctx.beginPath();
+      ctx.moveTo(x-half, y); ctx.lineTo(x-gap, y);
+      ctx.moveTo(x+gap, y);  ctx.lineTo(x+half, y);
+      ctx.moveTo(x, y-half); ctx.lineTo(x, y-gap);
+      ctx.moveTo(x, y+gap);  ctx.lineTo(x, y+half);
+      ctx.stroke();
+    } else {
+      ctx.strokeRect(x-half, y-half, half*2, half*2);
+    }
     ctx.fillStyle = rgba(col, placing ? 1 : 0.85);
     ctx.fillRect(x-1.5, y-1.5, 2, 2);
     if(placing){
@@ -1555,10 +1865,11 @@
      so lines never shimmer and never come loose from their points.
   ------------------------------------------------------------------- */
   var LINE_DEFAULTS = {
-    weight:0.35, opacity:1, cubeWeight:0.5,
-    jitter:1.5, grain:6, passes:3, dbl:0.75, taper:0.3, life:0.93, lifeSpeed:1.25,
-    dash:0, gap:6, cap:0, join:0,
-    beamWeight:0.45, beamOpacity:0.7, beamSpread:0.15
+    weight:0.2, opacity:1, cubeWeight:0.6,
+    jitter:4.9, grain:10, passes:4, dbl:1.5, taper:0.6, life:1.23, lifeSpeed:0.75,
+    dash:0, gap:0.5, cap:0, join:0,
+    beamWeight:0.65, beamOpacity:0.25, beamSpread:0.17,
+    wave:12.5, waves:1.5, waveSpeed:0.1
   };
   var LINES = Object.assign({}, LINE_DEFAULTS);
   var CAP_MODES = ['butt','round','square'];
@@ -1610,6 +1921,7 @@
     var creepA = life > 0 ? t0 * (0.30 + hash2(seed+salt, 71)*0.45) * spd * dir : 0;
     var creepB = life > 0 ? t0 * (0.71 + hash2(seed+salt, 83)*0.9) * spd * -dir : 0;
     out.length = 0;
+    var offs = _jOff; offs.length = 0;
 
     function cell(u, salt2){
       var i0 = Math.floor(u), f = smoothT(u - i0);
@@ -1619,8 +1931,6 @@
     }
 
     for(var i=0;i<=steps;i++){
-      var t = i/steps;
-      var ease = Math.sin(Math.PI*t);                 // nothing at either end
       var k = seed + i*31 + salt;
       var stat = hash2(k, 17)*2 - 1;                  // the line at rest
       var o = stat * amp;
@@ -1633,19 +1943,42 @@
                  + Math.sin(t0*(0.19 + hash2(k, 97)*0.38)*spd + hash2(k, 103)*6.283) * 0.9;
         o += anim * amp * life * 1.8;
       }
-      o *= ease;
-      out.push({ x: pa.x + dx*t + nx*o, y: pa.y + dy*t + ny*o });
+      offs.push(o);
+    }
+
+    // The undulation: one slow wave the whole thread carries, the same for
+    // every pass of the nib so the strokes keep together, travelling along
+    // the line in a direction of its own. Its swing grows with the line's
+    // length on screen, so short threads bow a little and long ones a lot.
+    var wA = 0;
+    if(LINES.wave > 0.001 && LINES.waves > 0.01){
+      wA = LINES.wave * Math.min(3, Math.max(0.3, len/160));
+    }
+    var M = steps;
+    if(wA > 0) M = Math.min(40, Math.max(steps, Math.ceil(LINES.waves * 8)));
+    var wPhase = hash2(seed, 131) * 6.2832;
+    var wTravel = 0;
+    if(wA > 0 && !reduceMotion && LINES.waveSpeed > 0){
+      wTravel = (performance.now()/1000) * LINES.waveSpeed * 1.1 * (hash2(seed, 137) < 0.5 ? -1 : 1);
+    }
+    for(var j=0;j<=M;j++){
+      var tj = j/M;
+      var u = tj*steps, i0 = Math.min(steps-1, Math.floor(u)), f = u - i0;
+      var oj = offs[i0]*(1-f) + offs[i0+1]*f;           // the hand's wobble, as before
+      if(wA > 0) oj += wA * Math.sin(6.2832*LINES.waves*tj + wPhase + wTravel);
+      oj *= Math.sin(Math.PI*tj);                        // nothing at either end
+      out.push({ x: pa.x + dx*tj + nx*oj, y: pa.y + dy*tj + ny*oj });
     }
     return out;
   }
 
-  var _jp = [], _jp2 = [];
+  var _jp = [], _jp2 = [], _jOff = [];
   function strokeSeg(pa, pb, style, width, seed){
     // Untouched settings take the plain path: no save/restore, no dash or cap
     // state to set and unset. The panel only costs what it is actually using.
     if(LINES.jitter <= 0.001 && LINES.taper <= 0.001 && (LINES.dbl <= 0.01 || LINES.passes < 2)
        && LINES.dash <= 0.01 && LINES.cap === 0 && LINES.join === 0
-       && LINES.opacity > 0.999){
+       && LINES.opacity > 0.999 && LINES.wave <= 0.001){
       ctx.strokeStyle = style;
       ctx.lineWidth = Math.max(0.05, width * LINES.weight);
       ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y); ctx.stroke();
@@ -1662,7 +1995,7 @@
     function onePass(salt, widthMul, a){
       var w = Math.max(0.05, width * LINES.weight * widthMul);
       if(a < 0.999) ctx.globalAlpha = alpha * a;
-      if(jit <= 0.001 && tap <= 0.001){
+      if(jit <= 0.001 && tap <= 0.001 && LINES.wave <= 0.001){
         ctx.lineWidth = w;
         ctx.beginPath(); ctx.moveTo(pa.x,pa.y); ctx.lineTo(pb.x,pb.y); ctx.stroke();
         return;
@@ -1751,6 +2084,7 @@
   function beginFit(){
     if(distBeforeFit !== null) return;      // already held
     distBeforeFit = cam.dist;
+    audioWide(true);
     var to = fitAllDistance();
     if(reduceMotion){ cam.dist = to; fitTween = null; updateZoomLabel(); return; }
     fitTween = { from:cam.dist, to:to, t0:performance.now(), dur:430 };
@@ -1759,6 +2093,7 @@
     if(distBeforeFit === null) return;
     var to = distBeforeFit;
     distBeforeFit = null;
+    audioWide(false);
     if(reduceMotion){ cam.dist = to; fitTween = null; updateZoomLabel(); return; }
     fitTween = { from:cam.dist, to:to, t0:performance.now(), dur:430 };
   }
@@ -2446,17 +2781,17 @@
         } else {
           ctx.moveTo(d.pa.x,d.pa.y); ctx.lineTo(d.pb.x,d.pb.y);
         }
-        ctx.strokeStyle = rgba(THEME.ink, Math.min(1, agedAlpha(d.e, (dimming?0.08:0.2)*fog) * LINES.beamOpacity));
+        ctx.strokeStyle = rgba(THEME.ink, Math.min(1, agedAlpha(d.e, (dimming?hoverDimmed(0.2,0.08):0.2)*fog) * LINES.beamOpacity));
         ctx.lineWidth = Math.max(0.4, 5*midScale*LINES.beamWeight*beamGauge(d.e));
         ctx.lineCap = 'round'; ctx.lineJoin = 'round';
         ctx.stroke();
         ctx.restore();
       }
-      var eStyle = hlBoth ? rgba(THEME.accent, 0.95) : hlOne ? rgba(THEME.accent, 0.55) : edgeColor(d.e, dimming ? fog*0.22 : fog);
+      var eStyle = hlBoth ? rgba(THEME.accent, 0.95) : hlOne ? rgba(THEME.accent, 0.55) : edgeColor(d.e, dimming ? fog*hoverDimmed(1,0.22) : fog);
       var eWidth = hlBoth ? 2 : hlOne ? 1.5 : (isBeam ? 1.1 : (d.e.origin==='visitor' ? 1 : (d.e.generation===0?0.9:0.6)));
       if(bite > 0){
         var grainCol = hl ? THEME.accent : THEME.ink;
-        var grainA = agedAlpha(d.e, (dimming && !hl ? 0.2 : 0.66) * fog);
+        var grainA = agedAlpha(d.e, (dimming && !hl ? hoverDimmed(0.66,0.2) : 0.66) * fog);
         strokeEroded(d.pa, d.pb, eStyle, eWidth, d.e.seed, erodeBreathe, grainCol, grainA,
                      nodeById[d.e.a], nodeById[d.e.b], d.gate);
       } else {
@@ -2485,7 +2820,7 @@
       var fog = depthFade(p.viewZ);
       var rr = Math.max(0.8, n.r*p.scale);
       var isHoverGroup = dimming && n.traceId===hoverTraceId;
-      var nc = isHoverGroup ? rgba(THEME.accent, Math.min(1, 0.9+0.1*fog)) : nodeColor(n, dimming ? fog*0.22 : fog);
+      var nc = isHoverGroup ? rgba(THEME.accent, Math.min(1, 0.9+0.1*fog)) : nodeColor(n, dimming ? fog*hoverDimmed(1,0.22) : fog);
       var halfSize = n.r * (n.big ? 0.95 : 0.8);
       var corners = projectCube(n, halfSize);
       if(corners){
@@ -2501,13 +2836,13 @@
       var textX = p.x + rr*1.45 + 6;
       if(showLabels && n.label){
         ctx.font = 'italic 12px Fraunces, Georgia, serif';
-        ctx.fillStyle = isHoverGroup ? rgba(THEME.accent, 0.95) : rgba(THEME.ink, agedAlpha(n, (dimming?0.25:0.6)*fog));
+        ctx.fillStyle = isHoverGroup ? rgba(THEME.accent, 0.95) : rgba(THEME.ink, agedAlpha(n, (dimming?hoverDimmed(0.6,0.25):0.6)*fog));
         ctx.fillText(n.label, textX, p.y + 4);
       }
       if(showCoords){
         // the surveyed position, in the manner of the plates this borrows from
         ctx.font = '8px "Space Mono", ui-monospace, monospace';
-        ctx.fillStyle = isHoverGroup ? rgba(THEME.accent, 0.8) : rgba(THEME.ink, agedAlpha(n, (dimming?0.14:0.36)*fog));
+        ctx.fillStyle = isHoverGroup ? rgba(THEME.accent, 0.8) : rgba(THEME.ink, agedAlpha(n, (dimming?hoverDimmed(0.36,0.14):0.36)*fog));
         ctx.fillText(coordText(n.x, n.y, nodeZ(n)), textX, p.y + (showLabels && n.label ? 15 : 4));
       }
     });
@@ -2611,6 +2946,19 @@
     ctx.fillText(ghost.refs.length + ' liens', gp.x + 13, gp.y - 12);
   }
 
+  // How far the rest of the archive falls back while a trace is lit up. Each
+  // dimmed value keeps its own proportion: at the shipped 22% it is exactly
+  // what it always was, at 100% it is the undimmed value, at 0 it is gone.
+  function hoverDimmed(normal, atDefault){
+    var D = Math.max(0, Math.min(1, SETTINGS.hoverDim));
+    return D <= 0.22 ? atDefault * D/0.22
+                     : atDefault + (normal - atDefault) * (D - 0.22)/0.78;
+  }
+
+  // The wake: a stretch of bite reaching back from the cursor toward where
+  // the dust cloud still is, so a quick sweep cuts a trail.
+  var WAKE = { on:false, vx:0, vy:0 };
+
   function updateErode(){
     var moving = viewIsMoving();
     var target = (cursorScreen && cursorIsMouse && !moving) ? 1 : 0;
@@ -2641,6 +2989,14 @@
       }
     } else {
       cursorLag = null; lagVel.x = lagVel.y = 0;
+    }
+
+    WAKE.on = false;
+    var wk = Math.max(0, SETTINGS.erodeWake);
+    if(wk > 0.01 && cursorScreen && cursorLag && !reduceMotion){
+      WAKE.vx = (cursorLag.x - cursorScreen.x) * wk * 2.2;
+      WAKE.vy = (cursorLag.y - cursorScreen.y) * wk * 2.2;
+      WAKE.on = (WAKE.vx*WAKE.vx + WAKE.vy*WAKE.vy) > 4;
     }
   }
 
@@ -2772,6 +3128,7 @@
         if(hn){
           tooltipEl.classList.add('show');
           tooltipEl.innerHTML = tooltipHTML(hn);
+          audioPoint(hn, 'hover');          // the point sings as the cursor finds it
         } else {
           tooltipEl.classList.remove('show');
         }
@@ -2942,6 +3299,7 @@
         contributor: storeState.contributorId, origin:'pending', _pending:true
       };
       pending.nodes.push(pn);
+      audioPoint(pn, 'place');
       refreshPendingPreview();
       if(pending.nodes.length >= MAX_POINTS){ enterTriangulating(); }
       else { refreshContribUI(); }
@@ -2962,6 +3320,7 @@
   var settingsPanel = document.getElementById('settingsPanel');
   var settingsToggle = document.getElementById('settingsToggle');
   var x2 = function(v){ return v.toFixed(2)+'\u00D7'; };
+  var signed2 = function(v){ return (v > 0.004 ? '+' : (v < -0.004 ? '\u2212' : '')) + Math.abs(v).toFixed(2); };
   var SETTING_CONTROLS = [
     { key:'fov',          input:'setFov',      out:'valFov',      fmt:x2, onChange:applyFov },
     { key:'depth',        input:'setDepth',    out:'valDepth',    fmt:x2, onChange:applyDepth },
@@ -2978,18 +3337,36 @@
     { key:'grainSize',    input:'setGrain',    out:'valGrain',    fmt:x2 },
     { key:'grainNoise',   input:'setNoise',    out:'valNoise',    fmt:x2 },
     { key:'grainDrift',   input:'setDrift',    out:'valDrift',    fmt:x2 },
+    { key:'reticleSize',  input:'setReticleSz',out:'valReticleSz',fmt:x2 },
+    { key:'hoverDim',     input:'setHoverDim', out:'valHoverDim', fmt:function(v){ return Math.round(v*100)+'%'; } },
+    { key:'erodeSoft',    input:'setErodeSoft',out:'valErodeSoft',fmt:function(v){ return v.toFixed(2); } },
+    { key:'erodeCore',    input:'setErodeCore',out:'valErodeCore',fmt:function(v){ return v.toFixed(2); } },
+    { key:'erodeWake',    input:'setWake',     out:'valWake',     fmt:x2 },
+    { key:'cordon',       input:'setCordon',   out:'valCordon',   fmt:x2 },
+    { key:'grainVar',     input:'setGrainVar', out:'valGrainVar', fmt:x2 },
+    { key:'grainDensity', input:'setGrainDen', out:'valGrainDen', fmt:x2 },
+    { key:'grainAlpha',   input:'setGrainA',   out:'valGrainA',   fmt:x2 },
+    { key:'grainGravity', input:'setGravity',  out:'valGravity',  fmt:signed2 },
+    { key:'grainSwirl',   input:'setSwirl',    out:'valSwirl',    fmt:signed2 },
+    { key:'grainPush',    input:'setPush',     out:'valPush',     fmt:signed2 },
     { key:'dust',         input:'setDust',     out:'valDust',     fmt:x2 },
     { key:'dustCount',    input:'setDustN',    out:'valDustN',    fmt:function(v){ return String(Math.round(v)); } },
     { key:'dustSize',     input:'setDustSz',   out:'valDustSz',   fmt:x2 },
     { key:'dustSpin',     input:'setDustSpin', out:'valDustSpin', fmt:x2 },
     { key:'volume',       input:'setVol',      out:'valVol',      fmt:x2 },
     { key:'chimes',       input:'setChime',    out:'valChime',    fmt:x2 },
+    { key:'noteVol',      input:'setNotes',    out:'valNotes',    fmt:x2 },
+    { key:'gestureAmt',   input:'setGesture',  out:'valGesture',  fmt:x2 },
+    { key:'spaceAmt',     input:'setSpace',    out:'valSpace',    fmt:x2 },
     { key:'fadeSpan',     input:'setFade',     out:'valFade',     fmt:function(v){ return String(Math.round(v)); } }
   ];
 
 
   var SETTING_CYCLERS = [
-    { key:'dustForm', btn:'setShape', labels:['Dot','Square','Wireframe','Solid'] }
+    { key:'dustForm', btn:'setShape', labels:['Dot','Square','Wireframe','Solid'] },
+    { key:'reticle',     btn:'setReticle',    labels:['Square','Circle','Cross','Hidden'] },
+    { key:'grainColour', btn:'setGrainCol',   labels:['Ink','Accent','Mixed'] },
+    { key:'grainForm',   btn:'setGrainShape', labels:['Square','Dot','Cross'] }
   ];
 
   function syncSettingsUI(){
@@ -3083,7 +3460,10 @@
     { key:'gap',         input:'lnGap',     out:'valLnGap',     fmt:px0 },
     { key:'beamWeight',  input:'lnBeamW',   out:'valLnBeamW',   fmt:x2 },
     { key:'beamOpacity', input:'lnBeamO',   out:'valLnBeamO',   fmt:x2 },
-    { key:'beamSpread',  input:'lnBeamS',   out:'valLnBeamS',   fmt:function(v){ return Math.round(v*100)+'%'; } }
+    { key:'beamSpread',  input:'lnBeamS',   out:'valLnBeamS',   fmt:function(v){ return Math.round(v*100)+'%'; } },
+    { key:'wave',        input:'lnWave',    out:'valLnWave',    fmt:function(v){ return v.toFixed(1)+' px'; } },
+    { key:'waves',       input:'lnWaves',   out:'valLnWaves',   fmt:function(v){ return v.toFixed(2); } },
+    { key:'waveSpeed',   input:'lnWaveSpd', out:'valLnWaveSpd', fmt:x2 }
   ];
   var LINE_CYCLERS = [
     { key:'cap',  btn:'lnCap',  labels:['Butt','Round','Square'] },
@@ -3139,22 +3519,37 @@
      Tuning — the two panels' values live alongside the traces, so a
      composition you have dialled in survives a reload and a reboot.
   ========================================================================= */
+  // Bumped whenever a default is changed on purpose. A browser holding a
+  // tuning saved before that change gets the new default for those values,
+  // rather than keeping the old one alive for ever because it was saved.
+  var TUNING_REV = 2;
+  var TUNING_REDEFAULTS = {
+    2: { settings:['dustForm'] }          // the motes went back to squares
+  };
   var saveTuningTimer = null;
   function saveTuning(){
     if(saveTuningTimer) clearTimeout(saveTuningTimer);
     saveTuningTimer = setTimeout(function(){
-      storeState.tuning = { settings: SETTINGS, lines: LINES };
+      storeState.tuning = { rev: TUNING_REV, settings: SETTINGS, lines: LINES };
       persist();
     }, 350);
   }
   function loadTuning(){
     var t = storeState && storeState.tuning;
     if(!t) return;
+    var skipS = {}, skipL = {};
+    for(var r = (parseInt(t.rev, 10) || 1) + 1; r <= TUNING_REV; r++){
+      var rd = TUNING_REDEFAULTS[r]; if(!rd) continue;
+      (rd.settings || []).forEach(function(key){ skipS[key] = true; });
+      (rd.lines || []).forEach(function(key){ skipL[key] = true; });
+    }
     if(t.settings) for(var k in SETTINGS_DEFAULTS){
+      if(skipS[k]) continue;
       var v = parseFloat(t.settings[k]);
       if(isFinite(v)) SETTINGS[k] = v;
     }
     if(t.lines) for(var j in LINE_DEFAULTS){
+      if(skipL[j]) continue;
       var w = parseFloat(t.lines[j]);
       if(isFinite(w)) LINES[j] = w;
     }
@@ -3377,7 +3772,7 @@
     traceCountTotal++;
     persist();
     animateTraceCount();
-    audioTrace();
+    audioTrace(pending.nodes);      // the trace's own chord
 
     pending = { nodes:[], edges:[] };
 
@@ -3513,20 +3908,35 @@
      chord — dissolves from one chord into the next instead of bending its way
      there; a soft root sits underneath it without throbbing; a faint high air
      hangs above; and single high notes glint now and then like stars, all
-     through a long, open tail. Nothing in it shares a period with anything
-     else, so it never comes round twice.
+     through a long, open tail.
 
-     It listens to the piece. Dust coming off a thread under the cursor
-     glitters as a scatter of tiny high notes; closing in on the archive
-     brightens the pad; and a trace added blooms into a rising chord, because
-     that is the one thing here that cannot be undone.
+     And it answers the visitor, three ways.
+
+     The points sing. Each one has a note, picked by how high it sits in the
+     archive, so running the cursor up through a cluster climbs a scale. The
+     plate's own points ring like glass; points left by visitors are plucked,
+     warmer, like a string. Placing a point plays its note, and a finished
+     trace sounds the chord its own points make — every trace has a voice.
+
+     The hand shapes the material. A quick gesture opens the pad and lifts
+     the air; the pad leans toward the side the cursor is on; when the hand
+     stops, it all settles back.
+
+     The camera is the space. Close in, the sound is dry and near, every
+     detail clear; standing back, the room opens out into a long tail.
+     Spinning the form lights the shimmer up and throws off sparks, and
+     holding space to see the whole archive opens a wide chord across the
+     sky that folds away again on release.
   ========================================================================= */
   var erodeAudioLevel = 0;
 
   var AUDIO = {
     ctx:null, started:false, failed:false, firstFade:true, wantLevel:-1,
-    master:null, dry:null, send:null, padBus:null, padFilter:null, airGain:null,
-    layer:null, chordIx:0, chordAt:0, nextStar:0, dustAcc:0, lastUpdate:-1
+    master:null, dry:null, wet:null, send:null,
+    padBus:null, padPan:null, padFilter:null, shimmerBus:null, airGain:null,
+    layer:null, wide:null, chordIx:0, chordAt:0, nextStar:0,
+    dustAcc:0, spinAcc:0, lastUpdate:-1, lastNoteAt:-1,
+    gx:null, gy:null, gesture:0, yaw:null, pitch:null, spin:0, yr:null
   };
 
   // Major, open, and never resolved quite far enough to stop: D, G, A, then
@@ -3540,6 +3950,10 @@
   ];
   // D major pentatonic, high up: no note among them can clash with the pad
   var STAR_NOTES = [587.33, 659.25, 739.99, 880.00, 987.77, 1174.66, 1318.51, 1479.98];
+  // The scale the points sing in: the same pentatonic over two octaves, so
+  // any number of them sound together without a clash.
+  var POINT_NOTES = [293.66, 329.63, 369.99, 440.00, 493.88, 587.33,
+                     659.25, 739.99, 880.00, 987.77, 1174.66, 1318.51];
   var CHORD_HOLD = 22, CHORD_XFADE = 9;   // seconds
 
   function audioNoise(ctx, seconds){
@@ -3581,17 +3995,23 @@
     var wet = ctx.createGain(); wet.gain.value = 0.95;
     conv.connect(wet); wet.connect(master);
     var send = ctx.createGain(); send.gain.value = 1; send.connect(conv);
-    AUDIO.dry = dry; AUDIO.send = send;
+    AUDIO.dry = dry; AUDIO.wet = wet; AUDIO.send = send;
 
     // the pad: everything it plays passes one gentle low-pass, which the
-    // zoom opens and closes
+    // zoom and the hand open and close; its direct sound can lean left or
+    // right while the room behind it stays where it is
     var padBus = ctx.createGain(); padBus.gain.value = 0.13;
-    var pd = ctx.createGain(); pd.gain.value = 0.5;  padBus.connect(pd); pd.connect(dry);
-    var pw = ctx.createGain(); pw.gain.value = 1.0;  padBus.connect(pw); pw.connect(send);
+    var padPan = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+    var pd = ctx.createGain(); pd.gain.value = 0.5;
+    if(padPan){ padBus.connect(padPan); padPan.connect(pd); } else padBus.connect(pd);
+    pd.connect(dry);
+    var pw = ctx.createGain(); pw.gain.value = 1.0; padBus.connect(pw); pw.connect(send);
     var padLp = ctx.createBiquadFilter();
     padLp.type = 'lowpass'; padLp.frequency.value = 1800; padLp.Q.value = 0.4;
     padLp.connect(padBus);
-    AUDIO.padBus = padBus; AUDIO.padFilter = padLp;
+    var shimmerBus = ctx.createGain(); shimmerBus.gain.value = 1; shimmerBus.connect(padLp);
+    AUDIO.padBus = padBus; AUDIO.padPan = padPan; AUDIO.padFilter = padLp;
+    AUDIO.shimmerBus = shimmerBus;
 
     // a faint high air, the hiss between stars — not a wind
     var air = ctx.createBufferSource(); air.buffer = audioNoise(ctx, 3); air.loop = true;
@@ -3611,10 +4031,13 @@
   // is what keeps the pad calm: a bending note is a note in trouble.
   function audioLayer(ch, fadeIn){
     var ctx = AUDIO.ctx, now = ctx.currentTime;
-    var layer = { gain:ctx.createGain(), oscs:[] };
-    layer.gain.gain.setValueAtTime(0.0001, now);
-    layer.gain.gain.linearRampToValueAtTime(1, now + fadeIn);
+    var layer = { gain:ctx.createGain(), shim:ctx.createGain(), oscs:[] };
+    [layer.gain, layer.shim].forEach(function(g){
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.linearRampToValueAtTime(1, now + fadeIn);
+    });
     layer.gain.connect(AUDIO.padFilter);
+    layer.shim.connect(AUDIO.shimmerBus);
 
     // the root, soft and alone: one sine, nothing beside it to beat against,
     // and its octave to carry some warmth up towards the chord
@@ -3636,14 +4059,15 @@
         o.connect(g); g.connect(layer.gain); o.start(now);
         layer.oscs.push(o);
       }
-      // and the octave above, very quiet, twinkling at a rate of its own
+      // and the octave above, very quiet, twinkling at a rate of its own —
+      // on a bus of its own too, so turning the sky can light it up
       var so = ctx.createOscillator(); so.type = 'sine'; so.frequency.value = f*2;
       var sg = ctx.createGain(); sg.gain.value = 0.07;
       var lfo = ctx.createOscillator(); lfo.type = 'sine';
       lfo.frequency.value = 0.05 + Math.random()*0.13;
       var lg = ctx.createGain(); lg.gain.value = 0.06;
       lfo.connect(lg); lg.connect(sg.gain);
-      so.connect(sg); sg.connect(layer.gain);
+      so.connect(sg); sg.connect(layer.shim);
       so.start(now); lfo.start(now);
       layer.oscs.push(so, lfo);
     });
@@ -3651,12 +4075,17 @@
   }
 
   function audioRelease(layer, fadeOut){
-    var ctx = AUDIO.ctx, now = ctx.currentTime, g = layer.gain.gain;
-    g.cancelScheduledValues(now);
-    g.setValueAtTime(Math.max(0.0001, g.value), now);
-    g.linearRampToValueAtTime(0.0001, now + fadeOut);
+    var ctx = AUDIO.ctx, now = ctx.currentTime;
+    [layer.gain, layer.shim].forEach(function(node){
+      var g = node.gain;
+      g.cancelScheduledValues(now);
+      g.setValueAtTime(Math.max(0.0001, g.value), now);
+      g.linearRampToValueAtTime(0.0001, now + fadeOut);
+    });
     layer.oscs.forEach(function(o){ try{ o.stop(now + fadeOut + 0.2); }catch(e){} });
-    layer.oscs[0].onended = function(){ try{ layer.gain.disconnect(); }catch(e){} };
+    layer.oscs[0].onended = function(){
+      try{ layer.gain.disconnect(); layer.shim.disconnect(); }catch(e){}
+    };
   }
 
   function audioStart(){
@@ -3673,16 +4102,21 @@
     audioUpdate();
   }
 
-  // A star: a pure note with its octave, struck softly and left to ring out
-  // into the tail. Glass, not metal — the overtone is harmonic.
-  function audioStar(freq, vol, when, life){
+  function audioReady(){
+    return !!(AUDIO.ctx && AUDIO.started && SETTINGS.sound > 0.5);
+  }
+
+  // A star — and the voice of the plate's own points: a pure note with its
+  // octave, struck softly and left to ring out into the tail. Glass, not
+  // metal, because the overtone is harmonic.
+  function audioStar(freq, vol, when, life, pan){
     var ctx = AUDIO.ctx; if(!ctx) return;
     var t = Math.max(ctx.currentTime, when || 0);
     life = life || (3.5 + Math.random()*3);
     var g = ctx.createGain();
-    var pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
-    if(pan){ g.connect(pan); pan.pan.value = (Math.random()*2-1)*0.8; }
-    var out = pan || g;
+    var p = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+    if(p){ g.connect(p); p.pan.value = (pan === undefined) ? (Math.random()*2-1)*0.8 : pan; }
+    var out = p || g;
     var a = ctx.createGain(); a.gain.value = 0.22; out.connect(a); a.connect(AUDIO.dry);
     var b = ctx.createGain(); b.gain.value = 1.0;  out.connect(b); b.connect(AUDIO.send);
     var o1 = ctx.createOscillator(); o1.type = 'sine'; o1.frequency.value = freq;
@@ -3695,42 +4129,166 @@
     o1.start(t); o2.start(t);
     o1.stop(t + life + 0.1); o2.stop(t + life + 0.1);
     o1.onended = function(){
-      try{ g.disconnect(); g2.disconnect(); a.disconnect(); b.disconnect(); if(pan) pan.disconnect(); }catch(e){}
+      try{ g.disconnect(); g2.disconnect(); a.disconnect(); b.disconnect(); if(p) p.disconnect(); }catch(e){}
     };
   }
 
-  // a trace blooms: the pad's own chord, an octave up, opening out, with a
-  // run of stars climbing out of it
-  function audioTrace(){
-    var ctx = AUDIO.ctx;
-    if(!ctx || !AUDIO.started || !(SETTINGS.sound > 0.5)) return;
-    var now = ctx.currentTime;
-    var ch = SKY_CHORDS[AUDIO.chordIx];
+  // The voice of a visitor's point: plucked rather than struck, a little
+  // string rather than glass — the brightness falls away as it rings.
+  function audioPluck(freq, vol, pan, when){
+    var ctx = AUDIO.ctx; if(!ctx) return;
+    var t = Math.max(ctx.currentTime, when || 0);
+    var g = ctx.createGain();
+    var p = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+    if(p){ g.connect(p); p.pan.value = pan || 0; }
+    var out = p || g;
+    var a = ctx.createGain(); a.gain.value = 0.45; out.connect(a); a.connect(AUDIO.dry);
+    var b = ctx.createGain(); b.gain.value = 0.8;  out.connect(b); b.connect(AUDIO.send);
+    var lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 0.7;
+    lp.frequency.setValueAtTime(Math.min(12000, freq*6), t);
+    lp.frequency.exponentialRampToValueAtTime(Math.max(220, freq*1.4), t + 0.55);
+    lp.connect(g);
+    var o1 = ctx.createOscillator(); o1.type = 'triangle'; o1.frequency.value = freq;
+    var o2 = ctx.createOscillator(); o2.type = 'sine'; o2.frequency.value = freq*1.5;
+    var g2 = ctx.createGain(); g2.gain.value = 0.1;
+    o1.connect(lp); o2.connect(g2); g2.connect(lp);
+    var life = 1.8 + Math.random()*0.8;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002, vol), t + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + life);
+    o1.start(t); o2.start(t);
+    o1.stop(t + life + 0.1); o2.stop(t + life + 0.1);
+    o1.onended = function(){
+      try{ lp.disconnect(); g.disconnect(); g2.disconnect(); a.disconnect(); b.disconnect(); if(p) p.disconnect(); }catch(e){}
+    };
+  }
+
+  // how high the archive reaches, so a point's height can pick its note
+  function audioYRange(){
+    if(AUDIO.yr && AUDIO.yr.n === nodes.length) return AUDIO.yr;
+    var lo = Infinity, hi = -Infinity;
+    for(var i=0;i<nodes.length;i++){ var y = nodes[i].y; if(y < lo) lo = y; if(y > hi) hi = y; }
+    if(!isFinite(lo)){ lo = -200; hi = 200; }
+    AUDIO.yr = { n:nodes.length, lo:lo, hi:hi };
+    return AUDIO.yr;
+  }
+  function audioPointFreq(n){
+    var r = audioYRange();
+    var u = (n.y - r.lo) / Math.max(1, r.hi - r.lo);
+    u = Math.max(0, Math.min(1, u));
+    return POINT_NOTES[Math.round(u * (POINT_NOTES.length - 1))];
+  }
+
+  // a point sings when the cursor finds it, or when it is placed
+  function audioPoint(n, kind){
+    if(!n || !audioReady() || !(SETTINGS.noteVol > 0.01)) return;
+    var ctx = AUDIO.ctx, now = ctx.currentTime;
+    // sweeping through a cluster plays an arpeggio, never a buzz
+    if(kind === 'hover' && now - AUDIO.lastNoteAt < 0.09) return;
+    AUDIO.lastNoteAt = now;
+    var f = audioPointFreq(n);
+    var sp = project(n);
+    var pan = sp ? Math.max(-0.85, Math.min(0.85, (sp.x / Math.max(1, W) - 0.5) * 1.6)) : 0;
+    var vol = (kind === 'place' ? 0.075 : 0.05) * SETTINGS.noteVol;
+    if(n.origin === 'visitor' || n.origin === 'pending' || kind === 'place') audioPluck(f, vol, pan);
+    else audioStar(f, vol, now, 2.6 + Math.random()*1.2, pan);
+  }
+
+  // A trace sounds its own chord — the notes of its own points, strummed low
+  // to high — and blooms out of it, with a run of stars climbing away.
+  function audioTrace(points){
+    if(!audioReady()) return;
+    var ctx = AUDIO.ctx, now = ctx.currentTime;
+    var freqs = [];
+    (points || []).forEach(function(p){
+      var f = audioPointFreq(p);
+      if(freqs.indexOf(f) < 0) freqs.push(f);
+    });
+    if(!freqs.length) freqs = SKY_CHORDS[AUDIO.chordIx].notes.slice();
+    freqs.sort(function(a, b){ return a - b; });
+    var nv = Math.max(0, SETTINGS.noteVol);
+    if(nv > 0.01){
+      freqs.forEach(function(f, i){
+        var pan = freqs.length > 1 ? (i/(freqs.length-1) - 0.5)*0.9 : 0;
+        audioPluck(f, 0.065*nv, pan, now + i*0.14);
+        audioStar(f*2, 0.03*nv, now + i*0.14 + 0.04, 4 + Math.random()*1.5, pan);
+      });
+    }
+
     var g = ctx.createGain();
     var a = ctx.createGain(); a.gain.value = 0.4; g.connect(a); a.connect(AUDIO.dry);
     var b = ctx.createGain(); b.gain.value = 1.2; g.connect(b); b.connect(AUDIO.send);
     var lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 0.6;
     lp.connect(g);
-    lp.frequency.setValueAtTime(600, now);
-    lp.frequency.linearRampToValueAtTime(4200, now + 2.6);
-    lp.frequency.linearRampToValueAtTime(1500, now + 8.5);
-    var oscs = ch.notes.map(function(f, i){
+    var t0 = now + freqs.length*0.14;
+    lp.frequency.setValueAtTime(600, t0);
+    lp.frequency.linearRampToValueAtTime(4200, t0 + 2.6);
+    lp.frequency.linearRampToValueAtTime(1500, t0 + 8.5);
+    var oscs = freqs.map(function(f, i){
       var o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = f*2;
       var og = ctx.createGain(); og.gain.value = 0.3;
       o.connect(og); og.connect(lp);
-      o.start(now + i*0.09);                    // a slow strum, low to high
-      o.stop(now + 9.4);
+      o.start(t0 + i*0.09);
+      o.stop(t0 + 9.4);
       return o;
     });
-    g.gain.setValueAtTime(0.0001, now);
-    g.gain.exponentialRampToValueAtTime(0.24, now + 1.8);
-    g.gain.exponentialRampToValueAtTime(0.0001, now + 9.2);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.24, t0 + 1.8);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 9.2);
     oscs[0].onended = function(){
       try{ lp.disconnect(); g.disconnect(); a.disconnect(); b.disconnect(); }catch(e){}
     };
     for(var s=0; s<5; s++){
       audioStar(STAR_NOTES[Math.min(STAR_NOTES.length-1, 1 + s + Math.floor(Math.random()*2))],
-                0.05 - s*0.006, now + 0.6 + s*0.22, 4 + Math.random()*2);
+                0.05 - s*0.006, t0 + 0.6 + s*0.22, 4 + Math.random()*2);
+    }
+  }
+
+  // Holding space to see the whole archive opens the chord out across the
+  // sky; letting go folds it away again.
+  function audioWide(open){
+    if(!AUDIO.ctx || !AUDIO.started) return;
+    var ctx = AUDIO.ctx, now = ctx.currentTime;
+    if(open){
+      if(AUDIO.wide || !audioReady() || !(SETTINGS.spaceAmt > 0.01)) return;
+      var ch = SKY_CHORDS[AUDIO.chordIx];
+      var w = { gain:ctx.createGain(), oscs:[] };
+      var a = ctx.createGain(); a.gain.value = 0.35; w.gain.connect(a); a.connect(AUDIO.dry);
+      var b = ctx.createGain(); b.gain.value = 1.4;  w.gain.connect(b); b.connect(AUDIO.send);
+      var lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 0.5;
+      lp.frequency.setValueAtTime(500, now);
+      lp.frequency.linearRampToValueAtTime(3800, now + 1.2);
+      lp.connect(w.gain);
+      var fs = [ch.bass, ch.bass*2, ch.notes[0], ch.notes[1], ch.notes[2], ch.notes[3],
+                ch.notes[1]*2, ch.notes[3]*2];
+      var lv = [0.5, 0.35, 0.28, 0.26, 0.24, 0.22, 0.14, 0.1];
+      fs.forEach(function(f, i){
+        var o = ctx.createOscillator(); o.type = i < 2 ? 'sine' : 'triangle';
+        o.frequency.value = f * (i % 2 ? 1.001 : 0.999);
+        var og = ctx.createGain(); og.gain.value = lv[i];
+        o.connect(og); og.connect(lp);
+        o.start(now + i*0.05);
+        w.oscs.push(o);
+      });
+      w.gain.gain.setValueAtTime(0.0001, now);
+      w.gain.gain.linearRampToValueAtTime(0.16 * Math.min(2, SETTINGS.spaceAmt), now + 1.1);
+      w.lp = lp; w.taps = [a, b];
+      AUDIO.wide = w;
+    } else {
+      var v = AUDIO.wide;
+      if(!v) return;
+      AUDIO.wide = null;
+      var gp = v.gain.gain;
+      gp.cancelScheduledValues(now);
+      gp.setValueAtTime(Math.max(0.0001, gp.value), now);
+      gp.linearRampToValueAtTime(0.0001, now + 2.6);
+      v.lp.frequency.cancelScheduledValues(now);
+      v.lp.frequency.setValueAtTime(v.lp.frequency.value, now);
+      v.lp.frequency.linearRampToValueAtTime(600, now + 2.6);
+      v.oscs.forEach(function(o){ try{ o.stop(now + 2.8); }catch(e){} });
+      v.oscs[0].onended = function(){
+        try{ v.lp.disconnect(); v.gain.disconnect(); v.taps[0].disconnect(); v.taps[1].disconnect(); }catch(e){}
+      };
     }
   }
 
@@ -3738,7 +4296,7 @@
     if(!AUDIO.started || !AUDIO.ctx) return;
     var ctx = AUDIO.ctx, now = ctx.currentTime;
     var dt = AUDIO.lastUpdate < 0 ? 0 : now - AUDIO.lastUpdate;
-    if(AUDIO.lastUpdate >= 0 && dt < 0.12) return;   // a few times a second is plenty
+    if(AUDIO.lastUpdate >= 0 && dt < 0.1) return;   // ten times a second is plenty
     AUDIO.lastUpdate = now;
 
     // Level. The very first move is a long fade up from nothing, so the room
@@ -3754,16 +4312,57 @@
     }
     if(want <= 0) return;
 
+    var resp  = Math.max(0, SETTINGS.gestureAmt);
+    var space = Math.max(0, SETTINGS.spaceAmt);
+
+    // --- the hand: how fast it is moving, and where it is ---
+    var speed = 0;
+    if(cursorScreen && cursorIsMouse){
+      if(AUDIO.gx !== null && dt > 0) speed = Math.hypot(cursorScreen.x - AUDIO.gx, cursorScreen.y - AUDIO.gy) / dt;
+      AUDIO.gx = cursorScreen.x; AUDIO.gy = cursorScreen.y;
+    } else {
+      AUDIO.gx = null;
+    }
+    var gTarget = Math.min(1, speed / 1400);            // 1 is a brisk sweep
+    // quick to rise, slow to settle, so a gesture leaves a wake
+    AUDIO.gesture += (gTarget - AUDIO.gesture) * (gTarget > AUDIO.gesture ? 0.55 : 0.1);
+    var gest = AUDIO.gesture * resp;
+
+    // --- the sky turning: how fast the visitor is spinning the form ---
+    var spinRate = 0;
+    if(AUDIO.yaw !== null && dt > 0){
+      spinRate = (Math.abs(cam.yaw - AUDIO.yaw) + Math.abs(cam.pitch - AUDIO.pitch)) / dt;
+    }
+    AUDIO.yaw = cam.yaw; AUDIO.pitch = cam.pitch;
+    var sTarget = Math.max(0, Math.min(1, (spinRate - 0.06) / 1.4));   // the idle drift does not count
+    AUDIO.spin += (sTarget - AUDIO.spin) * (sTarget > AUDIO.spin ? 0.5 : 0.08);
+    var turn = AUDIO.spin * space;
+
+    // --- distance: close in is dry and near, far out is the whole sky ---
+    var zoomK = Math.max(0.2, Math.min(20, DIST_REF/Math.max(1, cam.dist)));
+    var near = Math.max(0, Math.min(1, (Math.log(zoomK) - Math.log(0.6)) / (Math.log(6) - Math.log(0.6))));
+    AUDIO.wet.gain.setTargetAtTime(Math.max(0.2, 0.95 * (1 + space*(0.38 - 0.9*near))), now, 0.6);
+    AUDIO.dry.gain.setTargetAtTime(1 + space*0.25*near, now, 0.6);
+
     // two slow breaths, well out of step with each other
     var b1 = 0.5 + 0.5*Math.sin(now*0.061);
     var b2 = 0.5 + 0.5*Math.sin(now*0.027 + 1.7);
-    AUDIO.padBus.gain.setTargetAtTime(0.125 + 0.04*b1, now, 0.8);
-    AUDIO.airGain.gain.setTargetAtTime(0.014 + 0.016*b2, now, 1.4);
+    AUDIO.padBus.gain.setTargetAtTime((0.125 + 0.04*b1) * (1 + 0.25*gest), now, 0.5);
+    AUDIO.airGain.gain.setTargetAtTime((0.014 + 0.016*b2) * (1 + 1.8*gest), now, gest > 0.05 ? 0.25 : 1.2);
 
-    // closing in on the archive brightens the pad; standing back softens it
-    var zoomK = Math.max(0.2, Math.min(9, DIST_REF/Math.max(1, cam.dist)));
+    // brightness: closer is clearer, and a quick hand opens it further still
     var open = Math.min(1, Math.log(zoomK + 1)/Math.log(10));
-    AUDIO.padFilter.frequency.setTargetAtTime(2100 + open*2400 + b1*400, now, 1.0);
+    AUDIO.padFilter.frequency.setTargetAtTime(2100 + open*2400 + b1*400 + gest*2600, now,
+                                              gest > 0.05 ? 0.2 : 0.9);
+
+    // the pad leans toward the side the cursor is on
+    if(AUDIO.padPan){
+      var px = (cursorScreen && cursorIsMouse) ? (cursorScreen.x / Math.max(1, W) - 0.5) * 2 : 0;
+      AUDIO.padPan.pan.setTargetAtTime(Math.max(-1, Math.min(1, px * 0.45 * Math.min(1.5, resp))), now, 0.5);
+    }
+
+    // turning the sky lights the shimmer up
+    AUDIO.shimmerBus.gain.setTargetAtTime(1 + 3.2*turn, now, turn > 0.05 ? 0.25 : 1.0);
 
     // the next chord dissolves in over the last
     if(now >= AUDIO.chordAt){
@@ -3798,6 +4397,19 @@
       }
     } else {
       AUDIO.dustAcc = 0;
+    }
+
+    // and sparks thrown off while the sky turns
+    if(turn > 0.05 && dt > 0){
+      AUDIO.spinAcc += turn * 3.5 * Math.min(dt, 0.3);
+      var m = 0;
+      while(AUDIO.spinAcc >= 1 && m < 2){
+        AUDIO.spinAcc -= 1; m++;
+        audioStar(STAR_NOTES[3 + Math.floor(Math.random()*5)], 0.012 + turn*0.02,
+                  now + Math.random()*0.1, 1.6 + Math.random()*1.4);
+      }
+    } else {
+      AUDIO.spinAcc = 0;
     }
   }
 
