@@ -448,6 +448,7 @@
       <span class="mono-count" id="traceCount">1,284 traces</span>
       <button class="settings-toggle" id="settingsToggle" aria-expanded="false" aria-controls="settingsPanel">Settings</button>
       <button class="settings-toggle" id="linesToggle" aria-expanded="false" aria-controls="linesPanel">Lines</button>
+      <button class="settings-toggle" id="soundToggle" aria-pressed="false">Sound</button>
     </div>
   </header>
 
@@ -840,9 +841,9 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Dust shape</span>
-          <button class="setting-cycle" id="setShape">Solid</button>
+          <button class="setting-cycle" id="setShape">Dot</button>
         </div>
-        <span class="setting-note">Flat flecks, hollow cubes, or solid ones — three faces filled at three values, lit from overhead. Either cube is drawn in perspective and tumbles on its own axis. The finest grit and the motes furthest out of focus stay flat, since a cube that small is only mush.</span>
+        <span class="setting-note">Plain round points, square flecks, hollow cubes or solid ones. The cubes are drawn in perspective and tumble on their own axis; the finest grit stays flat whichever you pick.</span>
       </div>
 
       <div class="setting">
@@ -851,7 +852,25 @@
           <span class="setting-val" id="valDustSpin">1.00×</span>
         </div>
         <input type="range" id="setDustSpin" min="0" max="3" step="0.05" value="1" aria-label="Dust tumble">
-        <span class="setting-note">How fast the cubes turn on themselves. At zero they hang still, each at its own angle.</span>
+        <span class="setting-note">How fast the cubes turn on themselves. Only does anything once the shape is a cube.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Ambient volume</span>
+          <span class="setting-val" id="valVol">0.70×</span>
+        </div>
+        <input type="range" id="setVol" min="0" max="1.5" step="0.05" value="0.7" aria-label="Ambient volume">
+        <span class="setting-note">The room's own sound, synthesised on the spot rather than looped. Sound on and off is up in the corner.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Star density</span>
+          <span class="setting-val" id="valChime">1.00×</span>
+        </div>
+        <input type="range" id="setChime" min="0" max="3" step="0.05" value="1" aria-label="Star density">
+        <span class="setting-note">How often a high note glints over the pad. At zero there is only the pad and the air.</span>
       </div>
 
       <div class="setting">
@@ -927,7 +946,8 @@
   var SETTINGS_DEFAULTS = { rotSpeed:1, fov:0.35, depth:0.6, depthFalloff:1.45, inertia:0.5, reach:0.55,
     erode:1, grainSpread:1, grainSize:1, grainDrift:1,
     dust:1, dustCount:260, dustSize:1, dof:2.25, focusRange:0.6, fadeSpan:60,
-    springback:1, follow:1, grainNoise:0.5, dustShape:2, dustSpin:1 };
+    springback:1, follow:1, grainNoise:0.5, dustForm:0, dustSpin:1,
+    sound:1, volume:0.7, chimes:1 };
   var SETTINGS = Object.assign({}, SETTINGS_DEFAULTS);
 
   function v3(x,y,z){ return {x:x,y:y,z:z}; }
@@ -1453,7 +1473,12 @@
                    z:noise3(sx3, sy3 + 17.3, sz3) };
         // turned into the camera's frame, so orbiting rotates the displacement
         var csn = rotX(rotY(d3, view.yaw), view.pitch);
-        var mag = nAmt * 34 * (pa.scale + pb.scale)*0.5 * ramp;
+        // Measured against the bite itself, not against the projected scale
+        // of the line. Scale explodes as the camera closes in — tie the
+        // displacement to it and a zoom flings the grains hundreds of pixels
+        // clear of the thread they came off, which is how the cloud ends up
+        // adrift in empty space.
+        var mag = nAmt * spread * 3.4 * ramp;
         ox += csn.x * mag;
         oy -= csn.y * mag;
         szMul += csn.z * nAmt * 0.22;      // depth read as a touch of gauge
@@ -1745,6 +1770,7 @@
     var u = Math.min(1, (performance.now() - fitTween.t0)/fitTween.dur);
     var e = u<0.5 ? 2*u*u : 1-Math.pow(-2*u+2,2)/2;
     cam.dist = fitTween.from + (fitTween.to - fitTween.from)*e;
+    markViewMove();
     updateZoomLabel();
     if(u >= 1){
       cam.dist = fitTween.to;
@@ -1753,8 +1779,19 @@
     }
   }
 
+  /* While the visitor is moving the view themselves — a scroll, an orbit
+     drag, the hold-space fit — the cursor is not pointing at anything. The
+     archive is the thing that is moving, and every thread that happens to
+     sweep past a parked cursor bursts into dust on its way through. So the
+     bite lets go for as long as the view is in motion, and comes back once it
+     settles. The slow idle drift does not count: nothing the visitor did. */
+  var viewMoveAt = -1e9;
+  function markViewMove(){ viewMoveAt = performance.now(); }
+  function viewIsMoving(){ return performance.now() - viewMoveAt < 150; }
+
   function setDist(d){
     cam.dist = Math.max(DIST_MIN, Math.min(DIST_MAX, d));
+    markViewMove();
     updateZoomLabel();
   }
   function updateZoomLabel(){
@@ -1801,6 +1838,7 @@
     cam.yaw = lerp(camPulse.fromYaw, camPulse.toYaw, eased);
     cam.pitch = lerp(camPulse.fromPitch, camPulse.toPitch, eased);
     cam.dist = lerp(camPulse.fromDist, camPulse.toDist, eased);
+    markViewMove();
     updateZoomLabel();
     if(t>=1) camPulse = null;
   }
@@ -2096,7 +2134,8 @@
     var count = Math.min(dust.length, Math.round(SETTINGS.dustCount));
     if(k <= 0 || count <= 0) return;
     var t = reduceMotion ? 0 : performance.now()/1000;
-    var shape = Math.round(SETTINGS.dustShape);        // 0 flat, 1 wireframe, 2 solid
+    var form = Math.round(SETTINGS.dustForm);          // 0 dot, 1 square, 2 wireframe, 3 solid
+    var shape = form - 1;
     var asCube = shape > 0;
     var spin = reduceMotion ? 0 : SETTINGS.dustSpin;
     // Dollying moves the camera through the field: near motes stream outward
@@ -2134,6 +2173,28 @@
       }
     }
     // the flat grit first, so the cubes read over it
+    if(form === 0){
+      // Plain points. Round, so they read as motes and not as pixels, and
+      // batched by how much ink they carry: a handful of fills for the whole
+      // field instead of one per mote.
+      var DOT_TIERS = 8, dotStep = DUST_A_MAX / DOT_TIERS;
+      for(var dt=0; dt<DOT_TIERS; dt++){
+        var lo = dt*dotStep, hi = lo + dotStep, opened = false;
+        for(var f0=0; f0<count; f0++){
+          var a0 = D_A[f0];
+          if(a0 < lo || (a0 >= hi && dt < DOT_TIERS-1) || a0 <= 0.004) continue;
+          if(!opened){ ctx.beginPath(); opened = true; }
+          var r0 = Math.max(0.55, D_S[f0]*0.5);
+          ctx.moveTo(D_X[f0] + r0, D_Y[f0]);
+          ctx.arc(D_X[f0], D_Y[f0], r0, 0, Math.PI*2);
+        }
+        if(opened){
+          ctx.fillStyle = rgba(THEME.ink, lo + dotStep*0.5);
+          ctx.fill();
+        }
+      }
+      return;
+    }
     for(var f=0;f<count;f++){
       if(D_TIER[f] >= 0) continue;
       ctx.fillStyle = rgba(THEME.ink, D_A[f]);
@@ -2344,12 +2405,15 @@
       if(frontZ === null || rf.z < frontZ) frontZ = rf.z;
     }
     var biteCands = [];
+    var loudestBite = 0;
     for(var bj=0; bj<reach.length; bj++){
       var cd = reach[bj];
       cd.gate = focusWeight(cd.z) * depthShield(cd.z, frontZ);
       cd.bite = cd.bite2d * cd.gate;
       if(cd.bite > ERODE_ON) biteCands.push(cd); else { cd.bite = 0; cd.gate = 0; }
+      if(cd.bite > loudestBite) loudestBite = cd.bite;
     }
+    erodeAudioLevel = loudestBite;   // the dust is audible as well as visible
     if(biteCands.length > ERODE_MAX_EDGES){
       biteCands.sort(function(x,y){ return y.bite - x.bite; });
       for(var bk=ERODE_MAX_EDGES; bk<biteCands.length; bk++) biteCands[bk].bite = 0;
@@ -2548,8 +2612,10 @@
   }
 
   function updateErode(){
-    var target = (cursorScreen && cursorIsMouse) ? 1 : 0;
-    var ease = reduceMotion ? 1 : 0.16;
+    var moving = viewIsMoving();
+    var target = (cursorScreen && cursorIsMouse && !moving) ? 1 : 0;
+    // it lets go quickly and comes back gently
+    var ease = reduceMotion ? 1 : (moving ? 0.34 : 0.16);
     erodeFade += (target - erodeFade) * ease;
     if(erodeFade < 0.004) erodeFade = 0;
 
@@ -2602,6 +2668,7 @@
     draw();
     updatePinnedTooltip();
     updateEvolutionAutoplay();
+    audioUpdate();
     requestAnimationFrame(tick);
   }
 
@@ -2683,6 +2750,7 @@
         var dx = ev.clientX - dragLast.x, dy = ev.clientY - dragLast.y;
         cam.yaw += dx*0.0055;
         cam.pitch = Math.max(-1.35, Math.min(1.35, cam.pitch + dy*0.0055));
+        if(dx || dy) markViewMove();
       }
       if(dragLast){ dragLast = { x:ev.clientX, y:ev.clientY }; }
     }
@@ -2914,15 +2982,18 @@
     { key:'dustCount',    input:'setDustN',    out:'valDustN',    fmt:function(v){ return String(Math.round(v)); } },
     { key:'dustSize',     input:'setDustSz',   out:'valDustSz',   fmt:x2 },
     { key:'dustSpin',     input:'setDustSpin', out:'valDustSpin', fmt:x2 },
+    { key:'volume',       input:'setVol',      out:'valVol',      fmt:x2 },
+    { key:'chimes',       input:'setChime',    out:'valChime',    fmt:x2 },
     { key:'fadeSpan',     input:'setFade',     out:'valFade',     fmt:function(v){ return String(Math.round(v)); } }
   ];
 
 
   var SETTING_CYCLERS = [
-    { key:'dustShape', btn:'setShape', labels:['Flat','Wireframe','Solid'] }
+    { key:'dustForm', btn:'setShape', labels:['Dot','Square','Wireframe','Solid'] }
   ];
 
   function syncSettingsUI(){
+    if(typeof syncSoundUI === 'function' && soundToggle) syncSoundUI();
     SETTING_CYCLERS.forEach(function(c){
       var bb = document.getElementById(c.btn);
       if(bb) bb.textContent = c.labels[Math.round(SETTINGS[c.key])] || c.labels[0];
@@ -3125,6 +3196,7 @@
   document.getElementById('enterBtn').addEventListener('click', function(){
     introEl.classList.add('hidden');
     storeState.seenIntro = true; persist();
+    audioStart();                       // the one gesture a browser needs
   });
 
   /* ========================================================================
@@ -3305,6 +3377,7 @@
     traceCountTotal++;
     persist();
     animateTraceCount();
+    audioTrace();
 
     pending = { nodes:[], edges:[] };
 
@@ -3430,12 +3503,345 @@
   cam.dist = DIST_REF;
   if(nodes.length >= OPEN_DENSE_NODES) cam.dist = DIST_REF/OPEN_ZOOM;
 
+
+  /* ========================================================================
+     The sound of the room — a night sky rather than a cellar.
+
+     Nothing is loaded: a recording would loop, and a loop you can hear is
+     the end of an ambience, so the sound is built on the spot. A slow, bright
+     pad in D — major sevenths and ninths, with a lydian lift on the last
+     chord — dissolves from one chord into the next instead of bending its way
+     there; a soft root sits underneath it without throbbing; a faint high air
+     hangs above; and single high notes glint now and then like stars, all
+     through a long, open tail. Nothing in it shares a period with anything
+     else, so it never comes round twice.
+
+     It listens to the piece. Dust coming off a thread under the cursor
+     glitters as a scatter of tiny high notes; closing in on the archive
+     brightens the pad; and a trace added blooms into a rising chord, because
+     that is the one thing here that cannot be undone.
+  ========================================================================= */
+  var erodeAudioLevel = 0;
+
+  var AUDIO = {
+    ctx:null, started:false, failed:false, firstFade:true, wantLevel:-1,
+    master:null, dry:null, send:null, padBus:null, padFilter:null, airGain:null,
+    layer:null, chordIx:0, chordAt:0, nextStar:0, dustAcc:0, lastUpdate:-1
+  };
+
+  // Major, open, and never resolved quite far enough to stop: D, G, A, then
+  // D again with its fourth raised, which is the sound of looking up.
+  // Voiced high, where the light is, with only the root left down below.
+  var SKY_CHORDS = [
+    { bass: 73.42, notes:[369.99, 440.00, 554.37, 659.25] },   // D major ninth
+    { bass: 98.00, notes:[369.99, 493.88, 587.33, 880.00] },   // G major ninth
+    { bass:110.00, notes:[329.63, 493.88, 554.37, 739.99] },   // A six-nine, open
+    { bass: 73.42, notes:[415.30, 554.37, 659.25, 880.00] }    // D lydian
+  ];
+  // D major pentatonic, high up: no note among them can clash with the pad
+  var STAR_NOTES = [587.33, 659.25, 739.99, 880.00, 987.77, 1174.66, 1318.51, 1479.98];
+  var CHORD_HOLD = 22, CHORD_XFADE = 9;   // seconds
+
+  function audioNoise(ctx, seconds){
+    var len = Math.floor(ctx.sampleRate * seconds);
+    var buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    var d = buf.getChannelData(0);
+    for(var i=0;i<len;i++) d[i] = (Math.random()*2 - 1)*0.6;
+    return buf;
+  }
+
+  // A long, open tail. Only lightly smoothed, so it keeps its top end: the
+  // brightness of the reverb is most of what reads as space.
+  function audioTail(ctx, seconds, decay){
+    var rate = ctx.sampleRate, len = Math.floor(rate*seconds);
+    var buf = ctx.createBuffer(2, len, rate);
+    for(var c=0;c<2;c++){
+      var d = buf.getChannelData(c), run = 0;
+      for(var i=0;i<len;i++){
+        run = run*0.35 + (Math.random()*2-1)*0.65;
+        d[i] = run * Math.pow(1 - i/len, decay) * Math.min(1, i/(rate*0.02));
+      }
+    }
+    return buf;
+  }
+
+  function audioBuild(){
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) return false;
+    var ctx = new AC();
+    AUDIO.ctx = ctx;
+
+    var master = ctx.createGain();
+    master.gain.value = 0.0001;
+    master.connect(ctx.destination);
+    AUDIO.master = master;
+
+    var dry = ctx.createGain(); dry.gain.value = 1; dry.connect(master);
+    var conv = ctx.createConvolver(); conv.buffer = audioTail(ctx, 5.8, 3.1);
+    var wet = ctx.createGain(); wet.gain.value = 0.95;
+    conv.connect(wet); wet.connect(master);
+    var send = ctx.createGain(); send.gain.value = 1; send.connect(conv);
+    AUDIO.dry = dry; AUDIO.send = send;
+
+    // the pad: everything it plays passes one gentle low-pass, which the
+    // zoom opens and closes
+    var padBus = ctx.createGain(); padBus.gain.value = 0.13;
+    var pd = ctx.createGain(); pd.gain.value = 0.5;  padBus.connect(pd); pd.connect(dry);
+    var pw = ctx.createGain(); pw.gain.value = 1.0;  padBus.connect(pw); pw.connect(send);
+    var padLp = ctx.createBiquadFilter();
+    padLp.type = 'lowpass'; padLp.frequency.value = 1800; padLp.Q.value = 0.4;
+    padLp.connect(padBus);
+    AUDIO.padBus = padBus; AUDIO.padFilter = padLp;
+
+    // a faint high air, the hiss between stars — not a wind
+    var air = ctx.createBufferSource(); air.buffer = audioNoise(ctx, 3); air.loop = true;
+    var hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 3800; hp.Q.value = 0.5;
+    var lp = ctx.createBiquadFilter(); lp.type = 'lowpass';  lp.frequency.value = 10000;
+    var airGain = ctx.createGain(); airGain.gain.value = 0.012;
+    var ad = ctx.createGain(); ad.gain.value = 0.25; airGain.connect(ad); ad.connect(dry);
+    var aw = ctx.createGain(); aw.gain.value = 1.0;  airGain.connect(aw); aw.connect(send);
+    air.connect(hp); hp.connect(lp); lp.connect(airGain);
+    air.start();
+    AUDIO.airGain = airGain;
+    return true;
+  }
+
+  // One chord, as its own little orchestra, so the next one can dissolve in
+  // over it. Changing chords by crossfade rather than by gliding the pitch
+  // is what keeps the pad calm: a bending note is a note in trouble.
+  function audioLayer(ch, fadeIn){
+    var ctx = AUDIO.ctx, now = ctx.currentTime;
+    var layer = { gain:ctx.createGain(), oscs:[] };
+    layer.gain.gain.setValueAtTime(0.0001, now);
+    layer.gain.gain.linearRampToValueAtTime(1, now + fadeIn);
+    layer.gain.connect(AUDIO.padFilter);
+
+    // the root, soft and alone: one sine, nothing beside it to beat against,
+    // and its octave to carry some warmth up towards the chord
+    var bo = ctx.createOscillator(); bo.type = 'sine'; bo.frequency.value = ch.bass;
+    var bg = ctx.createGain(); bg.gain.value = 0.2;
+    bo.connect(bg); bg.connect(layer.gain); bo.start(now);
+    var mo = ctx.createOscillator(); mo.type = 'sine'; mo.frequency.value = ch.bass*2;
+    var mg = ctx.createGain(); mg.gain.value = 0.2;
+    mo.connect(mg); mg.connect(layer.gain); mo.start(now);
+    layer.oscs.push(bo, mo);
+
+    ch.notes.forEach(function(f, i){
+      var w = [0.34, 0.32, 0.30, 0.28][i];   // even, so the top of the chord carries
+      // each note twice, a hair apart: a shimmer, never a throb
+      for(var k=0;k<2;k++){
+        var o = ctx.createOscillator(); o.type = k ? 'sine' : 'triangle';
+        o.frequency.value = f * (k ? 1.0012 : 0.9988);
+        var g = ctx.createGain(); g.gain.value = w * (k ? 0.8 : 0.55);
+        o.connect(g); g.connect(layer.gain); o.start(now);
+        layer.oscs.push(o);
+      }
+      // and the octave above, very quiet, twinkling at a rate of its own
+      var so = ctx.createOscillator(); so.type = 'sine'; so.frequency.value = f*2;
+      var sg = ctx.createGain(); sg.gain.value = 0.07;
+      var lfo = ctx.createOscillator(); lfo.type = 'sine';
+      lfo.frequency.value = 0.05 + Math.random()*0.13;
+      var lg = ctx.createGain(); lg.gain.value = 0.06;
+      lfo.connect(lg); lg.connect(sg.gain);
+      so.connect(sg); sg.connect(layer.gain);
+      so.start(now); lfo.start(now);
+      layer.oscs.push(so, lfo);
+    });
+    return layer;
+  }
+
+  function audioRelease(layer, fadeOut){
+    var ctx = AUDIO.ctx, now = ctx.currentTime, g = layer.gain.gain;
+    g.cancelScheduledValues(now);
+    g.setValueAtTime(Math.max(0.0001, g.value), now);
+    g.linearRampToValueAtTime(0.0001, now + fadeOut);
+    layer.oscs.forEach(function(o){ try{ o.stop(now + fadeOut + 0.2); }catch(e){} });
+    layer.oscs[0].onended = function(){ try{ layer.gain.disconnect(); }catch(e){} };
+  }
+
+  function audioStart(){
+    if(AUDIO.failed || !(SETTINGS.sound > 0.5)) return;
+    try{
+      if(!AUDIO.ctx && !audioBuild()){ AUDIO.failed = true; return; }
+      if(AUDIO.ctx.state === 'suspended') AUDIO.ctx.resume();
+    }catch(e){ AUDIO.failed = true; return; }
+    if(AUDIO.started) return;
+    AUDIO.started = true;
+    AUDIO.layer = audioLayer(SKY_CHORDS[0], 3);
+    AUDIO.chordAt = AUDIO.ctx.currentTime + CHORD_HOLD;
+    AUDIO.nextStar = AUDIO.ctx.currentTime + 4;
+    audioUpdate();
+  }
+
+  // A star: a pure note with its octave, struck softly and left to ring out
+  // into the tail. Glass, not metal — the overtone is harmonic.
+  function audioStar(freq, vol, when, life){
+    var ctx = AUDIO.ctx; if(!ctx) return;
+    var t = Math.max(ctx.currentTime, when || 0);
+    life = life || (3.5 + Math.random()*3);
+    var g = ctx.createGain();
+    var pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+    if(pan){ g.connect(pan); pan.pan.value = (Math.random()*2-1)*0.8; }
+    var out = pan || g;
+    var a = ctx.createGain(); a.gain.value = 0.22; out.connect(a); a.connect(AUDIO.dry);
+    var b = ctx.createGain(); b.gain.value = 1.0;  out.connect(b); b.connect(AUDIO.send);
+    var o1 = ctx.createOscillator(); o1.type = 'sine'; o1.frequency.value = freq;
+    var o2 = ctx.createOscillator(); o2.type = 'sine'; o2.frequency.value = freq*2;
+    var g2 = ctx.createGain(); g2.gain.value = 0.12;
+    o1.connect(g); o2.connect(g2); g2.connect(g);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002, vol), t + 0.025 + Math.random()*0.035);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + life);
+    o1.start(t); o2.start(t);
+    o1.stop(t + life + 0.1); o2.stop(t + life + 0.1);
+    o1.onended = function(){
+      try{ g.disconnect(); g2.disconnect(); a.disconnect(); b.disconnect(); if(pan) pan.disconnect(); }catch(e){}
+    };
+  }
+
+  // a trace blooms: the pad's own chord, an octave up, opening out, with a
+  // run of stars climbing out of it
+  function audioTrace(){
+    var ctx = AUDIO.ctx;
+    if(!ctx || !AUDIO.started || !(SETTINGS.sound > 0.5)) return;
+    var now = ctx.currentTime;
+    var ch = SKY_CHORDS[AUDIO.chordIx];
+    var g = ctx.createGain();
+    var a = ctx.createGain(); a.gain.value = 0.4; g.connect(a); a.connect(AUDIO.dry);
+    var b = ctx.createGain(); b.gain.value = 1.2; g.connect(b); b.connect(AUDIO.send);
+    var lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 0.6;
+    lp.connect(g);
+    lp.frequency.setValueAtTime(600, now);
+    lp.frequency.linearRampToValueAtTime(4200, now + 2.6);
+    lp.frequency.linearRampToValueAtTime(1500, now + 8.5);
+    var oscs = ch.notes.map(function(f, i){
+      var o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = f*2;
+      var og = ctx.createGain(); og.gain.value = 0.3;
+      o.connect(og); og.connect(lp);
+      o.start(now + i*0.09);                    // a slow strum, low to high
+      o.stop(now + 9.4);
+      return o;
+    });
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(0.24, now + 1.8);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 9.2);
+    oscs[0].onended = function(){
+      try{ lp.disconnect(); g.disconnect(); a.disconnect(); b.disconnect(); }catch(e){}
+    };
+    for(var s=0; s<5; s++){
+      audioStar(STAR_NOTES[Math.min(STAR_NOTES.length-1, 1 + s + Math.floor(Math.random()*2))],
+                0.05 - s*0.006, now + 0.6 + s*0.22, 4 + Math.random()*2);
+    }
+  }
+
+  function audioUpdate(){
+    if(!AUDIO.started || !AUDIO.ctx) return;
+    var ctx = AUDIO.ctx, now = ctx.currentTime;
+    var dt = AUDIO.lastUpdate < 0 ? 0 : now - AUDIO.lastUpdate;
+    if(AUDIO.lastUpdate >= 0 && dt < 0.12) return;   // a few times a second is plenty
+    AUDIO.lastUpdate = now;
+
+    // Level. The very first move is a long fade up from nothing, so the room
+    // arrives rather than switches on; every later move follows the slider.
+    var want = (SETTINGS.sound > 0.5) ? Math.max(0, SETTINGS.volume) * 0.55 : 0;
+    if(Math.abs(want - AUDIO.wantLevel) > 0.0005){
+      AUDIO.wantLevel = want;
+      var gp = AUDIO.master.gain;
+      gp.cancelScheduledValues(now);
+      gp.setValueAtTime(Math.max(0.0001, gp.value), now);
+      gp.linearRampToValueAtTime(Math.max(0.0001, want), now + (AUDIO.firstFade ? 7 : 0.45));
+      AUDIO.firstFade = false;
+    }
+    if(want <= 0) return;
+
+    // two slow breaths, well out of step with each other
+    var b1 = 0.5 + 0.5*Math.sin(now*0.061);
+    var b2 = 0.5 + 0.5*Math.sin(now*0.027 + 1.7);
+    AUDIO.padBus.gain.setTargetAtTime(0.125 + 0.04*b1, now, 0.8);
+    AUDIO.airGain.gain.setTargetAtTime(0.014 + 0.016*b2, now, 1.4);
+
+    // closing in on the archive brightens the pad; standing back softens it
+    var zoomK = Math.max(0.2, Math.min(9, DIST_REF/Math.max(1, cam.dist)));
+    var open = Math.min(1, Math.log(zoomK + 1)/Math.log(10));
+    AUDIO.padFilter.frequency.setTargetAtTime(2100 + open*2400 + b1*400, now, 1.0);
+
+    // the next chord dissolves in over the last
+    if(now >= AUDIO.chordAt){
+      AUDIO.chordIx = (AUDIO.chordIx + 1) % SKY_CHORDS.length;
+      var old = AUDIO.layer;
+      AUDIO.layer = audioLayer(SKY_CHORDS[AUDIO.chordIx], CHORD_XFADE);
+      if(old) audioRelease(old, CHORD_XFADE*1.25);
+      AUDIO.chordAt = now + CHORD_HOLD;
+    }
+
+    // stars: one now and then, sometimes answered a fourth or fifth higher
+    if(SETTINGS.chimes > 0.01 && now >= AUDIO.nextStar){
+      var si = Math.floor(Math.random()*(STAR_NOTES.length - 2));
+      var v = 0.035 + Math.random()*0.035;
+      audioStar(STAR_NOTES[si], v, now);
+      if(Math.random() < 0.35){
+        audioStar(STAR_NOTES[si + 2], v*0.6, now + 0.18 + Math.random()*0.3);
+      }
+      AUDIO.nextStar = now + (4 + Math.random()*9) / Math.max(0.2, SETTINGS.chimes);
+    }
+
+    // stardust: the cursor's bite glitters, a few tiny notes a second at the
+    // most, high and short, so it sparkles over the pad instead of hissing
+    var lvl = Math.max(0, Math.min(1, erodeAudioLevel));
+    if(lvl > 0.06 && dt > 0){
+      AUDIO.dustAcc += lvl * 7 * Math.min(dt, 0.3);
+      var n = 0;
+      while(AUDIO.dustAcc >= 1 && n < 3){
+        AUDIO.dustAcc -= 1; n++;
+        var hi = STAR_NOTES[4 + Math.floor(Math.random()*4)] * (Math.random() < 0.5 ? 1 : 2);
+        audioStar(hi, 0.008 + lvl*0.016, now + Math.random()*0.12, 0.7 + Math.random()*0.9);
+      }
+    } else {
+      AUDIO.dustAcc = 0;
+    }
+  }
+
+  var soundToggle = document.getElementById('soundToggle');
+  function syncSoundUI(){
+    var on = SETTINGS.sound > 0.5;
+    soundToggle.textContent = on ? 'Sound on' : 'Sound off';
+    soundToggle.setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
+  soundToggle.addEventListener('click', function(){
+    SETTINGS.sound = (SETTINGS.sound > 0.5) ? 0 : 1;
+    syncSoundUI();
+    saveTuning();
+    if(SETTINGS.sound > 0.5) audioStart(); else audioUpdate();
+  });
+
+  // A browser will not make a sound until someone has touched the page. The
+  // Enter button is usually that touch; a returning visitor skips it, so the
+  // first click or keystroke anywhere will do instead.
+  function audioFirstGesture(){
+    audioStart();
+    if(AUDIO.started || AUDIO.failed){
+      window.removeEventListener('pointerdown', audioFirstGesture, true);
+      window.removeEventListener('keydown', audioFirstGesture, true);
+    }
+  }
+  window.addEventListener('pointerdown', audioFirstGesture, true);
+  window.addEventListener('keydown', audioFirstGesture, true);
+
+  document.addEventListener('visibilitychange', function(){
+    if(!AUDIO.ctx) return;
+    try{
+      if(document.hidden) AUDIO.ctx.suspend();
+      else if(SETTINGS.sound > 0.5) AUDIO.ctx.resume();
+    }catch(e){}
+  });
+
   // whatever was dialled in last time, brought back before the first frame
   loadTuning();
   applyFov();
   applyDepth();
   syncSettingsUI();
   syncLinesUI();
+  syncSoundUI();
 
   updateZoomLabel();
   requestAnimationFrame(tick);
