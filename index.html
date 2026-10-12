@@ -15,12 +15,21 @@
 
 <title>Living Archive</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=Archivo:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 
 <style>
+  /* MBM Mono, by Mason Mulcahy, licensed CC BY 4.0
+     (https://creativecommons.org/licenses/by/4.0/). Converted from OTF to
+     WOFF2 to embed it; the glyphs are untouched. Its accented letters are
+     drawn as the bare base letter, so they are left out of the range below
+     and fall through to the next face: a visitor called Élisa keeps her accent. */
+  @font-face{
+    font-family:"MBM Mono";
+    src:url(data:font/woff2;base64,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) format("woff2");
+    font-weight:400; font-style:normal; font-display:swap;
+    unicode-range:U+0020-007E, U+00A0, U+00AD, U+2018-2019, U+201C-201D;
+  }
   :root{
+    --font: "MBM Mono", ui-monospace, "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
     --paper: #F2EDE1;
     --paper-2: #ECE5D3;
     --ink: #1D1912;
@@ -55,13 +64,16 @@
 
   *{ box-sizing:border-box; }
   html,body{ margin:0; padding:0; height:100%; overflow:hidden; }
+  /* one weight, one style: nothing is faked bold or slanted */
+  html{ font-synthesis:none; }
+  button, input, select, textarea{ font-family:inherit; }
   body{
-    background: var(--paper);
+    background: var(--bg, var(--paper));
     color: var(--ink);
-    font-family: "Archivo", ui-sans-serif, system-ui, sans-serif;
+    font-family:var(--font);
     -webkit-font-smoothing: antialiased;
   }
-  #app{ position:fixed; inset:0; background: var(--paper); }
+  #app{ position:fixed; inset:0; background: var(--bg, var(--paper)); }
   #stage{ position:absolute; inset:0; display:block; touch-action:none; cursor: grab; }
   #stage.dragging{ cursor: grabbing; }
   #stage.crosshair{ cursor: crosshair; }
@@ -78,12 +90,12 @@
 
   #vignette{
     position:fixed; inset:0; pointer-events:none; z-index:4;
-    background: radial-gradient(ellipse at 50% 45%, transparent 45%, var(--paper) 145%);
+    background: radial-gradient(ellipse at 50% 45%, transparent 45%, var(--bg-edge, var(--paper)) 145%);
     opacity:0.55;
   }
 
-  .mono{ font-family:"Space Mono", ui-monospace, monospace; }
-  .serif{ font-family:"Fraunces", Georgia, serif; }
+  .mono{ font-family:var(--font); }
+  .serif{ font-family:var(--font); }
 
   /* ---------- HUD ---------- */
   .hud-top, .hud-bottom{
@@ -112,11 +124,11 @@
 
   .hud-center{ position:absolute; left:50%; top: clamp(14px,2.4vw,26px); transform:translateX(-50%); }
   .wordmark{
-    font-family:"Fraunces", Georgia, serif; font-weight:500; font-size:15px;
+    font-family:var(--font); font-size:13px; letter-spacing:0.06em;
     letter-spacing:0.01em; color:var(--ink); opacity:0.86; white-space:nowrap;
   }
 
-  .mono-count{ font-family:"Space Mono", monospace; font-size:11.5px; letter-spacing:0.03em; color:var(--ink); opacity:0.68; font-variant-numeric: tabular-nums; }
+  .mono-count{ font-family:var(--font); font-size:11.5px; letter-spacing:0.03em; color:var(--ink); opacity:0.68; font-variant-numeric: tabular-nums; }
 
   .hud-bottom{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center; }
   .hud-zoom{ display:flex; align-items:center; gap:10px; justify-self:start; }
@@ -124,7 +136,7 @@
 
   .zbtn{
     width:26px; height:26px; border-radius:50%; border:1px solid var(--line);
-    background:transparent; color:var(--ink); font-family:"Space Mono",monospace; font-size:14px;
+    background:transparent; color:var(--ink); font-family:var(--font); font-size:14px;
     display:flex; align-items:center; justify-content:center; cursor:pointer; line-height:1;
     transition: background .15s ease, opacity .15s ease;
   }
@@ -133,7 +145,7 @@
 
   .ghost-btn{
     background:none; border:none; padding:6px 2px; cursor:pointer;
-    font-family:"Archivo", sans-serif; font-size:12.5px; letter-spacing:0.06em; text-transform:uppercase;
+    font-family:var(--font); font-size:12.5px; letter-spacing:0.06em; text-transform:uppercase;
     color:var(--ink); position:relative;
   }
   .ghost-btn::after{
@@ -149,24 +161,24 @@
 
   /* ---------- Intro ---------- */
   .intro{
-    position:fixed; inset:0; z-index:100; background:var(--paper);
+    position:fixed; inset:0; z-index:100; background:var(--bg, var(--paper));
     display:flex; align-items:center; justify-content:center;
     transition: opacity 1.1s ease, visibility 1.1s;
   }
   .intro.hidden{ opacity:0; visibility:hidden; pointer-events:none; }
-  .intro-inner{ max-width:560px; padding: 0 28px; text-align:center; }
+  .intro-inner{ max-width:620px; padding: 0 28px; text-align:center; }
   .intro-eyebrow{
-    font-family:"Space Mono", monospace; font-size:12px; letter-spacing:0.28em;
+    font-family:var(--font); font-size:12px; letter-spacing:0.28em;
     color:var(--ink); opacity:0.55; margin:0 0 28px;
   }
   .intro-copy{
-    font-family:"Fraunces", Georgia, serif; font-weight:400; font-size: clamp(19px, 2.6vw, 26px);
+    font-family:var(--font); font-size: clamp(14px, 1.55vw, 18px);
     line-height:1.5; color:var(--ink); margin:0 0 20px; opacity:0;
     transform: translateY(8px);
     animation: rise 1s ease forwards;
     text-wrap: balance;
   }
-  .intro-copy--final{ font-style:italic; color:var(--accent); }
+  .intro-copy--final{ color:var(--accent); }
   .intro-copy:nth-of-type(1){ animation-delay:.15s; }
   .intro-copy:nth-of-type(2){ animation-delay:.55s; }
   .intro-copy:nth-of-type(3){ animation-delay:1.05s; }
@@ -176,7 +188,7 @@
   }
   .enter-btn{
     margin-top:34px; background:none; border:1px solid var(--ink); color:var(--ink);
-    font-family:"Archivo", sans-serif; font-size:12.5px; letter-spacing:0.1em; text-transform:uppercase;
+    font-family:var(--font); font-size:12.5px; letter-spacing:0.1em; text-transform:uppercase;
     padding:13px 26px; cursor:pointer; opacity:0; animation: rise 1s ease forwards; animation-delay:1.5s;
     transition: background .2s ease, color .2s ease;
   }
@@ -196,34 +208,34 @@
   }
   .contrib-left{ display:flex; flex-direction:column; gap:4px; max-width:640px; }
   .contrib-step{
-    font-family:"Space Mono", monospace; font-size:11px; letter-spacing:0.14em;
+    font-family:var(--font); font-size:11px; letter-spacing:0.14em;
     text-transform:uppercase; color:var(--accent); opacity:0.85;
   }
-  .contrib-msg{ font-family:"Fraunces", Georgia, serif; font-size:16px; color:var(--ink); text-wrap:balance; }
-  .contrib-sub{ font-family:"Archivo", sans-serif; font-size:12.5px; color:var(--ink); opacity:0.55; }
+  .contrib-msg{ font-family:var(--font); font-size:14px; color:var(--ink); text-wrap:balance; }
+  .contrib-sub{ font-family:var(--font); font-size:11.5px; color:var(--ink); opacity:0.55; }
   .contrib-sign{ display:flex; flex-direction:column; gap:5px; justify-self:center; min-width:210px; }
   .contrib-sign-label{
     font-size:9.5px; letter-spacing:0.14em; text-transform:uppercase;
     color:var(--accent); opacity:0.85;
   }
   .contrib-sign-input{
-    font-family:"Fraunces", Georgia, serif; font-size:15px;
+    font-family:var(--font); font-size:13px;
     color:var(--ink); background:transparent;
     border:0; border-bottom:1px solid var(--line);
     padding:3px 1px; width:100%;
   }
-  .contrib-sign-input::placeholder{ font-style:italic; opacity:0.34; }
+  .contrib-sign-input::placeholder{ opacity:0.34; }
   .contrib-sign-input:focus{ outline:none; border-bottom-color:var(--accent); }
   .contrib-right{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; justify-content:flex-end; }
   .btn-text{
-    background:none; border:none; font-family:"Archivo",sans-serif; font-size:12px;
+    background:none; border:none; font-family:var(--font); font-size:12px;
     letter-spacing:0.05em; text-transform:uppercase; color:var(--ink); opacity:0.55; cursor:pointer;
     white-space:nowrap;
   }
   .btn-text:hover{ opacity:0.9; }
   .btn-primary{
     background:var(--ink); color:var(--paper); border:none; padding:12px 22px;
-    font-family:"Archivo",sans-serif; font-size:12.5px; letter-spacing:0.07em; text-transform:uppercase;
+    font-family:var(--font); font-size:12.5px; letter-spacing:0.07em; text-transform:uppercase;
     cursor:pointer; transition: opacity .2s ease; white-space:nowrap;
   }
   .btn-primary:disabled{ opacity:0.32; cursor:default; }
@@ -236,8 +248,8 @@
     pointer-events:none;
   }
   .toast.show{ opacity:1; transform:translate(-50%,0); }
-  .toast-line1{ font-family:"Fraunces", Georgia, serif; font-style:italic; font-size:16px; color:var(--ink); }
-  .toast-line2{ font-family:"Archivo", sans-serif; font-size:11.5px; letter-spacing:0.05em; color:var(--ink); opacity:0.55; margin-top:2px; }
+  .toast-line1{ font-family:var(--font); font-size:14px; color:var(--ink); }
+  .toast-line2{ font-family:var(--font); font-size:11.5px; letter-spacing:0.05em; color:var(--ink); opacity:0.55; margin-top:2px; }
 
   /* ---------- Node tooltip ---------- */
   .fps-tag{
@@ -246,26 +258,25 @@
   }
 
   #nodeTip{
-    position:fixed; z-index:25; pointer-events:none; font-family:"Fraunces","Georgia",serif;
-    font-size:14px; color:var(--ink); background:var(--paper);
+    position:fixed; z-index:25; pointer-events:none; font-family:var(--font);
+    font-size:12.5px; color:var(--ink); background:var(--paper);
     padding:6px 10px; border:1px solid var(--line); opacity:0; transition:opacity .15s ease;
     white-space:nowrap; transform:translate(-50%,-130%);
   }
   #nodeTip.show{ opacity:0.94; }
   #nodeTip .tip-icon{ font-size:12px; margin-right:6px; opacity:0.85; }
   #nodeTip .tip-id{
-    font-variant-numeric: oldstyle-nums; font-feature-settings:"onum" 1;
-    font-size:15px;
+    font-size:13px;
   }
   #nodeTip .tip-sep{ margin:0 6px; color:var(--ash); opacity:0.7; }
-  #nodeTip .tip-liens{ font-style:italic; color:var(--ash); }
+  #nodeTip .tip-liens{ color:var(--ash); }
   #nodeTip .tip-sign{
-    margin-top:3px; font-family:"Fraunces", Georgia, serif; font-style:italic;
-    font-size:13px; color:var(--accent); opacity:0.9;
+    margin-top:3px; font-family:var(--font);
+    font-size:12px; color:var(--accent); opacity:0.9;
   }
   #nodeTip .tip-coord{
     margin-top:4px; padding-top:4px; border-top:1px solid var(--line-soft);
-    font-family:"Space Mono", ui-monospace, monospace; font-size:9.5px;
+    font-family:var(--font); font-size:9.5px;
     letter-spacing:0.04em; color:var(--ink); opacity:0.5;
     font-variant-numeric: tabular-nums;
   }
@@ -282,11 +293,11 @@
   .evo-row{ display:flex; align-items:center; gap:18px; }
   .evo-close{
     position:absolute; top:12px; right:16px; background:none; border:none; cursor:pointer;
-    color:var(--ink); font-size:18px; opacity:0.5; font-family:"Archivo",sans-serif;
+    color:var(--ink); font-size:18px; opacity:0.5; font-family:var(--font);
   }
   .evo-close:hover{ opacity:0.9; }
   .evo-label-block{ display:flex; flex-direction:column; gap:2px; min-width:190px; }
-  #evoCaption{ font-family:"Fraunces", Georgia, serif; font-size:13px; color:var(--ink); opacity:0.75; }
+  #evoCaption{ font-family:var(--font); font-size:11.5px; color:var(--ink); opacity:0.75; }
   input[type="range"]{
     -webkit-appearance:none; appearance:none; flex:1; height:1px; background:var(--line); outline:none;
   }
@@ -301,14 +312,14 @@
 
   .nudge{
     position:fixed; left:50%; bottom:104px; transform:translateX(-50%);
-    font-family:"Archivo", sans-serif; font-size:11.5px; letter-spacing:0.04em; color:var(--ink);
+    font-family:var(--font); font-size:11.5px; letter-spacing:0.04em; color:var(--ink);
     opacity:0; transition:opacity .8s ease; pointer-events:none; z-index:22; text-align:center;
   }
   .nudge.show{ opacity:0.6; }
 
   /* ---- parameters panel ------------------------------------------- */
   .settings-toggle{
-    font-family:"Space Mono", ui-monospace, monospace; font-size:9.5px;
+    font-family:var(--font); font-size:9.5px;
     letter-spacing:0.12em; text-transform:uppercase;
     background:transparent; border:0; padding:2px 0; margin-top:5px;
     color:var(--ink); opacity:0.5; cursor:pointer; text-align:right;
@@ -330,7 +341,7 @@
   .settings-title{ font-size:9.5px; letter-spacing:0.16em; text-transform:uppercase; opacity:0.55; }
   .settings-close{
     background:transparent; border:0; padding:0; line-height:1; cursor:pointer;
-    font-family:"Space Mono", monospace; font-size:14px; color:var(--ink); opacity:0.45;
+    font-family:var(--font); font-size:14px; color:var(--ink); opacity:0.45;
   }
   .settings-close:hover{ opacity:0.9; }
   .setting{ display:flex; flex-direction:column; gap:6px; }
@@ -339,21 +350,21 @@
     padding-top:13px; border-top:1px solid var(--line-soft);
   }
   .settings-group-name{
-    font-family:"Space Mono", ui-monospace, monospace; font-size:8.5px;
+    font-family:var(--font); font-size:8.5px;
     letter-spacing:0.17em; text-transform:uppercase;
     color:var(--accent); opacity:0.8;
   }
   .setting-top{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
   .setting-name{
-    font-family:"Space Mono", ui-monospace, monospace; font-size:9px;
+    font-family:var(--font); font-size:9px;
     letter-spacing:0.11em; text-transform:uppercase; color:var(--ink); opacity:0.66;
   }
   .setting-val{
-    font-family:"Space Mono", ui-monospace, monospace; font-size:10px;
+    font-family:var(--font); font-size:10px;
     color:var(--accent); font-variant-numeric:tabular-nums;
   }
-  .setting-note{ font-family:"Fraunces", Georgia, serif; font-style:italic;
-    font-size:10.5px; color:var(--ink); opacity:0.38; line-height:1.35; }
+  .setting-note{ font-family:var(--font);
+    font-size:9.5px; color:var(--ink); opacity:0.42; line-height:1.45; }
   .setting input[type="range"]{
     -webkit-appearance:none; appearance:none; width:100%; height:12px;
     background:transparent; cursor:pointer; display:block;
@@ -372,7 +383,7 @@
   .settings-actions{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-top:2px; }
   .settings-reset{
     align-self:flex-start;
-    font-family:"Space Mono", ui-monospace, monospace; font-size:9px;
+    font-family:var(--font); font-size:9px;
     letter-spacing:0.11em; text-transform:uppercase;
     background:transparent; border:0; padding:0; cursor:pointer;
     color:var(--ink); opacity:0.45; border-bottom:1px solid var(--line);
@@ -385,15 +396,33 @@
   }
   .settings-keys > div{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
   .settings-keys dt, .settings-keys dd{
-    margin:0; font-family:"Space Mono", ui-monospace, monospace; font-size:8.5px;
+    margin:0; font-family:var(--font); font-size:8.5px;
     letter-spacing:0.07em; text-transform:uppercase; color:var(--ink);
   }
   .settings-keys dt{ opacity:0.5; }
+
+  /* background: colour swatches, and only the controls the chosen mode uses */
+  .setting-swatch{ display:inline-flex; align-items:center; gap:8px; cursor:pointer; }
+  .setting-swatch input[type="color"]{
+    -webkit-appearance:none; appearance:none; width:30px; height:16px; padding:0; margin:0;
+    border:1px solid var(--line); background:none; cursor:pointer;
+  }
+  .setting-swatch input[type="color"]::-webkit-color-swatch-wrapper{ padding:0; }
+  .setting-swatch input[type="color"]::-webkit-color-swatch{ border:none; }
+  .setting-swatch input[type="color"]::-moz-color-swatch{ border:none; }
+  #bgGroup[data-mode="theme"] .bg-custom{ display:none; }
+  #bgGroup:not([data-mode="gradient"]) .bg-grad{ display:none; }
+  #bgGroup[data-type="radial"] .bg-linear{ display:none; }
+  .settings-credit{
+    margin:0; padding-top:10px; border-top:1px solid var(--line-soft);
+    font-size:8.5px; letter-spacing:0.05em; line-height:1.5; color:var(--ink); opacity:0.4;
+  }
+  .settings-credit a{ color:inherit; text-decoration:underline; text-underline-offset:2px; white-space:nowrap; }
   .settings-keys dd{ opacity:0.34; }
 
   .lines-panel{ right:274px; }
   .setting-cycle{
-    font-family:"Space Mono", ui-monospace, monospace; font-size:10px;
+    font-family:var(--font); font-size:10px;
     letter-spacing:0.06em; text-transform:uppercase;
     background:transparent; border:1px solid var(--line); cursor:pointer;
     color:var(--accent); padding:2px 7px; min-width:66px; text-align:center;
@@ -433,7 +462,7 @@
       <p class="intro-copy">Nothing starts from nothing.</p>
       <p class="intro-copy">This drawing began as an archive from the past. Every visitor inherits what came before, adds a small trace, then passes it forward.</p>
       <p class="intro-copy intro-copy--final">Nothing can be erased.</p>
-      <button class="enter-btn" id="enterBtn">Enter the archive <span class="arrow">→</span></button>
+      <button class="enter-btn" id="enterBtn">Enter the archive <span class="arrow">-&gt;</span></button>
     </div>
   </section>
 
@@ -441,7 +470,7 @@
     <div class="hud-corner hud-corner--left">
       <span class="tag mono">CC0</span>
       <span class="tag tag--loading mono">PERMANENT LOADING<span class="dots"><span>.</span><span>.</span><span>.</span></span></span>
-      <span class="tag mono fps-tag" id="fpsTag">— fps</span>
+      <span class="tag mono fps-tag" id="fpsTag">-- fps</span>
     </div>
     <div class="hud-center"><span class="wordmark">Living Archive</span></div>
     <div class="hud-corner hud-corner--right">
@@ -454,7 +483,7 @@
 
   <footer class="hud-bottom">
     <div class="hud-zoom">
-      <button class="zbtn" id="zoomOut" aria-label="Zoom out">−</button>
+      <button class="zbtn" id="zoomOut" aria-label="Zoom out">-</button>
       <span class="mono-count" id="zoomPct">42%</span>
       <button class="zbtn" id="zoomIn" aria-label="Zoom in">+</button>
     </div>
@@ -464,7 +493,7 @@
 
   <div class="contrib-bar" id="contribBar" hidden>
     <div class="contrib-left">
-      <div class="contrib-step mono" id="contribStep">STEP 1 — ADD YOUR POINTS</div>
+      <div class="contrib-step mono" id="contribStep">STEP 1 / ADD YOUR POINTS</div>
       <div class="contrib-msg serif" id="contribMsg">3 points remaining</div>
       <div class="contrib-sub" id="contribSub">Click anywhere in the archive to place your first point.</div>
     </div>
@@ -479,7 +508,7 @@
   <aside class="settings-panel lines-panel" id="linesPanel" hidden>
     <div class="settings-head">
       <span class="settings-title mono">Line rendering</span>
-      <button class="settings-close" id="linesClose" aria-label="Close line rendering">×</button>
+      <button class="settings-close" id="linesClose" aria-label="Close line rendering">x</button>
     </div>
 
     <div class="settings-group">
@@ -488,7 +517,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Line weight</span>
-          <span class="setting-val" id="valLnWeight">0.20×</span>
+          <span class="setting-val" id="valLnWeight">0.20x</span>
         </div>
         <input type="range" id="lnWeight" min="0.2" max="5" step="0.05" value="0.2" aria-label="Line weight">
         <span class="setting-note">Multiplies every line width in the archive.</span>
@@ -497,7 +526,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Line opacity</span>
-          <span class="setting-val" id="valLnOpacity">1.00×</span>
+          <span class="setting-val" id="valLnOpacity">1.00x</span>
         </div>
         <input type="range" id="lnOpacity" min="0.05" max="1" step="0.05" value="1" aria-label="Line opacity">
         <span class="setting-note">Ink density, over and above the depth and age fades.</span>
@@ -506,7 +535,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Point weight</span>
-          <span class="setting-val" id="valLnCube">0.60×</span>
+          <span class="setting-val" id="valLnCube">0.60x</span>
         </div>
         <input type="range" id="lnCube" min="0.2" max="5" step="0.05" value="0.6" aria-label="Point weight">
         <span class="setting-note">The twelve edges of each point cube.</span>
@@ -519,7 +548,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Wobble</span>
-          <span class="setting-val" id="valLnJitter">4.90×</span>
+          <span class="setting-val" id="valLnJitter">4.90x</span>
         </div>
         <input type="range" id="lnJitter" min="0" max="6" step="0.05" value="4.9" aria-label="Wobble">
         <span class="setting-note">Departure from true, eased to nothing at both ends.</span>
@@ -546,7 +575,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Extra stroke ink</span>
-          <span class="setting-val" id="valLnDbl">1.50×</span>
+          <span class="setting-val" id="valLnDbl">1.50x</span>
         </div>
         <input type="range" id="lnDbl" min="0" max="1.5" step="0.05" value="1.5" aria-label="Extra stroke ink">
         <span class="setting-note">Weight of the passes after the first. Zero leaves a single stroke.</span>
@@ -555,7 +584,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Thread life</span>
-          <span class="setting-val" id="valLnLife">1.23×</span>
+          <span class="setting-val" id="valLnLife">1.23x</span>
         </div>
         <input type="range" id="lnLife" min="0" max="5" step="0.01" value="1.23" aria-label="Thread life">
         <span class="setting-note">How wide the threads swing as they stir. The moving part has its own reach, so this goes well past the resting wobble.</span>
@@ -564,7 +593,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Thread speed</span>
-          <span class="setting-val" id="valLnLifeSpd">0.75×</span>
+          <span class="setting-val" id="valLnLifeSpd">0.75x</span>
         </div>
         <input type="range" id="lnLifeSpd" min="0.1" max="4" step="0.05" value="0.75" aria-label="Thread speed">
         <span class="setting-note">How fast it travels. This is the one to push if the stirring reads too slow.</span>
@@ -573,7 +602,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Nib taper</span>
-          <span class="setting-val" id="valLnTaper">0.60×</span>
+          <span class="setting-val" id="valLnTaper">0.60x</span>
         </div>
         <input type="range" id="lnTaper" min="0" max="1" step="0.05" value="0.6" aria-label="Nib taper">
         <span class="setting-note">Thin at the ends, full in the middle.</span>
@@ -604,7 +633,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Wave speed</span>
-          <span class="setting-val" id="valLnWaveSpd">0.10×</span>
+          <span class="setting-val" id="valLnWaveSpd">0.10x</span>
         </div>
         <input type="range" id="lnWaveSpd" min="0" max="3" step="0.05" value="0.1" aria-label="Wave speed">
         <span class="setting-note">How fast the crests travel along each thread, each in its own direction. Zero holds them still.</span>
@@ -655,7 +684,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Beam weight</span>
-          <span class="setting-val" id="valLnBeamW">0.65×</span>
+          <span class="setting-val" id="valLnBeamW">0.65x</span>
         </div>
         <input type="range" id="lnBeamW" min="0" max="4" step="0.05" value="0.65" aria-label="Beam weight">
         <span class="setting-note">The thick shaded rods of the genesis plate.</span>
@@ -664,7 +693,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Beam opacity</span>
-          <span class="setting-val" id="valLnBeamO">0.25×</span>
+          <span class="setting-val" id="valLnBeamO">0.25x</span>
         </div>
         <input type="range" id="lnBeamO" min="0" max="2" step="0.05" value="0.25" aria-label="Beam opacity">
         <span class="setting-note">Zero removes the rods and leaves the hairlines.</span>
@@ -689,7 +718,7 @@
   <aside class="settings-panel" id="settingsPanel" hidden>
     <div class="settings-head">
       <span class="settings-title mono">Parameters</span>
-      <button class="settings-close" id="settingsClose" aria-label="Close parameters">×</button>
+      <button class="settings-close" id="settingsClose" aria-label="Close parameters">x</button>
     </div>
 
     <div class="settings-group">
@@ -698,16 +727,16 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Field of view</span>
-          <span class="setting-val" id="valFov">1.00×</span>
+          <span class="setting-val" id="valFov">1.00x</span>
         </div>
         <input type="range" id="setFov" min="0.28" max="6" step="0.02" value="1" aria-label="Field of view">
-        <span class="setting-note">A short lens throws the depth open, a long one presses it flat. It cannot go much wider than this — the lens would end up inside the archive.</span>
+        <span class="setting-note">A short lens throws the depth open, a long one presses it flat. It cannot go much wider than this: the lens would end up inside the archive.</span>
       </div>
 
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">3D depth</span>
-          <span class="setting-val" id="valDepth">1.00×</span>
+          <span class="setting-val" id="valDepth">1.00x</span>
         </div>
         <input type="range" id="setDepth" min="0" max="2.5" step="0.05" value="1" aria-label="3D depth">
         <span class="setting-note">How far the points spread along Z.</span>
@@ -716,7 +745,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Depth falloff</span>
-          <span class="setting-val" id="valFalloff">1.20×</span>
+          <span class="setting-val" id="valFalloff">1.20x</span>
         </div>
         <input type="range" id="setFalloff" min="0" max="2.5" step="0.05" value="1.2" aria-label="Depth falloff">
         <span class="setting-note">How much the points furthest back give way.</span>
@@ -725,7 +754,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Blur amount</span>
-          <span class="setting-val" id="valDof">1.00×</span>
+          <span class="setting-val" id="valDof">1.00x</span>
         </div>
         <input type="range" id="setDof" min="0" max="3" step="0.05" value="1" aria-label="Blur amount">
         <span class="setting-note">How soft the background goes. Zero is sharp all the way back.</span>
@@ -734,7 +763,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Focus range</span>
-          <span class="setting-val" id="valFocus">1.00×</span>
+          <span class="setting-val" id="valFocus">1.00x</span>
         </div>
         <input type="range" id="setFocus" min="0.2" max="2.5" step="0.05" value="1" aria-label="Focus range">
         <span class="setting-note">How far back the sharp zone reaches before the blur starts.</span>
@@ -743,7 +772,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Placement depth</span>
-          <span class="setting-val" id="valReach">1.00×</span>
+          <span class="setting-val" id="valReach">1.00x</span>
         </div>
         <input type="range" id="setReach" min="0" max="2.5" step="0.05" value="1" aria-label="Placement depth">
         <span class="setting-note">How deep a new point can settle behind or in front of its neighbours.</span>
@@ -756,7 +785,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Rotation speed</span>
-          <span class="setting-val" id="valRot">1.0×</span>
+          <span class="setting-val" id="valRot">1.0x</span>
         </div>
         <input type="range" id="setRot" min="0" max="4" step="0.1" value="1" aria-label="Rotation speed">
         <span class="setting-note">Idle drift of the whole composition.</span>
@@ -780,13 +809,13 @@
           <span class="setting-name">Reticle</span>
           <button class="setting-cycle" id="setReticle">Square</button>
         </div>
-        <span class="setting-note">The pointer itself: a square, a circle, a cross, or nothing at all — then the dust is the cursor. Placing a point always shows the square.</span>
+        <span class="setting-note">The pointer itself: a square, a circle, a cross, or nothing at all, and then the dust is the cursor. Placing a point always shows the square.</span>
       </div>
 
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Reticle size</span>
-          <span class="setting-val" id="valReticleSz">1.00×</span>
+          <span class="setting-val" id="valReticleSz">1.00x</span>
         </div>
         <input type="range" id="setReticleSz" min="0.5" max="3" step="0.05" value="1" aria-label="Reticle size">
         <span class="setting-note">How large the pointer is drawn.</span>
@@ -808,7 +837,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Reach</span>
-          <span class="setting-val" id="valErode">1.00×</span>
+          <span class="setting-val" id="valErode">1.00x</span>
         </div>
         <input type="range" id="setErode" min="0" max="6" step="0.05" value="1" aria-label="Reach">
         <span class="setting-note">How much of a line comes apart around the cursor.</span>
@@ -835,7 +864,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Wake</span>
-          <span class="setting-val" id="valWake">0.00×</span>
+          <span class="setting-val" id="valWake">0.00x</span>
         </div>
         <input type="range" id="setWake" min="0" max="2" step="0.05" value="0" aria-label="Wake">
         <span class="setting-note">Stretches the bite back along the path the cursor has just taken, so a quick sweep cuts a trail through the threads that knits shut behind it.</span>
@@ -844,7 +873,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Point cordon</span>
-          <span class="setting-val" id="valCordon">1.00×</span>
+          <span class="setting-val" id="valCordon">1.00x</span>
         </div>
         <input type="range" id="setCordon" min="0" max="3" step="0.05" value="1" aria-label="Point cordon">
         <span class="setting-note">How much of each line stays whole where it meets a point, so the cubes are never cut loose. Zero lets the dust reach right into them.</span>
@@ -853,7 +882,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Springback</span>
-          <span class="setting-val" id="valSpring">0.15×</span>
+          <span class="setting-val" id="valSpring">0.15x</span>
         </div>
         <input type="range" id="setSpring" min="0" max="2" step="0.05" value="0.15" aria-label="Springback">
         <span class="setting-note">How far the cloud overshoots the cursor and how long it rings. Zero pins it.</span>
@@ -862,7 +891,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Follow speed</span>
-          <span class="setting-val" id="valFollow">0.50×</span>
+          <span class="setting-val" id="valFollow">0.50x</span>
         </div>
         <input type="range" id="setFollow" min="0.2" max="3" step="0.05" value="0.5" aria-label="Follow speed">
         <span class="setting-note">How eagerly it chases. Low trails far behind, high stays close.</span>
@@ -875,7 +904,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Particle spread</span>
-          <span class="setting-val" id="valSpread">1.00×</span>
+          <span class="setting-val" id="valSpread">1.00x</span>
         </div>
         <input type="range" id="setSpread" min="0" max="6" step="0.05" value="1" aria-label="Particle spread">
         <span class="setting-note">How far the grains scatter off the line.</span>
@@ -884,7 +913,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Particle size</span>
-          <span class="setting-val" id="valGrain">1.00×</span>
+          <span class="setting-val" id="valGrain">1.00x</span>
         </div>
         <input type="range" id="setGrain" min="0.2" max="12" step="0.1" value="1" aria-label="Particle size">
         <span class="setting-note">Grains snap to whole pixels. Push it and they read as blocks.</span>
@@ -893,7 +922,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Size variety</span>
-          <span class="setting-val" id="valGrainVar">1.00×</span>
+          <span class="setting-val" id="valGrainVar">1.00x</span>
         </div>
         <input type="range" id="setGrainVar" min="0" max="3" step="0.05" value="1" aria-label="Size variety">
         <span class="setting-note">Zero makes every grain the same gauge; higher mixes fine grit with larger chips.</span>
@@ -902,7 +931,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Particle density</span>
-          <span class="setting-val" id="valGrainDen">1.00×</span>
+          <span class="setting-val" id="valGrainDen">1.00x</span>
         </div>
         <input type="range" id="setGrainDen" min="0.25" max="3" step="0.05" value="1" aria-label="Particle density">
         <span class="setting-note">How many grains a line breaks into.</span>
@@ -911,7 +940,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Particle opacity</span>
-          <span class="setting-val" id="valGrainA">1.00×</span>
+          <span class="setting-val" id="valGrainA">1.00x</span>
         </div>
         <input type="range" id="setGrainA" min="0" max="2" step="0.05" value="1" aria-label="Particle opacity">
         <span class="setting-note">How much ink each grain carries.</span>
@@ -936,7 +965,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Noise amount</span>
-          <span class="setting-val" id="valNoise">0.50×</span>
+          <span class="setting-val" id="valNoise">0.50x</span>
         </div>
         <input type="range" id="setNoise" min="0" max="3" step="0.05" value="0.5" aria-label="Noise amount">
         <span class="setting-note">A 3D noise field displaces the active grains on all three axes. Anchored in the archive, so it turns with it.</span>
@@ -945,7 +974,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Particle drift</span>
-          <span class="setting-val" id="valDrift">1.00×</span>
+          <span class="setting-val" id="valDrift">1.00x</span>
         </div>
         <input type="range" id="setDrift" min="0" max="3" step="0.05" value="1" aria-label="Particle drift">
         <span class="setting-note">Each grain wanders on its own, and the cloud trails the cursor.</span>
@@ -983,13 +1012,75 @@
       </div>
     </div>
 
+    <div class="settings-group" id="bgGroup" data-mode="theme" data-type="linear">
+      <span class="settings-group-name">Background</span>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Background</span>
+          <button class="setting-cycle" id="setBgMode">Theme</button>
+        </div>
+        <span class="setting-note">Theme follows light or dark paper. Solid fills it with one colour, gradient blends two.</span>
+      </div>
+
+      <div class="setting bg-custom">
+        <div class="setting-top">
+          <span class="setting-name" id="lblBgA">Colour</span>
+          <label class="setting-swatch"><span class="setting-val" id="valBgA">#F2EDE1</span><input type="color" id="setBgA" value="#f2ede1" aria-label="Colour"></label>
+        </div>
+        <span class="setting-note">The fill, or where the gradient starts.</span>
+      </div>
+
+      <div class="setting bg-grad">
+        <div class="setting-top">
+          <span class="setting-name" id="lblBgB">To</span>
+          <label class="setting-swatch"><span class="setting-val" id="valBgB">#D8CCB2</span><input type="color" id="setBgB" value="#d8ccb2" aria-label="To"></label>
+        </div>
+        <span class="setting-note">Where the gradient ends.</span>
+      </div>
+
+      <div class="setting bg-grad">
+        <div class="setting-top">
+          <span class="setting-name">Gradient</span>
+          <button class="setting-cycle" id="setBgType">Linear</button>
+        </div>
+        <span class="setting-note">A straight blend across the screen, or a radial one spreading out from the centre.</span>
+      </div>
+
+      <div class="setting bg-grad bg-linear">
+        <div class="setting-top">
+          <span class="setting-name">Angle</span>
+          <span class="setting-val" id="valBgAngle">180 deg</span>
+        </div>
+        <input type="range" id="setBgAngle" min="0" max="360" step="1" value="180" aria-label="Angle">
+        <span class="setting-note">Which way the linear blend runs. 180 goes from top to bottom.</span>
+      </div>
+
+      <div class="setting bg-custom">
+        <div class="setting-top">
+          <span class="setting-name">Ink</span>
+          <button class="setting-cycle" id="setBgInk">Auto</button>
+        </div>
+        <span class="setting-note">Auto picks dark or light ink from how dark the background is. Force it if a gradient runs from one to the other.</span>
+      </div>
+
+      <div class="setting ">
+        <div class="setting-top">
+          <span class="setting-name">Vignette</span>
+          <span class="setting-val" id="valBgVig">55%</span>
+        </div>
+        <input type="range" id="setBgVig" min="0" max="1" step="0.01" value="0.55" aria-label="Vignette">
+        <span class="setting-note">How much the edges of the screen fade back toward the background.</span>
+      </div>
+    </div>
+
     <div class="settings-group">
       <span class="settings-group-name">Environment</span>
 
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Ambient dust</span>
-          <span class="setting-val" id="valDust">2.55×</span>
+          <span class="setting-val" id="valDust">2.55x</span>
         </div>
         <input type="range" id="setDust" min="0" max="3" step="0.05" value="2.55" aria-label="Ambient dust">
         <span class="setting-note">Motes hanging in the air of the room. They drift on their own and never turn with the form.</span>
@@ -1007,7 +1098,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Dust size</span>
-          <span class="setting-val" id="valDustSz">0.70×</span>
+          <span class="setting-val" id="valDustSz">0.70x</span>
         </div>
         <input type="range" id="setDustSz" min="0.3" max="4" step="0.05" value="0.7" aria-label="Dust size">
         <span class="setting-note">Scales the whole spread of gauges, from grit to flecks.</span>
@@ -1024,7 +1115,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Dust tumble</span>
-          <span class="setting-val" id="valDustSpin">1.00×</span>
+          <span class="setting-val" id="valDustSpin">1.00x</span>
         </div>
         <input type="range" id="setDustSpin" min="0" max="3" step="0.05" value="1" aria-label="Dust tumble">
         <span class="setting-note">How fast the cubes turn on themselves. Only does anything once the shape is a cube.</span>
@@ -1036,7 +1127,7 @@
           <span class="setting-val" id="valFade">60</span>
         </div>
         <input type="range" id="setFade" min="5" max="200" step="5" value="60" aria-label="Trace fade">
-        <span class="setting-note">Traces before an old one reaches 5% — its floor.</span>
+        <span class="setting-note">Traces before an old one reaches 5%, its floor.</span>
       </div>
     </div>
 
@@ -1046,7 +1137,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Ambient volume</span>
-          <span class="setting-val" id="valVol">0.70×</span>
+          <span class="setting-val" id="valVol">0.70x</span>
         </div>
         <input type="range" id="setVol" min="0" max="1.5" step="0.05" value="0.7" aria-label="Ambient volume">
         <span class="setting-note">The room's own sound, synthesised on the spot rather than looped. Sound on and off is up in the corner.</span>
@@ -1055,7 +1146,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Star density</span>
-          <span class="setting-val" id="valChime">1.00×</span>
+          <span class="setting-val" id="valChime">1.00x</span>
         </div>
         <input type="range" id="setChime" min="0" max="3" step="0.05" value="1" aria-label="Star density">
         <span class="setting-note">How often a high note glints over the pad. At zero there is only the pad and the air.</span>
@@ -1064,7 +1155,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Point notes</span>
-          <span class="setting-val" id="valNotes">1.00×</span>
+          <span class="setting-val" id="valNotes">1.00x</span>
         </div>
         <input type="range" id="setNotes" min="0" max="2" step="0.05" value="1" aria-label="Point notes">
         <span class="setting-note">How loud a point sings when the cursor finds it, when it is placed, and when a trace sounds its chord. Higher in the archive is higher in pitch.</span>
@@ -1073,7 +1164,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Gesture response</span>
-          <span class="setting-val" id="valGesture">1.00×</span>
+          <span class="setting-val" id="valGesture">1.00x</span>
         </div>
         <input type="range" id="setGesture" min="0" max="2" step="0.05" value="1" aria-label="Gesture response">
         <span class="setting-note">How much the hand shapes the sound: a quick sweep opens it up and lifts the air, and the pad leans toward the cursor's side.</span>
@@ -1082,7 +1173,7 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Camera space</span>
-          <span class="setting-val" id="valSpace">1.00×</span>
+          <span class="setting-val" id="valSpace">1.00x</span>
         </div>
         <input type="range" id="setSpace" min="0" max="2" step="0.05" value="1" aria-label="Camera space">
         <span class="setting-note">How much the view shapes the room: close in is dry and near, far out is wide; spinning the form makes it shimmer, holding space opens a chord across the sky.</span>
@@ -1102,6 +1193,7 @@
       <div><dt>Left click</dt><dd>place a point</dd></div>
       <div><dt>Hold space</dt><dd>see it all</dd></div>
     </dl>
+    <p class="settings-credit">Type: MBM Mono by Mason Mulcahy, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a></p>
   </aside>
 
   <div class="toast" id="toast">
@@ -1109,12 +1201,12 @@
     <div class="toast-line2">The archive keeps loading.</div>
   </div>
 
-  <div class="nudge" id="nudge">Rotate the composition — your trace now lives somewhere inside all of this.</div>
+  <div class="nudge" id="nudge">Rotate the composition: your trace now lives somewhere inside all of this.</div>
 
   <div class="evo-panel" id="evoPanel" hidden>
-    <button class="evo-close" id="evoClose">×</button>
+    <button class="evo-close" id="evoClose">x</button>
     <div class="evo-row">
-      <button class="ghost-btn" id="evoPlay">▶ Play</button>
+      <button class="ghost-btn" id="evoPlay">&gt; Play</button>
       <input type="range" id="evoSlider" min="0" max="1" value="1" step="1">
       <div class="evo-label-block">
         <span class="mono-count" id="evoLabel">GEN 138 / 138</span>
@@ -1156,7 +1248,8 @@
     sound:0, volume:0.7, chimes:1, noteVol:1, gestureAmt:1, spaceAmt:1,
     reticle:0, reticleSize:1, hoverDim:0.22, erodeSoft:1.5, erodeCore:0.42, erodeWake:0, cordon:1,
     grainVar:1, grainDensity:1, grainAlpha:1, grainColour:0, grainForm:0,
-    grainGravity:0, grainSwirl:0, grainPush:0 };
+    grainGravity:0, grainSwirl:0, grainPush:0,
+    bgMode:0, bgA:'#F2EDE1', bgB:'#D8CCB2', bgType:0, bgAngle:180, bgInk:0, bgVignette:0.55 };
   var SETTINGS = Object.assign({}, SETTINGS_DEFAULTS);
 
   function v3(x,y,z){ return {x:x,y:y,z:z}; }
@@ -2201,6 +2294,60 @@
     return { r:(num>>16)&255, g:(num>>8)&255, b:num&255 };
   }
   var THEME = { ink:null, ash:null, accent:null, paper:null };
+
+  /* ------------------------------------------------------------------
+     The background. Theme leaves the page as it was, on light or dark
+     paper. Solid and gradient paint the stage, the intro and the vignette
+     with the visitor's own colours — and because ink has to read against
+     whatever is behind it, the ink follows: a dark background turns the
+     whole palette to its light-ink version, a pale one to dark ink.
+  ------------------------------------------------------------------- */
+  var hostTheme = document.documentElement.getAttribute('data-theme');
+  function validHex(v, fallback){
+    return (typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v)) ? v.toUpperCase() : fallback;
+  }
+  function relLum(hex){
+    var c = hexToRgb(hex);
+    function ch(v){ v /= 255; return v <= 0.03928 ? v/12.92 : Math.pow((v + 0.055)/1.055, 2.4); }
+    return 0.2126*ch(c.r) + 0.7152*ch(c.g) + 0.0722*ch(c.b);
+  }
+  function mixHex(a, b, t){
+    var p = hexToRgb(a), q = hexToRgb(b);
+    return 'rgb(' + Math.round(p.r + (q.r-p.r)*t) + ',' + Math.round(p.g + (q.g-p.g)*t) + ',' + Math.round(p.b + (q.b-p.b)*t) + ')';
+  }
+  function applyBackground(){
+    var root = document.documentElement, st = root.style;
+    var mode = Math.round(SETTINGS.bgMode), radial = Math.round(SETTINGS.bgType) === 1;
+    var grp = document.getElementById('bgGroup');
+    if(grp){ grp.setAttribute('data-mode', ['theme','solid','gradient'][mode] || 'theme');
+             grp.setAttribute('data-type', radial ? 'radial' : 'linear'); }
+    var lbl = document.getElementById('lblBgA');
+    if(lbl) lbl.textContent = mode === 2 ? 'From' : 'Colour';
+    if(mode !== 1 && mode !== 2){
+      st.removeProperty('--bg'); st.removeProperty('--bg-edge');
+      if(hostTheme === null) root.removeAttribute('data-theme'); else root.setAttribute('data-theme', hostTheme);
+    } else {
+      var A = validHex(SETTINGS.bgA, SETTINGS_DEFAULTS.bgA), B = validHex(SETTINGS.bgB, SETTINGS_DEFAULTS.bgB);
+      var bg, edge, L;
+      if(mode === 1){ bg = A; edge = A; L = relLum(A); }
+      else if(radial){
+        bg = 'radial-gradient(ellipse at 50% 45%, ' + A + ' 0%, ' + B + ' 100%)';
+        edge = B; L = relLum(A)*0.5 + relLum(B)*0.5;
+      } else {
+        bg = 'linear-gradient(' + Math.round(SETTINGS.bgAngle) + 'deg, ' + A + ', ' + B + ')';
+        edge = mixHex(A, B, 0.5); L = relLum(A)*0.5 + relLum(B)*0.5;
+      }
+      st.setProperty('--bg', bg);
+      st.setProperty('--bg-edge', edge);
+      var ink = Math.round(SETTINGS.bgInk);   // 0 auto, 1 dark ink, 2 light ink
+      // 0.18 is where black and white text are equally legible on a colour
+      var lightInk = ink === 2 || (ink !== 1 && L < 0.18);
+      root.setAttribute('data-theme', lightInk ? 'dark' : 'light');
+    }
+    var vg = document.getElementById('vignette');
+    if(vg) vg.style.opacity = String(Math.max(0, Math.min(1, SETTINGS.bgVignette)));
+    refreshTheme();
+  }
   function refreshTheme(){
     THEME.ink = hexToRgb(rootVar('--ink') || '#1D1912');
     THEME.ash = hexToRgb(rootVar('--ash') || '#8B8172');
@@ -2366,7 +2513,7 @@
   // axes, independent of the depth setting used to display them.
   function fmtCoord(v){
     var r = Math.round(v);
-    return (r < 0 ? '\u2212' : '+') + Math.abs(r);
+    return (r < 0 ? '-' : '+') + Math.abs(r);
   }
   function nodeZ(n){ return n.z0 !== undefined ? n.z0 : n.z; }
   function coordText(x, y, z){
@@ -2380,9 +2527,9 @@
   function tooltipHTML(n){
     var sig = n.signature ? cleanSignature(n.signature) : '';
     return '<div class="tip-main">' +
-      '<span class="tip-icon">✳</span>' +
+      '<span class="tip-icon">*</span>' +
       '<span class="tip-id">' + fmtNodeId(n) + '</span>' +
-      '<span class="tip-sep">·</span>' +
+      '<span class="tip-sep">/</span>' +
       '<span class="tip-liens">' + fmtLiens(n) + '</span>' +
       '</div>' +
       (sig ? '<div class="tip-sign">' + escapeHTML(sig) + '</div>' : '') +
@@ -2835,13 +2982,13 @@
       }
       var textX = p.x + rr*1.45 + 6;
       if(showLabels && n.label){
-        ctx.font = 'italic 12px Fraunces, Georgia, serif';
+        ctx.font = '12px "MBM Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace';
         ctx.fillStyle = isHoverGroup ? rgba(THEME.accent, 0.95) : rgba(THEME.ink, agedAlpha(n, (dimming?hoverDimmed(0.6,0.25):0.6)*fog));
         ctx.fillText(n.label, textX, p.y + 4);
       }
       if(showCoords){
         // the surveyed position, in the manner of the plates this borrows from
-        ctx.font = '8px "Space Mono", ui-monospace, monospace';
+        ctx.font = '8px "MBM Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace';
         ctx.fillStyle = isHoverGroup ? rgba(THEME.accent, 0.8) : rgba(THEME.ink, agedAlpha(n, (dimming?hoverDimmed(0.36,0.14):0.36)*fog));
         ctx.fillText(coordText(n.x, n.y, nodeZ(n)), textX, p.y + (showLabels && n.label ? 15 : 4));
       }
@@ -2939,7 +3086,7 @@
       ctx.strokeStyle = rgba(THEME.accent, 0.85); ctx.lineWidth = 1.4; ctx.stroke();
     }
 
-    ctx.font = '9px "Space Mono", ui-monospace, monospace';
+    ctx.font = '9px "MBM Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace';
     ctx.fillStyle = rgba(THEME.accent, 0.9);
     ctx.fillText(coordText(ghost.pos.x, ghost.pos.y, unscaleZ(ghost.pos.z)), gp.x + 13, gp.y - 23);
     ctx.fillStyle = rgba(THEME.accent, 0.6);
@@ -3319,8 +3466,8 @@
   ========================================================================= */
   var settingsPanel = document.getElementById('settingsPanel');
   var settingsToggle = document.getElementById('settingsToggle');
-  var x2 = function(v){ return v.toFixed(2)+'\u00D7'; };
-  var signed2 = function(v){ return (v > 0.004 ? '+' : (v < -0.004 ? '\u2212' : '')) + Math.abs(v).toFixed(2); };
+  var x2 = function(v){ return v.toFixed(2)+'x'; };
+  var signed2 = function(v){ return (v > 0.004 ? '+' : (v < -0.004 ? '-' : '')) + Math.abs(v).toFixed(2); };
   var SETTING_CONTROLS = [
     { key:'fov',          input:'setFov',      out:'valFov',      fmt:x2, onChange:applyFov },
     { key:'depth',        input:'setDepth',    out:'valDepth',    fmt:x2, onChange:applyDepth },
@@ -3328,7 +3475,7 @@
     { key:'dof',          input:'setDof',      out:'valDof',      fmt:x2 },
     { key:'focusRange',   input:'setFocus',    out:'valFocus',    fmt:x2 },
     { key:'reach',        input:'setReach',    out:'valReach',    fmt:x2 },
-    { key:'rotSpeed',     input:'setRot',      out:'valRot',      fmt:function(v){ return v.toFixed(1)+'\u00D7'; } },
+    { key:'rotSpeed',     input:'setRot',      out:'valRot',      fmt:function(v){ return v.toFixed(1)+'x'; } },
     { key:'inertia',      input:'setInertia',  out:'valInertia',  fmt:function(v){ return v.toFixed(2); } },
     { key:'erode',        input:'setErode',    out:'valErode',    fmt:x2 },
     { key:'springback',   input:'setSpring',   out:'valSpring',   fmt:x2 },
@@ -3349,6 +3496,8 @@
     { key:'grainGravity', input:'setGravity',  out:'valGravity',  fmt:signed2 },
     { key:'grainSwirl',   input:'setSwirl',    out:'valSwirl',    fmt:signed2 },
     { key:'grainPush',    input:'setPush',     out:'valPush',     fmt:signed2 },
+    { key:'bgAngle',      input:'setBgAngle',  out:'valBgAngle',  fmt:function(v){ return Math.round(v)+' deg'; }, onChange:applyBackground },
+    { key:'bgVignette',   input:'setBgVig',    out:'valBgVig',    fmt:function(v){ return Math.round(v*100)+'%'; }, onChange:applyBackground },
     { key:'dust',         input:'setDust',     out:'valDust',     fmt:x2 },
     { key:'dustCount',    input:'setDustN',    out:'valDustN',    fmt:function(v){ return String(Math.round(v)); } },
     { key:'dustSize',     input:'setDustSz',   out:'valDustSz',   fmt:x2 },
@@ -3366,10 +3515,35 @@
     { key:'dustForm', btn:'setShape', labels:['Dot','Square','Wireframe','Solid'] },
     { key:'reticle',     btn:'setReticle',    labels:['Square','Circle','Cross','Hidden'] },
     { key:'grainColour', btn:'setGrainCol',   labels:['Ink','Accent','Mixed'] },
-    { key:'grainForm',   btn:'setGrainShape', labels:['Square','Dot','Cross'] }
+    { key:'grainForm',   btn:'setGrainShape', labels:['Square','Dot','Cross'] },
+    { key:'bgMode',      btn:'setBgMode',     labels:['Theme','Solid','Gradient'], onChange:applyBackground },
+    { key:'bgType',      btn:'setBgType',     labels:['Linear','Radial'],          onChange:applyBackground },
+    { key:'bgInk',       btn:'setBgInk',      labels:['Auto','Dark','Light'],      onChange:applyBackground }
   ];
 
+  var COLOUR_CONTROLS = [
+    { key:'bgA', input:'setBgA', out:'valBgA' },
+    { key:'bgB', input:'setBgB', out:'valBgB' }
+  ];
+  COLOUR_CONTROLS.forEach(function(c){
+    var el = document.getElementById(c.input);
+    if(!el) return;
+    el.addEventListener('input', function(){
+      SETTINGS[c.key] = el.value.toUpperCase();
+      var out = document.getElementById(c.out);
+      if(out) out.textContent = SETTINGS[c.key];
+      applyBackground();
+      saveTuning();
+    });
+  });
+
   function syncSettingsUI(){
+    COLOUR_CONTROLS.forEach(function(c){
+      var el = document.getElementById(c.input), out = document.getElementById(c.out);
+      var v = validHex(SETTINGS[c.key], SETTINGS_DEFAULTS[c.key]);
+      if(el) el.value = v.toLowerCase();
+      if(out) out.textContent = v;
+    });
     if(typeof syncSoundUI === 'function' && soundToggle) syncSoundUI();
     SETTING_CYCLERS.forEach(function(c){
       var bb = document.getElementById(c.btn);
@@ -3401,6 +3575,7 @@
     bb.addEventListener('click', function(){
       SETTINGS[c.key] = (Math.round(SETTINGS[c.key]) + 1) % c.labels.length;
       bb.textContent = c.labels[SETTINGS[c.key]];
+      if(c.onChange) c.onChange();
       saveTuning();
     });
   });
@@ -3422,6 +3597,7 @@
     SETTINGS = Object.assign({}, SETTINGS_DEFAULTS);
     applyFov();
     applyDepth();
+    applyBackground();
     syncSettingsUI();
     saveTuning();
   });
@@ -3545,6 +3721,11 @@
     }
     if(t.settings) for(var k in SETTINGS_DEFAULTS){
       if(skipS[k]) continue;
+      if(typeof SETTINGS_DEFAULTS[k] === 'string'){
+        var sv = t.settings[k];
+        if(typeof sv === 'string' && /^#[0-9a-f]{6}$/i.test(sv)) SETTINGS[k] = sv.toUpperCase();
+        continue;
+      }
       var v = parseFloat(t.settings[k]);
       if(isFinite(v)) SETTINGS[k] = v;
     }
@@ -3669,7 +3850,7 @@
     contribBar.classList.remove('signing');
     if(mode==='placing'){
       var remaining = MAX_POINTS - pending.nodes.length;
-      contribStep.textContent = 'STEP 1 — ADD YOUR POINTS';
+      contribStep.textContent = 'STEP 1 / ADD YOUR POINTS';
       contribMsg.textContent = remaining + (remaining===1 ? ' point remaining' : ' points remaining');
       contribSub.textContent = pending.nodes.length
         ? 'Click to add another point, or continue.'
@@ -3681,20 +3862,20 @@
       var linked = pendingLinkedCount() === pending.nodes.length;
       var full = linked && pendingFullyTriangulated();
       var multi = pending.nodes.length > 1;
-      contribStep.textContent = 'STEP 2 — TRIANGULATION';
+      contribStep.textContent = 'STEP 2 / TRIANGULATION';
       contribMsg.textContent = full
         ? (multi ? 'Your points are located.' : 'Your point is located.')
         : (multi ? 'Some points could not be located.' : 'Your point could not be located.');
       contribSub.textContent = full
         ? (multi ? 'Each point fixed by lines to its nearest points in the archive.' : 'Fixed by lines to its four nearest points in the archive.')
-        : 'This spot is too crowded to triangulate — try again.';
+        : 'This spot is too crowded to triangulate. Try again.';
       addRightButton('Continue', enterConfirming, !full);
       addRightButton('Try again', tryAgain, false, true);
       addRightButton('Cancel', function(){ exitContribution(true); }, false, true);
     } else if(mode==='confirming'){
-      contribStep.textContent = 'STEP 3 — CONFIRM';
+      contribStep.textContent = 'STEP 3 / CONFIRM';
       contribMsg.textContent = 'Your trace will become part of the archive.';
-      contribSub.textContent = 'It cannot be erased. A name is optional — it stays with your points.';
+      contribSub.textContent = 'It cannot be erased. A name is optional; it stays with your points.';
       signWrap.hidden = false;
       contribBar.classList.add('signing');
       signInput.value = storeState.signature || '';
@@ -3831,7 +4012,7 @@
   function closeEvolution(){
     evolutionMode = false;
     evoPlaying = false;
-    evoPlayBtn.textContent = '▶ Play';
+    evoPlayBtn.textContent = '> Play';
     evoPanel.hidden = true;
     evolutionBtn.classList.remove('active');
     if(savedCam){ cam.yaw=savedCam.yaw; cam.pitch=savedCam.pitch; cam.dist=savedCam.dist; updateZoomLabel(); }
@@ -3844,15 +4025,15 @@
     evoCaption.textContent = evoThreshold >= CURRENT_MAX_GEN ? 'Current state' : ('Generation ' + Math.round(evoThreshold));
   }
   evoSlider.addEventListener('input', function(){
-    evoPlaying=false; evoPlayBtn.textContent='▶ Play';
+    evoPlaying=false; evoPlayBtn.textContent='> Play';
     evoThreshold = parseFloat(evoSlider.value);
     updateEvoLabel();
   });
   evoPlayBtn.addEventListener('click', function(){
-    if(evoPlaying){ evoPlaying=false; evoPlayBtn.textContent='▶ Play'; return; }
+    if(evoPlaying){ evoPlaying=false; evoPlayBtn.textContent='> Play'; return; }
     evoStepIdx=0; evoThreshold=evoCheckpoints[0];
     evoFrom=evoCheckpoints[0]; evoTo=evoCheckpoints[0]; evoTweenT=1;
-    evoPlaying=true; evoPlayBtn.textContent='❙❙ Pause';
+    evoPlaying=true; evoPlayBtn.textContent='II Pause';
   });
 
   var evoPauseUntil=0, evoTweenStart=0;
@@ -3861,7 +4042,7 @@
     var now = performance.now();
     if(now < evoPauseUntil) return;
     if(evoTweenT >= 1){
-      if(evoStepIdx >= evoCheckpoints.length-1){ evoPlaying=false; evoPlayBtn.textContent='▶ Play'; return; }
+      if(evoStepIdx >= evoCheckpoints.length-1){ evoPlaying=false; evoPlayBtn.textContent='> Play'; return; }
       evoFrom = evoCheckpoints[evoStepIdx]; evoTo = evoCheckpoints[evoStepIdx+1];
       evoStepIdx++; evoTweenT=0; evoTweenStart=now;
     }
@@ -4451,6 +4632,7 @@
   loadTuning();
   applyFov();
   applyDepth();
+  applyBackground();
   syncSettingsUI();
   syncLinesUI();
   syncSoundUI();
