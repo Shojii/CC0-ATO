@@ -104,8 +104,8 @@
     padding: clamp(14px, 2.4vw, 26px) clamp(16px, 3vw, 34px);
     pointer-events:none;
   }
-  .hud-top{ top:0; }
-  .hud-bottom{ bottom:0; }
+  .hud-top{ top:0; transition: opacity 1.4s ease .15s; }
+  .hud-bottom{ bottom:0; transition: opacity 1.4s ease .5s; }
   .hud-top > *, .hud-bottom > *{ pointer-events:auto; }
 
   .hud-corner{ display:flex; flex-direction:column; gap:5px; min-width: 120px; }
@@ -159,43 +159,137 @@
   .ghost-btn.active{ color:var(--accent); }
   .ghost-btn.active::after{ background:var(--accent); transform:scaleX(1); }
 
-  /* ---------- Intro ---------- */
+  /* ---------- Intro: a short piece of theatre ---------- */
   .intro{
-    position:fixed; inset:0; z-index:100; background:var(--bg, var(--paper));
-    display:flex; align-items:center; justify-content:center;
+    position:fixed; inset:0; z-index:100; cursor:default;
+    -webkit-user-select:none; user-select:none;
     transition: opacity 1.1s ease, visibility 1.1s;
   }
   .intro.hidden{ opacity:0; visibility:hidden; pointer-events:none; }
-  .intro-inner{ max-width:620px; padding: 0 28px; text-align:center; }
-  .intro-eyebrow{
-    font-family:var(--font); font-size:12px; letter-spacing:0.28em;
-    color:var(--ink); opacity:0.55; margin:0 0 28px;
+  /* the ground itself, lowered in stages to let the drawing through */
+  .intro-curtain{
+    position:absolute; inset:0; background:var(--bg, var(--paper));
+    transition: opacity 2.6s cubic-bezier(.45,0,.2,1);
   }
-  .intro-copy{
-    font-family:var(--font); font-size: clamp(14px, 1.55vw, 18px);
-    line-height:1.5; color:var(--ink); margin:0 0 20px; opacity:0;
-    transform: translateY(8px);
-    animation: rise 1s ease forwards;
-    text-wrap: balance;
+  /* a pool of ground behind the words, so they stay legible over the lines */
+  .intro-scrim{
+    position:absolute; inset:0; pointer-events:none; opacity:0;
+    background: radial-gradient(ellipse 46% 30% at 50% 50%, var(--bg-core, var(--paper)) 0%, transparent 100%);
+    transition: opacity 2.6s ease;
   }
-  .intro-copy--final{ color:var(--accent); }
-  .intro-copy:nth-of-type(1){ animation-delay:.15s; }
-  .intro-copy:nth-of-type(2){ animation-delay:.55s; }
-  .intro-copy:nth-of-type(3){ animation-delay:1.05s; }
-  @keyframes rise{ to{ opacity:1; transform:translateY(0); } }
-  @media (prefers-reduced-motion: reduce){
-    .intro-copy{ animation:none; opacity:1; transform:none; }
+  .intro-scrim--low{
+    background: radial-gradient(ellipse 40% 24% at 50% 80%, var(--bg-core, var(--paper)) 0%, transparent 100%);
   }
+  .intro-stage{
+    position:absolute; inset:0; padding:0 28px; text-align:center;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+  }
+  /* the last beat: the archive takes the centre of the stage, the line and
+     the door wait beneath it */
+  .intro.is-final .intro-stage{ justify-content:flex-end; padding-bottom: clamp(92px, 16vh, 168px); }
+  .intro-block{
+    display:flex; flex-direction:column; align-items:center; gap:0.3em;
+    font-size: clamp(17px, 2.1vw, 27px); max-width: min(46ch, 100%);
+  }
+  .intro-line{
+    margin:0; line-height:1.45; color:var(--ink); text-wrap:balance; --caret:var(--ink);
+  }
+  .intro-line--accent{ color:var(--accent); --caret:var(--accent); }
+  .intro-title{
+    font-size: clamp(22px, 3.3vw, 42px); line-height:1.2;
+    letter-spacing:0.32em; margin-right:-0.32em;   /* the tracking after the last letter */
+  }
+  .intro-w{ white-space:nowrap; }
+  /* every letter is set from the start and only coloured in as it is typed,
+     so a centred, balanced line never reflows under the caret */
+  .intro-ch{
+    display:inline-block; position:relative; color:transparent; white-space:pre;
+    transition: opacity .55s ease, transform .75s cubic-bezier(.5,0,.9,.55);
+  }
+  .intro-ch.intro-sp{ display:inline; white-space:normal; }
+  .intro-ch.on{ color:inherit; }
+  .intro-ch.gone{ opacity:0; }
+  .intro-ch.cur::after{
+    content:''; position:absolute; left:100%; top:0.17em; bottom:0.1em;
+    width:0.5em; margin-left:0.06em; background:var(--caret);
+    animation: introCaret 1.06s steps(1) infinite;
+  }
+  .intro-ch.cur0::after{ left:0; margin-left:0; }
+  .intro-typing .intro-ch.cur::after{ animation:none; }
+  @keyframes introCaret{ 0%{ opacity:1; } 50%{ opacity:0; } }
+  .intro-rule{
+    width: clamp(80px, 12vw, 160px); height:1px; margin-top:0.45em;
+    background:var(--ink); opacity:0.5; transform:scaleX(0);
+    transition: transform 1.2s cubic-bezier(.2,.7,.1,1), opacity .6s ease;
+  }
+  .intro-rule.on{ transform:scaleX(1); }
+  .intro-sub{
+    margin:0.35em 0 0; font-size:11px; letter-spacing:0.18em; text-transform:uppercase;
+    color:var(--ink); opacity:0; transition: opacity 1s ease;
+  }
+  .intro-sub.on{ opacity:0.6; }
+  .intro-block.leaving .intro-rule, .intro-block.leaving .intro-sub{ opacity:0; }
+
   .enter-btn{
-    margin-top:34px; background:none; border:1px solid var(--ink); color:var(--ink);
+    margin-top:2.4em; background:var(--bg-core, var(--paper)); border:1px solid var(--ink); color:var(--ink);
     font-family:var(--font); font-size:12.5px; letter-spacing:0.1em; text-transform:uppercase;
-    padding:13px 26px; cursor:pointer; opacity:0; animation: rise 1s ease forwards; animation-delay:1.5s;
+    padding:13px 26px; cursor:pointer; opacity:0; animation: rise 1s ease forwards; animation-delay:.45s;
     transition: background .2s ease, color .2s ease;
   }
   .enter-btn:hover{ background:var(--ink); color:var(--paper); }
-  @media (prefers-reduced-motion: reduce){ .enter-btn{ animation:none; opacity:1; } }
+  @keyframes rise{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:translateY(0); } }
   .arrow{ display:inline-block; margin-left:4px; transition: transform .2s ease; }
   .enter-btn:hover .arrow{ transform: translateX(3px); }
+
+  .intro-foot{
+    position:absolute; left:0; right:0; bottom:0;
+    display:grid; grid-template-columns:1fr auto 1fr; align-items:end; gap:16px;
+    padding: clamp(14px, 2.4vw, 26px) clamp(16px, 3vw, 34px);
+    font-family:var(--font); font-size:11px; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--ink);
+  }
+  .intro-count{
+    justify-self:start; white-space:nowrap; font-variant-numeric:tabular-nums;
+    opacity:0; transition: opacity 1.2s ease;
+  }
+  .intro-count.on{ opacity:0.72; }
+  .intro-count b{ font-weight:400; }
+  .intro-center{ display:flex; flex-direction:column; align-items:center; gap:11px; }
+  .intro-steps{ display:flex; gap:8px; margin:0; padding:0; list-style:none; }
+  .intro-steps li{
+    width:7px; height:7px; box-sizing:border-box; border:1px solid var(--ink); opacity:0.3;
+    transition: background-color .5s ease, border-color .5s ease, opacity .5s ease;
+  }
+  .intro-steps li.done{ background:var(--ink); opacity:0.42; }
+  .intro-steps li.now{ background:var(--accent); border-color:var(--accent); opacity:1; }
+  .intro-hint{ font-size:9.5px; letter-spacing:0.16em; white-space:nowrap; opacity:0; transition: opacity .8s ease; }
+  .intro-hint.on{ opacity:0.42; }
+  .intro-skip{
+    justify-self:end; background:none; border:0; border-bottom:1px solid transparent;
+    padding:0 0 2px; cursor:pointer; white-space:nowrap;
+    font:inherit; letter-spacing:inherit; text-transform:inherit; color:var(--ink);
+    opacity:0; visibility:hidden; transition: opacity .8s ease, visibility .8s, border-color .2s ease;
+  }
+  .intro-skip.on{ opacity:0.6; visibility:visible; }
+  .intro-skip.on:hover{ opacity:1; border-bottom-color:var(--accent); }
+  .sr-only{
+    position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0;
+    overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap;
+  }
+  /* the interface waits in the wings until the visitor steps in */
+  .intro:not(.hidden) ~ .hud-top, .intro:not(.hidden) ~ .hud-bottom{
+    opacity:0; transition-duration:.6s; transition-delay:0s;
+  }
+  @media (max-width:640px){
+    .intro-count-more, .intro-hint{ display:none; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .intro-curtain, .intro-scrim{ transition-duration:1.2s; }
+    .intro-ch{ transition: opacity .4s ease; }
+    .intro-ch.cur::after{ display:none; }
+    .intro-rule{ transition:none; }
+    .enter-btn{ animation:none; opacity:1; }
+  }
 
   /* ---------- Contribution bar ---------- */
   .contrib-bar.signing{ grid-template-columns:1fr auto auto; }
@@ -272,8 +366,9 @@
   #nodeTip .tip-liens{ color:var(--ash); }
   #nodeTip .tip-sign{
     margin-top:3px; font-family:var(--font);
-    font-size:12px; color:var(--accent); opacity:0.9;
+    font-size:12px; color:var(--ink); opacity:1;
   }
+  #nodeTip .tip-sign--accent{ color:var(--accent); opacity:0.9; }
   #nodeTip .tip-coord{
     margin-top:4px; padding-top:4px; border-top:1px solid var(--line-soft);
     font-family:var(--font); font-size:9.5px;
@@ -456,13 +551,22 @@
   <div id="vignette"></div>
   <div id="nodeTip"></div>
 
-  <section class="intro" id="intro">
-    <div class="intro-inner">
-      <p class="intro-eyebrow">LIVING ARCHIVE</p>
-      <p class="intro-copy">Nothing starts from nothing.</p>
-      <p class="intro-copy">This drawing began as an archive from the past. Every visitor inherits what came before, adds a small trace, then passes it forward.</p>
-      <p class="intro-copy intro-copy--final">Nothing can be erased.</p>
-      <button class="enter-btn" id="enterBtn">Enter the archive <span class="arrow">-&gt;</span></button>
+  <section class="intro" id="intro" role="dialog" aria-modal="true" aria-label="Living Archive, introduction">
+    <div class="intro-curtain" id="introCurtain"></div>
+    <div class="intro-scrim" id="introScrim"></div>
+    <div class="intro-scrim intro-scrim--low" id="introScrimLow"></div>
+    <div class="intro-stage">
+      <div class="intro-block" id="introBlock" aria-hidden="true"></div>
+      <button class="enter-btn" id="enterBtn" hidden>Enter the archive <span class="arrow">-&gt;</span></button>
+    </div>
+    <p class="sr-only" id="introLive" aria-live="polite"></p>
+    <div class="intro-foot">
+      <span class="intro-count" id="introCount" aria-hidden="true"><b id="introCountN">0000</b> traces<span class="intro-count-more"> inherited</span></span>
+      <div class="intro-center" aria-hidden="true">
+        <ol class="intro-steps" id="introSteps"></ol>
+        <span class="intro-hint" id="introHint">Click or press space</span>
+      </div>
+      <button class="intro-skip" id="introSkip">Skip intro -&gt;</button>
     </div>
   </section>
 
@@ -829,6 +933,14 @@
         <input type="range" id="setHoverDim" min="0" max="1" step="0.01" value="0.22" aria-label="Highlight dim">
         <span class="setting-note">Resting on a point lights its whole trace and lets the rest of the archive fall back to this. 100% leaves the rest untouched.</span>
       </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Highlight colour</span>
+          <button class="setting-cycle" id="setHoverCol">Black</button>
+        </div>
+        <span class="setting-note">The colour a trace lights up in when a point is hovered: deep black (light ink on a dark ground), or the accent.</span>
+      </div>
     </div>
 
     <div class="settings-group">
@@ -1184,6 +1296,7 @@
       <button class="settings-reset" id="settingsReset">Reset defaults</button>
       <button class="settings-reset" id="settingsCopy">Copy all</button>
       <button class="settings-reset" id="fpsToggle">Hide FPS</button>
+      <button class="settings-reset" id="introReplay">Replay intro</button>
     </div>
 
     <dl class="settings-keys">
@@ -1246,7 +1359,7 @@
     dust:2.55, dustCount:340, dustSize:0.7, dof:1, focusRange:1, fadeSpan:60,
     springback:0.15, follow:0.5, grainNoise:0.5, dustForm:1, dustSpin:1,
     sound:0, volume:0.7, chimes:1, noteVol:1, gestureAmt:1, spaceAmt:1,
-    reticle:0, reticleSize:1, hoverDim:0.22, erodeSoft:1.5, erodeCore:0.42, erodeWake:0, cordon:1,
+    reticle:0, reticleSize:1, hoverDim:0.22, hoverCol:0, erodeSoft:1.5, erodeCore:0.42, erodeWake:0, cordon:1,
     grainVar:1, grainDensity:1, grainAlpha:1, grainColour:0, grainForm:0,
     grainGravity:0, grainSwirl:0, grainPush:0,
     bgMode:0, bgA:'#F2EDE1', bgB:'#D8CCB2', bgType:0, bgAngle:180, bgInk:0, bgVignette:0.55 };
@@ -2324,21 +2437,22 @@
     var lbl = document.getElementById('lblBgA');
     if(lbl) lbl.textContent = mode === 2 ? 'From' : 'Colour';
     if(mode !== 1 && mode !== 2){
-      st.removeProperty('--bg'); st.removeProperty('--bg-edge');
+      st.removeProperty('--bg'); st.removeProperty('--bg-edge'); st.removeProperty('--bg-core');
       if(hostTheme === null) root.removeAttribute('data-theme'); else root.setAttribute('data-theme', hostTheme);
     } else {
       var A = validHex(SETTINGS.bgA, SETTINGS_DEFAULTS.bgA), B = validHex(SETTINGS.bgB, SETTINGS_DEFAULTS.bgB);
-      var bg, edge, L;
-      if(mode === 1){ bg = A; edge = A; L = relLum(A); }
+      var bg, edge, core, L;
+      if(mode === 1){ bg = A; edge = A; core = A; L = relLum(A); }
       else if(radial){
         bg = 'radial-gradient(ellipse at 50% 45%, ' + A + ' 0%, ' + B + ' 100%)';
-        edge = B; L = relLum(A)*0.5 + relLum(B)*0.5;
+        edge = B; core = A; L = relLum(A)*0.5 + relLum(B)*0.5;
       } else {
         bg = 'linear-gradient(' + Math.round(SETTINGS.bgAngle) + 'deg, ' + A + ', ' + B + ')';
-        edge = mixHex(A, B, 0.5); L = relLum(A)*0.5 + relLum(B)*0.5;
+        edge = mixHex(A, B, 0.5); core = edge; L = relLum(A)*0.5 + relLum(B)*0.5;
       }
       st.setProperty('--bg', bg);
       st.setProperty('--bg-edge', edge);
+      st.setProperty('--bg-core', core);   // the tone at the centre, behind the intro's words
       var ink = Math.round(SETTINGS.bgInk);   // 0 auto, 1 dark ink, 2 light ink
       // 0.18 is where black and white text are equally legible on a colour
       var lightInk = ink === 2 || (ink !== 1 && L < 0.18);
@@ -2352,12 +2466,17 @@
     THEME.ink = hexToRgb(rootVar('--ink') || '#1D1912');
     THEME.ash = hexToRgb(rootVar('--ash') || '#8B8172');
     THEME.accent = hexToRgb(rootVar('--accent') || '#A8402A');
+    // the hover colour: the ink taken down to a deep black, or, on a dark
+    // ground where black would vanish, the ink itself
+    var inkLum = (0.2126*THEME.ink.r + 0.7152*THEME.ink.g + 0.0722*THEME.ink.b)/255;
+    THEME.deep = inkLum < 0.5 ? mixRgb(THEME.ink, { r:0, g:0, b:0 }, 0.55) : THEME.ink;
     THEME.paper = rootVar('--paper') || '#F2EDE1';
   }
   refreshTheme();
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', refreshTheme);
 
   function lerp(a,b,t){ return a+(b-a)*t; }
+  function hoverRgb(){ return Math.round(SETTINGS.hoverCol) === 1 ? THEME.accent : THEME.deep; }
   function mixRgb(c1,c2,t){ return { r:lerp(c1.r,c2.r,t), g:lerp(c1.g,c2.g,t), b:lerp(c1.b,c2.b,t) }; }
   function rgba(c,a){ return 'rgba('+Math.round(c.r)+','+Math.round(c.g)+','+Math.round(c.b)+','+Math.max(0,a)+')'; }
 
@@ -2421,6 +2540,10 @@
   var pending = { nodes:[], edges:[] };
   var lastInteraction = 0;
 
+  // The intro draws the archive in: below 1, a line only appears once the
+  // build reaches its key, and grows out from its inner end.
+  var introBuild = 1, introKey = {}, introFlip = {}, introNodeKey = {}, introSpot = null;
+  var INTRO_W = 0.05;
   var evolutionMode = false, evoThreshold = CURRENT_MAX_GEN, evoPlaying=false, evoTweenT=0, evoFrom=0, evoTo=0, evoStepIdx=0, evoCheckpoints=[];
   var savedCam = null;
 
@@ -2532,7 +2655,7 @@
       '<span class="tip-sep">/</span>' +
       '<span class="tip-liens">' + fmtLiens(n) + '</span>' +
       '</div>' +
-      (sig ? '<div class="tip-sign">' + escapeHTML(sig) + '</div>' : '') +
+      (sig ? '<div class="tip-sign' + (Math.round(SETTINGS.hoverCol) === 1 ? ' tip-sign--accent' : '') + '">' + escapeHTML(sig) + '</div>' : '') +
       '<div class="tip-coord">' + coordHTML(n.x, n.y, nodeZ(n)) + '</div>';
   }
 
@@ -2612,7 +2735,7 @@
       D_TIER = new Int8Array(DUST_POOL);   // -1 flat, else its cube tier
 
   function drawDust(){
-    var k = SETTINGS.dust;
+    var k = SETTINGS.dust * (introBuild < 1 ? Math.min(1, introBuild*1.6) : 1);
     var count = Math.min(dust.length, Math.round(SETTINGS.dustCount));
     if(k <= 0 || count <= 0) return;
     var t = reduceMotion ? 0 : performance.now()/1000;
@@ -2854,10 +2977,22 @@
     for(var i=0;i<edges.length;i++){
       var e = edges[i];
       if(e.generation > genCap) continue;
+      var grow = 1;
+      if(introBuild < 1){
+        var ik = introKey[e.id];
+        if(ik !== undefined){
+          if(ik >= introBuild) continue;
+          grow = Math.min(1, (introBuild - ik)/INTRO_W);
+        }
+      }
       var a = nodeById[e.a], b = nodeById[e.b];
       if(!a||!b) continue;
       var pa = project(a), pb = project(b);
       if(!pa||!pb) continue;
+      if(grow < 1){
+        var gq = 1 - Math.pow(1 - grow, 2);
+        if(introFlip[e.id]) pa = lerpProj(pb, pa, gq); else pb = lerpProj(pa, pb, gq);
+      }
       edgeDraw.push({ e:e, pa:pa, pb:pb, z:(pa.viewZ+pb.viewZ)/2 });
     }
     edgeDraw.sort(function(x,y){ return y.z-x.z; });
@@ -2934,10 +3069,11 @@
         ctx.stroke();
         ctx.restore();
       }
-      var eStyle = hlBoth ? rgba(THEME.accent, 0.95) : hlOne ? rgba(THEME.accent, 0.55) : edgeColor(d.e, dimming ? fog*hoverDimmed(1,0.22) : fog);
+      var hc = hl ? hoverRgb() : null;
+      var eStyle = hlBoth ? rgba(hc, 0.95) : hlOne ? rgba(hc, 0.55) : edgeColor(d.e, dimming ? fog*hoverDimmed(1,0.22) : fog);
       var eWidth = hlBoth ? 2 : hlOne ? 1.5 : (isBeam ? 1.1 : (d.e.origin==='visitor' ? 1 : (d.e.generation===0?0.9:0.6)));
       if(bite > 0){
-        var grainCol = hl ? THEME.accent : THEME.ink;
+        var grainCol = hl ? hc : THEME.ink;
         var grainA = agedAlpha(d.e, (dimming && !hl ? hoverDimmed(0.66,0.2) : 0.66) * fog);
         strokeEroded(d.pa, d.pb, eStyle, eWidth, d.e.seed, erodeBreathe, grainCol, grainA,
                      nodeById[d.e.a], nodeById[d.e.b], d.gate);
@@ -2951,10 +3087,18 @@
     for(var j=0;j<nodes.length;j++){
       var n = nodes[j];
       if(n.generation > genCap) continue;
+      var nGrow = 1;
+      if(introBuild < 1){
+        var nk = introNodeKey[n.id];
+        if(nk !== undefined){
+          if(nk >= introBuild) continue;
+          nGrow = Math.min(1, (introBuild - nk)/(INTRO_W*0.5));
+        }
+      }
       var p = project(n);
       if(!p) continue;
       if(p.x<-30||p.x>W+30||p.y<-30||p.y>H+30) continue;
-      nodeDraw.push({ n:n, p:p });
+      nodeDraw.push({ n:n, p:p, grow:nGrow });
       lastProjected[n.id] = p;
     }
     nodeDraw.sort(function(x,y){ return y.p.viewZ-x.p.viewZ; });
@@ -2967,13 +3111,14 @@
       var fog = depthFade(p.viewZ);
       var rr = Math.max(0.8, n.r*p.scale);
       var isHoverGroup = dimming && n.traceId===hoverTraceId;
-      var nc = isHoverGroup ? rgba(THEME.accent, Math.min(1, 0.9+0.1*fog)) : nodeColor(n, dimming ? fog*hoverDimmed(1,0.22) : fog);
-      var halfSize = n.r * (n.big ? 0.95 : 0.8);
+      var hcN = isHoverGroup ? hoverRgb() : null;
+      var nc = isHoverGroup ? rgba(hcN, Math.min(1, 0.9+0.1*fog)) : nodeColor(n, dimming ? fog*hoverDimmed(1,0.22) : fog);
+      var halfSize = n.r * (n.big ? 0.95 : 0.8) * (d.grow < 1 ? 0.25 + 0.75*d.grow : 1);
       var corners = projectCube(n, halfSize);
       if(corners){
         if(isHoverGroup){
           var halo = projectCube(n, halfSize*1.9);
-          if(halo) strokeCube(halo, rgba(THEME.accent, 0.45), 1.1);
+          if(halo) strokeCube(halo, rgba(hcN, 0.45), 1.1);
         }
         strokeCube(corners, nc, n.big ? 1.3 : (showFineStroke ? 1 : 0.8));
       } else {
@@ -2983,13 +3128,13 @@
       var textX = p.x + rr*1.45 + 6;
       if(showLabels && n.label){
         ctx.font = '12px "MBM Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace';
-        ctx.fillStyle = isHoverGroup ? rgba(THEME.accent, 0.95) : rgba(THEME.ink, agedAlpha(n, (dimming?hoverDimmed(0.6,0.25):0.6)*fog));
+        ctx.fillStyle = isHoverGroup ? rgba(hcN, 0.95) : rgba(THEME.ink, agedAlpha(n, (dimming?hoverDimmed(0.6,0.25):0.6)*fog));
         ctx.fillText(n.label, textX, p.y + 4);
       }
       if(showCoords){
         // the surveyed position, in the manner of the plates this borrows from
         ctx.font = '8px "MBM Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace';
-        ctx.fillStyle = isHoverGroup ? rgba(THEME.accent, 0.8) : rgba(THEME.ink, agedAlpha(n, (dimming?hoverDimmed(0.36,0.14):0.36)*fog));
+        ctx.fillStyle = isHoverGroup ? rgba(hcN, 0.8) : rgba(THEME.ink, agedAlpha(n, (dimming?hoverDimmed(0.36,0.14):0.36)*fog));
         ctx.fillText(coordText(n.x, n.y, nodeZ(n)), textX, p.y + (showLabels && n.label ? 15 : 4));
       }
     });
@@ -3039,6 +3184,7 @@
       if(mainC) strokeCube(mainC, rgba(THEME.accent,1), 1.6);
     });
 
+    drawIntroSpot();
     drawGhost();
     drawReticle();
   }
@@ -3168,6 +3314,7 @@
     updateSway();
     updateErode();
     updateGhost();
+    updateIntro();
     draw();
     updatePinnedTooltip();
     updateEvolutionAutoplay();
@@ -3514,6 +3661,7 @@
   var SETTING_CYCLERS = [
     { key:'dustForm', btn:'setShape', labels:['Dot','Square','Wireframe','Solid'] },
     { key:'reticle',     btn:'setReticle',    labels:['Square','Circle','Cross','Hidden'] },
+    { key:'hoverCol',    btn:'setHoverCol',   labels:['Black','Accent'] },
     { key:'grainColour', btn:'setGrainCol',   labels:['Ink','Accent','Mixed'] },
     { key:'grainForm',   btn:'setGrainShape', labels:['Square','Dot','Cross'] },
     { key:'bgMode',      btn:'setBgMode',     labels:['Theme','Solid','Gradient'], onChange:applyBackground },
@@ -3602,6 +3750,7 @@
     saveTuning();
   });
   window.addEventListener('keydown', function(ev){
+    if(introActive()) return;          // the intro has the keys while it plays
     if(ev.code === 'Space' || ev.key === ' '){
       var a = document.activeElement, tag = a ? a.tagName : '';
       if(tag === 'BUTTON' || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
@@ -3764,16 +3913,6 @@
   ========================================================================= */
   document.getElementById('zoomIn').addEventListener('click', function(){ lastInteraction=performance.now(); setDist(cam.dist/1.45); });
   document.getElementById('zoomOut').addEventListener('click', function(){ lastInteraction=performance.now(); setDist(cam.dist*1.45); });
-
-  /* ========================================================================
-     Intro
-  ========================================================================= */
-  var introEl = document.getElementById('intro');
-  document.getElementById('enterBtn').addEventListener('click', function(){
-    introEl.classList.add('hidden');
-    storeState.seenIntro = true; persist();
-    audioStart();                       // the one gesture a browser needs
-  });
 
   /* ========================================================================
      Contribution flow — Add points → Triangulate (automatic) → Confirm
@@ -4078,6 +4217,511 @@
   var OPEN_ZOOM = 3.7, OPEN_DENSE_NODES = 60;
   cam.dist = DIST_REF;
   if(nodes.length >= OPEN_DENSE_NODES) cam.dist = DIST_REF/OPEN_ZOOM;
+
+
+  /* ========================================================================
+     The intro — a short piece of theatre, in five beats.
+
+     The house is dark: a caret blinks on an empty stage, then types the
+     title. The lines arrive one at a time, typed, and leave the way the
+     drawing gives way under the cursor — their letters crumble to grit and
+     fall. Halfway through, the curtain thins and the archive draws itself
+     in behind the words, from the oldest strokes at its heart outward, with
+     visitors' own traces arriving last; when the text says a visitor adds a
+     trace, one lights up, point by point. Then the curtain rises, the camera
+     moves in among the lines, and the last sentence waits with the door.
+
+     A click, space, enter or the right arrow finishes the line being typed,
+     or moves on to the next beat; Escape or "Skip intro" goes straight in.
+     The words live in INTRO_SCENES and can be edited freely.
+  ========================================================================= */
+  var INTRO_SCENES = [
+    { lines:[{ text:'LIVING ARCHIVE', cls:'intro-title', speed:95, lead:1300 }],
+      title:true, hold:1600, hint:true },
+    { lines:[{ text:'Nothing starts from nothing.' }],
+      hold:1800, hint:true },
+    { lines:[{ text:'This drawing began as an archive from the past.' }],
+      curtain:0.4, scrim:0.9, build:0.55, buildDur:5200, count:true, hold:2100 },
+    { lines:[{ text:'Every visitor inherits what came before,' },
+             { text:'adds a small trace,', cue:'spot' },
+             { text:'then passes it forward.', cue:'release' }],
+      curtain:0.2, scrim:0.9, build:1, buildDur:6800, count:true, hold:2100 },
+    { lines:[{ text:'Nothing can be erased.', cls:'intro-line--accent', lead:900 }],
+      curtain:0, scrim:0.82, build:1, buildDur:1600, count:true, dolly:true, final:true }
+  ];
+
+  var introEl = document.getElementById('intro');
+  var introCurtain = document.getElementById('introCurtain');
+  var introScrim = document.getElementById('introScrim');
+  var introScrimLow = document.getElementById('introScrimLow');
+  var introBlock = document.getElementById('introBlock');
+  var introLive = document.getElementById('introLive');
+  var introCount = document.getElementById('introCount');
+  var introCountN = document.getElementById('introCountN');
+  var introSteps = document.getElementById('introSteps');
+  var introHint = document.getElementById('introHint');
+  var introSkip = document.getElementById('introSkip');
+  var enterBtn = document.getElementById('enterBtn');
+  var introHud = [document.querySelector('.hud-top'), document.querySelector('.hud-bottom')];
+  INTRO_SCENES.forEach(function(){ introSteps.appendChild(document.createElement('li')); });
+
+  var INTRO = {
+    on:false, scene:-1, token:0, typing:false, rush:false, timers:[], cur:null,
+    build:null, cam:null, yawK:1, yawTo:1, enteredAt:0, skipTimer:0, shown:-1, keys:false
+  };
+
+  function introActive(){ return !!(INTRO && INTRO.on); }
+  function lerpProj(a, b, t){
+    return { x:a.x + (b.x-a.x)*t, y:a.y + (b.y-a.y)*t,
+             scale:a.scale + (b.scale-a.scale)*t, viewZ:a.viewZ + (b.viewZ-a.viewZ)*t };
+  }
+  function introOpenDist(){ return nodes.length >= OPEN_DENSE_NODES ? DIST_REF/OPEN_ZOOM : DIST_REF; }
+
+  // Timers the intro can cancel when it jumps, or fire early when the
+  // visitor asks for the rest of a line at once.
+  function introTimer(fn, ms){
+    var rec = { fn:fn, id:0 };
+    rec.id = setTimeout(function(){
+      var i = INTRO.timers.indexOf(rec);
+      if(i >= 0) INTRO.timers.splice(i, 1);
+      fn();
+    }, ms);
+    INTRO.timers.push(rec);
+  }
+  function introCancel(){
+    INTRO.timers.forEach(function(r){ clearTimeout(r.id); });
+    INTRO.timers.length = 0;
+  }
+  function introFlush(){
+    var list = INTRO.timers.slice();
+    INTRO.timers.length = 0;
+    list.forEach(function(r){ clearTimeout(r.id); r.fn(); });
+  }
+  function introWait(ms){
+    return new Promise(function(res){
+      if(INTRO.rush && INTRO.typing) res(); else introTimer(res, ms);
+    });
+  }
+
+  // Where each line sits in the build: the archive is drawn again in the
+  // order it was made — every point keeps the date it was set down — each
+  // line growing out of the older of its two ends; points that share a date
+  // go from the heart outward, loosened by a little chance. Visitors' traces
+  // come after it, in the order they were left.
+  function introComputeKeys(){
+    introKey = {}; introFlip = {}; introNodeKey = {};
+    if(!nodes.length) return;
+    var cx = 0, cy = 0, cz = 0;
+    nodes.forEach(function(n){ cx += n.x; cy += n.y; cz += n.z; });
+    cx /= nodes.length; cy /= nodes.length; cz /= nodes.length;
+    var rOf = {}, maxR = 1;
+    nodes.forEach(function(n){
+      var r = Math.sqrt((n.x-cx)*(n.x-cx) + (n.y-cy)*(n.y-cy) + (n.z-cz)*(n.z-cz));
+      rOf[n.id] = r; if(r > maxR) maxR = r;
+    });
+    var ARCH = 0.84, arch = [], vis = [];
+    edges.forEach(function(e, i){
+      var A = nodeById[e.a], B = nodeById[e.b];
+      if(!A || !B) return;
+      var ta = A.createdAt || 0, tb = B.createdAt || 0;
+      var rec = { e:e, t:Math.max(ta, tb), r:Math.min(rOf[e.a], rOf[e.b])/maxR, h:hash2(i, 577),
+                  flip: tb < ta || (tb === ta && rOf[e.b] < rOf[e.a]) };
+      (A.origin === 'visitor' || B.origin === 'visitor' || e.origin === 'visitor' ? vis : arch).push(rec);
+    });
+    function lay(list, k0, k1){
+      list.sort(function(x, y){ return (x.t - y.t) || ((x.r + x.h*0.35) - (y.r + y.h*0.35)); });
+      var n = list.length;
+      list.forEach(function(rec, i){
+        var k = k0 + (k1 - k0 - INTRO_W) * (n > 1 ? i/(n-1) : 0);
+        var e = rec.e;
+        introKey[e.id] = k; introFlip[e.id] = rec.flip;
+        // a point arrives with the first line to reach it
+        var ka = k + (rec.flip ? INTRO_W : 0), kb = k + (rec.flip ? 0 : INTRO_W);
+        if(introNodeKey[e.a] === undefined || ka < introNodeKey[e.a]) introNodeKey[e.a] = ka;
+        if(introNodeKey[e.b] === undefined || kb < introNodeKey[e.b]) introNodeKey[e.b] = kb;
+      });
+    }
+    lay(arch, 0, ARCH);
+    lay(vis, ARCH + 0.02, 0.995);
+    nodes.forEach(function(n){
+      if(introNodeKey[n.id] === undefined)
+        introNodeKey[n.id] = n.origin === 'visitor' ? ARCH + 0.02 : (rOf[n.id]/maxR) * (ARCH - INTRO_W);
+    });
+  }
+
+  function introBuildTo(to, dur){
+    if(!(dur > 0) || reduceMotion){ introBuild = to; INTRO.build = null; return; }
+    INTRO.build = { from:introBuild, to:to, t0:performance.now(), dur:dur };
+  }
+  function introCamTo(dist, dur){
+    if(!(dur > 0) || reduceMotion){ cam.dist = dist; INTRO.cam = null; updateZoomLabel(); return; }
+    INTRO.cam = { from:cam.dist, to:dist, t0:performance.now(), dur:dur };
+  }
+
+  function updateIntro(){
+    var now = performance.now();
+    if(INTRO.build){
+      var u = Math.min(1, (now - INTRO.build.t0)/INTRO.build.dur);
+      var e = 0.5 - 0.5*Math.cos(Math.PI*u);
+      introBuild = INTRO.build.from + (INTRO.build.to - INTRO.build.from)*e;
+      if(u >= 1){ introBuild = INTRO.build.to; INTRO.build = null; }
+    }
+    // once the visitor is in, their own hand takes the camera back
+    if(INTRO.cam && !INTRO.on &&
+       (lastInteraction > INTRO.enteredAt || fitTween || distBeforeFit !== null)) INTRO.cam = null;
+    if(INTRO.cam){
+      var v = Math.min(1, (now - INTRO.cam.t0)/INTRO.cam.dur);
+      var ev = v < 0.5 ? 4*v*v*v : 1 - Math.pow(-2*v + 2, 3)/2;
+      cam.dist = INTRO.cam.from + (INTRO.cam.to - INTRO.cam.from)*ev;
+      markViewMove(); updateZoomLabel();
+      if(v >= 1) INTRO.cam = null;
+    }
+    if(INTRO.on){
+      INTRO.yawK += (INTRO.yawTo - INTRO.yawK)*0.02;
+      if(!reduceMotion) cam.yaw += 0.0007 * SETTINGS.rotSpeed * INTRO.yawK;
+      var total = traceCountTotal;
+      var shown = Math.round(Math.max(0, Math.min(1, introBuild)) * total);
+      if(shown !== INTRO.shown){
+        INTRO.shown = shown;
+        var str = String(shown), w = String(total).length;
+        while(str.length < w) str = '0' + str;
+        introCountN.textContent = str;
+      }
+    }
+  }
+
+  // ---- the words ----
+  function introMakeLine(line){
+    var p = document.createElement('p');
+    p.className = 'intro-line' + (line.cls ? ' ' + line.cls : '');
+    var chars = [];
+    line.text.split(' ').forEach(function(word, wi){
+      if(wi > 0){
+        var sp = document.createElement('span');
+        sp.className = 'intro-ch intro-sp'; sp.textContent = ' ';
+        p.appendChild(sp); chars.push(sp);
+      }
+      var w = document.createElement('span');
+      w.className = 'intro-w';
+      for(var i=0;i<word.length;i++){
+        var c = document.createElement('span');
+        c.className = 'intro-ch'; c.textContent = word[i];
+        w.appendChild(c); chars.push(c);
+      }
+      p.appendChild(w);
+    });
+    p._chars = chars;
+    return p;
+  }
+  function introCaret(c, atStart){
+    if(INTRO.cur) INTRO.cur.classList.remove('cur', 'cur0');
+    INTRO.cur = c || null;
+    if(c){ c.classList.add('cur'); if(atStart) c.classList.add('cur0'); }
+  }
+  function introType(p, line, tk){
+    return new Promise(function(done){
+      var chars = p._chars, i = 0, speed = line.speed || 46;
+      if(!chars.length) return done();
+      function finish(){
+        chars.forEach(function(c){ c.classList.add('on'); });
+        introCaret(chars[chars.length-1]);
+        done();
+      }
+      if(INTRO.rush || reduceMotion){ finish(); return; }
+      introCaret(chars[0], true);              // the caret waits at the start, blinking
+      introBlock.classList.remove('intro-typing');
+      function step(){
+        if(tk !== INTRO.token) return done();
+        if(INTRO.rush){ finish(); return; }
+        introBlock.classList.add('intro-typing');
+        var c = chars[i++];
+        c.classList.add('on'); introCaret(c);
+        if(i >= chars.length) return done();
+        var ch = c.textContent, d = speed*(0.55 + Math.random()*0.9);
+        if(ch === ',') d += 260; else if(ch === '.') d += 340; else if(ch === ' ') d += speed*0.5;
+        introTimer(step, d);
+      }
+      introTimer(step, line.lead || 380);
+    });
+  }
+  // the letters give way the way the lines do under the cursor: each turns
+  // to grit, then falls out of the light
+  var INTRO_GRIT = ['.', '.', '.', ':', ',', '_', "'"];
+  function introDecay(){
+    return new Promise(function(done){
+      introBlock.classList.add('leaving');
+      introBlock.classList.remove('intro-typing');
+      introCaret(null);
+      var spread = reduceMotion ? 0 : 620;
+      var all = introBlock.querySelectorAll('.intro-ch.on');
+      for(var i=0;i<all.length;i++){
+        (function(c){
+          if(c.classList.contains('intro-sp')) return;
+          var t1 = Math.random()*spread;
+          if(!reduceMotion) introTimer(function(){ c.textContent = INTRO_GRIT[(Math.random()*INTRO_GRIT.length)|0]; }, t1);
+          introTimer(function(){
+            c.classList.add('gone');
+            if(!reduceMotion) c.style.transform = 'translate(' + ((Math.random()-0.5)*6).toFixed(1) + 'px,' +
+                                                  (3 + Math.random()*10).toFixed(1) + 'px)';
+          }, reduceMotion ? 0 : t1 + 90 + Math.random()*260);
+        })(all[i]);
+      }
+      introTimer(done, reduceMotion ? 450 : spread + 880);
+    });
+  }
+
+  // ---- the stage around the words ----
+  function introSetStage(sc, k){
+    introCurtain.style.opacity = String(sc.curtain === undefined ? 1 : sc.curtain);
+    introEl.classList.toggle('is-final', !!sc.final);
+    introScrim.style.opacity = String(sc.final ? 0 : (sc.scrim || 0));
+    introScrimLow.style.opacity = String(sc.final ? (sc.scrim || 0) : 0);
+    if(sc.build !== undefined) introBuildTo(Math.max(introBuild, sc.build), sc.buildDur || 1600);
+    introCount.classList.toggle('on', !!sc.count);
+    introHint.classList.remove('on');
+    enterBtn.hidden = true;
+    var lis = introSteps.children;
+    for(var i=0;i<lis.length;i++) lis[i].className = i < k ? 'done' : (i === k ? 'now' : '');
+    var spotHere = sc.lines.some(function(l){ return l.cue === 'spot'; });
+    if(!spotHere && introSpot && !introSpot.out) introSpot.out = performance.now();
+    if(sc.dolly){ introCamTo(introOpenDist(), 4200); INTRO.yawTo = 0.3; }
+    if(sc.final) introSkip.classList.remove('on');      // the door is right there now
+    else if(INTRO.skipReady) introSkip.classList.add('on');
+    if(audioReady() && SETTINGS.noteVol > 0.01){
+      var f = STAR_NOTES[[0, 2, 1, 4, 3][k] || 0];
+      audioStar(f, 0.032*SETTINGS.noteVol, 0, 5.5, 0);
+    }
+  }
+
+  async function introPlay(k){
+    introCancel();
+    var tk = ++INTRO.token;
+    var sc = INTRO_SCENES[k];
+    if(!sc) return;
+    INTRO.scene = k; INTRO.rush = false; INTRO.typing = true;
+    introSetStage(sc, k);
+    introBlock.innerHTML = '';
+    introBlock.classList.remove('leaving', 'intro-typing');
+    var els = sc.lines.map(function(line){
+      var p = introMakeLine(line); introBlock.appendChild(p); return p;
+    });
+    var rule = null, sub = null;
+    if(sc.title){
+      rule = document.createElement('div'); rule.className = 'intro-rule';
+      sub = document.createElement('p'); sub.className = 'intro-sub';
+      sub.innerHTML = 'CC0 / Permanent loading<span class="dots"><span>.</span><span>.</span><span>.</span></span>';
+      introBlock.appendChild(rule); introBlock.appendChild(sub);
+    }
+    introLive.textContent = sc.lines.map(function(l){ return l.text; }).join(' ');
+    for(var i=0;i<els.length;i++){
+      if(sc.lines[i].cue) introCue(sc.lines[i].cue);
+      await introType(els[i], sc.lines[i], tk);
+      if(tk !== INTRO.token) return;
+      if(i < els.length - 1){
+        await introWait(sc.lines[i].pause || 700);
+        if(tk !== INTRO.token) return;
+      }
+    }
+    introBlock.classList.remove('intro-typing');
+    INTRO.typing = false; INTRO.rush = false;
+    if(rule){
+      rule.classList.add('on');
+      introTimer(function(){ sub.classList.add('on'); }, reduceMotion ? 0 : 500);
+    }
+    if(sc.final){
+      enterBtn.hidden = false;
+      if(INTRO.keys){ try{ enterBtn.focus({ preventScroll:true }); }catch(e){ enterBtn.focus(); } }
+      return;
+    }
+    if(sc.hint) introHint.classList.add('on');
+    await introWait((sc.hold || 2000) + (reduceMotion ? 1200 : 0));
+    if(tk !== INTRO.token) return;
+    await introDecay();
+    if(tk !== INTRO.token) return;
+    introPlay(k + 1);
+  }
+
+  function introAdvance(){
+    if(!INTRO.on || INTRO.scene < 0) return;
+    var sc = INTRO_SCENES[INTRO.scene];
+    if(INTRO.typing){ INTRO.rush = true; introFlush(); return; }
+    if(sc.final){ introEnter(); return; }
+    introPlay(INTRO.scene + 1);
+  }
+
+  // ---- "adds a small trace": one of the archive's triangles lights up ----
+  function introCue(c){
+    if(c === 'spot') introSpotPick();
+    else if(c === 'release' && introSpot && !introSpot.out) introSpot.out = performance.now();
+  }
+  function introSpotPick(){
+    // a triangle of lines already drawn, if there is one in view; otherwise
+    // any of them (the visitor may have hurried on ahead of the drawing)
+    if(!introSpotSearch(true)) introSpotSearch(false);
+  }
+  function introSpotSearch(drawnOnly){
+    var adj = {};
+    edges.forEach(function(e){
+      var k = introKey[e.id];
+      if(drawnOnly && k !== undefined && k + INTRO_W > introBuild) return;
+      (adj[e.a] = adj[e.a] || {})[e.b] = e;
+      (adj[e.b] = adj[e.b] || {})[e.a] = e;
+    });
+    var m = Math.min(W, H);
+    var r = introBlock.getBoundingClientRect(), pad = 30;
+    function onStage(p){ return p && p.x > m*0.07 && p.x < W - m*0.07 && p.y > m*0.08 && p.y < H - m*0.16; }
+    function inText(x, y){ return x > r.left-pad && x < r.right+pad && y > r.top-pad && y < r.bottom+pad; }
+    function ok(p){ return onStage(p) && !inText(p.x, p.y); }
+    var P = function(id){ return lastProjected[id] || (nodeById[id] ? project(nodeById[id]) : null); };
+    var best = null, bestS = Infinity;
+    for(var a in adj){
+      var pa = P(a); if(!ok(pa)) continue;
+      var na = adj[a];
+      for(var b in na){
+        if(b <= a) continue;
+        var pb = P(b); if(!ok(pb)) continue;
+        var nb = adj[b];
+        for(var c in nb){
+          if(c <= b || !na[c]) continue;
+          var pc = P(c); if(!ok(pc)) continue;
+          if(inText((pa.x+pb.x+pc.x)/3, (pa.y+pb.y+pc.y)/3)) continue;
+          var per = Math.hypot(pb.x-pa.x, pb.y-pa.y) + Math.hypot(pc.x-pb.x, pc.y-pb.y) + Math.hypot(pa.x-pc.x, pa.y-pc.y);
+          var area = Math.abs((pb.x-pa.x)*(pc.y-pa.y) - (pc.x-pa.x)*(pb.y-pa.y))/2;
+          if(area < per*per*0.018) continue;                     // no slivers
+          var sc = Math.abs(per/m - 0.6) + 0.25*((pa.viewZ+pb.viewZ+pc.viewZ)/3)/cam.dist;
+          if(sc < bestS){ bestS = sc; best = [a, b, c]; }
+        }
+      }
+    }
+    if(!best){ introSpot = null; return false; }
+    var N = best.map(function(id){ return nodeById[id]; });
+    introSpot = { nodes:N, edges:[adj[best[0]][best[1]], adj[best[1]][best[2]], adj[best[2]][best[0]]],
+                  t0:performance.now(), out:null };
+    if(audioReady()) N.forEach(function(n, i){
+      setTimeout(function(){ if(introSpot && introSpot.nodes === N) audioPoint(n, 'place'); }, i*260);
+    });
+    return true;
+  }
+  function drawIntroSpot(){
+    var s = introSpot;
+    if(!s) return;
+    var now = performance.now(), t = (now - s.t0)/1000, k = 1;
+    if(s.out){
+      k = 1 - Math.min(1, (now - s.out)/1800);
+      if(k <= 0){ introSpot = null; return; }
+      k = smoothT(k);
+    }
+    var P = s.nodes.map(project);
+    if(!P[0] || !P[1] || !P[2]) return;
+    for(var i=0;i<3;i++){
+      var ap = reduceMotion ? 1 : Math.max(0, Math.min(1, (t - i*0.26)/0.22));
+      if(ap <= 0) continue;
+      var n = s.nodes[i], half = n.r*(n.big ? 0.95 : 0.8);
+      var halo = projectCube(n, half*1.9*(1.7 - 0.7*ap));
+      if(halo) strokeCube(halo, rgba(THEME.accent, 0.45*ap*k), 1.1);
+      var cc = projectCube(n, half);
+      if(cc) strokeCube(cc, rgba(THEME.accent, ap*k), 1.4);
+    }
+    // then the line goes round them, the way a visitor's trace is drawn
+    var lt = reduceMotion ? 3 : Math.max(0, (t - 0.85)/0.42);
+    for(var j=0;j<3;j++){
+      var f = Math.max(0, Math.min(1, lt - j));
+      if(f <= 0) break;
+      var a = P[j], b = P[(j+1)%3];
+      strokeSeg(a, f < 1 ? lerpProj(a, b, 1 - Math.pow(1-f, 3)) : b,
+                rgba(THEME.accent, 0.95*k), Math.max(1.7, 1.3/Math.max(0.05, LINES.weight)), s.edges[j].seed);
+    }
+  }
+
+  // ---- curtain up, curtain down ----
+  function introSetHud(hidden){
+    introHud.forEach(function(h){ if(h) h.inert = hidden; });
+  }
+  function introStart(replay){
+    introCancel();
+    INTRO.on = true; INTRO.scene = -1; INTRO.token++; INTRO.typing = false; INTRO.rush = false;
+    INTRO.yawK = INTRO.yawTo = 1; INTRO.shown = -1;
+    var tk = INTRO.token;
+    introSetHud(true);
+    introBlock.innerHTML = ''; introLive.textContent = '';
+    enterBtn.hidden = true;
+    introCount.classList.remove('on'); introHint.classList.remove('on');
+    var lis = introSteps.children;
+    for(var i=0;i<lis.length;i++) lis[i].className = '';
+    // the ground goes back up at once; on a replay the whole intro fades in over it
+    introCurtain.style.transition = 'none'; introCurtain.style.opacity = '1';
+    introScrim.style.transition = 'none'; introScrim.style.opacity = '0';
+    introScrimLow.style.transition = 'none'; introScrimLow.style.opacity = '0';
+    introEl.classList.remove('is-final');
+    void introCurtain.offsetWidth;
+    introCurtain.style.transition = ''; introScrim.style.transition = ''; introScrimLow.style.transition = '';
+    introEl.classList.remove('hidden');
+    introSkip.classList.remove('on');
+    clearTimeout(INTRO.skipTimer);
+    INTRO.skipReady = false;
+    INTRO.skipTimer = setTimeout(function(){
+      INTRO.skipReady = true;
+      var sc = INTRO_SCENES[INTRO.scene];
+      if(!(sc && sc.final)) introSkip.classList.add('on');
+    },
+                                 storeState.seenIntro ? 400 : 2600);
+    setTimeout(function(){
+      if(tk !== INTRO.token) return;
+      // behind the curtain: the paper is wiped and the camera stands back
+      introComputeKeys();
+      introBuild = 0; INTRO.build = null; INTRO.cam = null; introSpot = null;
+      pinnedNode = null; tooltipEl.classList.remove('show');
+      cam.dist = fitAllDistance()*1.05; updateZoomLabel();
+      var fonts = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+      fonts.then(function(){
+        if(tk !== INTRO.token) return;
+        introTimer(function(){ if(tk === INTRO.token) introPlay(0); }, reduceMotion ? 200 : 700);
+      });
+    }, replay ? 1150 : 0);
+  }
+  function introEnter(){
+    if(!INTRO.on) return;
+    INTRO.on = false; INTRO.token++; INTRO.typing = false;
+    introCancel();
+    clearTimeout(INTRO.skipTimer);
+    INTRO.enteredAt = performance.now();
+    lastInteraction = INTRO.enteredAt;
+    // whatever is still on its way in arrives quickly
+    introBuildTo(1, 1100);
+    var open = introOpenDist();
+    if(!(INTRO.cam && INTRO.cam.to === open) && Math.abs(cam.dist - open) > 1) introCamTo(open, 1700);
+    if(introSpot && !introSpot.out) introSpot.out = performance.now();
+    introEl.classList.add('hidden');
+    introSetHud(false);
+    if(introEl.contains(document.activeElement)) document.activeElement.blur();
+    storeState.seenIntro = true; persist();
+    audioStart();                       // the one gesture a browser needs
+  }
+
+  introEl.addEventListener('click', function(ev){
+    if(ev.target.closest && ev.target.closest('button')) return;
+    introAdvance();
+  });
+  introSkip.addEventListener('click', introEnter);
+  enterBtn.addEventListener('click', introEnter);
+  window.addEventListener('keydown', function(ev){
+    if(!introActive()) return;
+    INTRO.keys = true;
+    if(ev.key === 'Escape'){ ev.preventDefault(); introEnter(); return; }
+    var a = document.activeElement;
+    if(a && a.tagName === 'BUTTON' && (ev.key === 'Enter' || ev.key === ' ')) return;   // the button acts
+    if(ev.key === ' ' || ev.key === 'Enter' || ev.key === 'ArrowRight' || ev.key === 'PageDown'){
+      ev.preventDefault();
+      if(!ev.repeat) introAdvance();
+    }
+  });
+  document.getElementById('introReplay').addEventListener('click', function(){
+    if(mode !== 'idle' || evolutionMode) return;
+    setSettingsOpen(false); setLinesOpen(false);
+    introStart(true);
+  });
+  introStart(false);
+
 
 
   /* ========================================================================
