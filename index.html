@@ -931,7 +931,7 @@
           <span class="setting-val" id="valHoverDim">22%</span>
         </div>
         <input type="range" id="setHoverDim" min="0" max="1" step="0.01" value="0.22" aria-label="Highlight dim">
-        <span class="setting-note">Resting on a point lights its whole trace and lets the rest of the archive fall back to this. 100% leaves the rest untouched.</span>
+        <span class="setting-note">Resting on a point lights it, its links and, for a visitor's point, its whole trace, and lets the rest of the archive fall back to this. 100% leaves the rest untouched.</span>
       </div>
 
       <div class="setting">
@@ -940,6 +940,24 @@
           <button class="setting-cycle" id="setHoverCol">Black</button>
         </div>
         <span class="setting-note">The colour a trace lights up in when a point is hovered: deep black (light ink on a dark ground), or the accent.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Highlight weight</span>
+          <span class="setting-val" id="valHoverW">1.00x</span>
+        </div>
+        <input type="range" id="setHoverW" min="0.3" max="4" step="0.05" value="1" aria-label="Highlight weight">
+        <span class="setting-note">How heavy the lit lines are drawn, whatever the line weight of the rest.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Point marker</span>
+          <span class="setting-val" id="valHoverMark">1.00x</span>
+        </div>
+        <input type="range" id="setHoverMark" min="0" max="2.5" step="0.05" value="1" aria-label="Point marker">
+        <span class="setting-note">The hovered point turns solid and is framed by four corner marks, like a surveyed point on a plate. 0 turns the marker off.</span>
       </div>
     </div>
 
@@ -1359,7 +1377,7 @@
     dust:2.55, dustCount:340, dustSize:0.7, dof:1, focusRange:1, fadeSpan:60,
     springback:0.15, follow:0.5, grainNoise:0.5, dustForm:1, dustSpin:1,
     sound:0, volume:0.7, chimes:1, noteVol:1, gestureAmt:1, spaceAmt:1,
-    reticle:0, reticleSize:1, hoverDim:0.22, hoverCol:0, erodeSoft:1.5, erodeCore:0.42, erodeWake:0, cordon:1,
+    reticle:0, reticleSize:1, hoverDim:0.22, hoverCol:0, hoverWeight:1, hoverMark:1, erodeSoft:1.5, erodeCore:0.42, erodeWake:0, cordon:1,
     grainVar:1, grainDensity:1, grainAlpha:1, grainColour:0, grainForm:0,
     grainGravity:0, grainSwirl:0, grainPush:0,
     bgMode:0, bgA:'#F2EDE1', bgB:'#D8CCB2', bgType:0, bgAngle:180, bgInk:0, bgVignette:0.55 };
@@ -2033,7 +2051,10 @@
     if(shape === 3) return;                       // hidden: the dust is the cursor
     var col = placing ? THEME.accent : THEME.ink;
     var half = placing ? 8 : 6.5 * Math.max(0.3, SETTINGS.reticleSize);
-    ctx.strokeStyle = rgba(col, placing ? 0.9 : 0.6);
+    // on a point, the marker frames it instead
+    var give = (placing || !(SETTINGS.hoverMark > 0.01)) ? 1 : 1 - 0.85*HOVER.k;
+    if(give < 0.03) return;
+    ctx.strokeStyle = rgba(col, (placing ? 0.9 : 0.6)*give);
     ctx.lineWidth = 1;
     if(shape === 1){
       ctx.beginPath(); ctx.arc(x, y, half, 0, Math.PI*2); ctx.stroke();
@@ -2048,7 +2069,7 @@
     } else {
       ctx.strokeRect(x-half, y-half, half*2, half*2);
     }
-    ctx.fillStyle = rgba(col, placing ? 1 : 0.85);
+    ctx.fillStyle = rgba(col, (placing ? 1 : 0.85)*give);
     ctx.fillRect(x-1.5, y-1.5, 2, 2);
     if(placing){
       ctx.strokeStyle = rgba(col, 0.45);
@@ -2471,6 +2492,7 @@
     var inkLum = (0.2126*THEME.ink.r + 0.7152*THEME.ink.g + 0.0722*THEME.ink.b)/255;
     THEME.deep = inkLum < 0.5 ? mixRgb(THEME.ink, { r:0, g:0, b:0 }, 0.55) : THEME.ink;
     THEME.paper = rootVar('--paper') || '#F2EDE1';
+    THEME.paperRgb = hexToRgb(THEME.paper);
   }
   refreshTheme();
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', refreshTheme);
@@ -2549,6 +2571,10 @@
 
   var lastProjected = {}; // nodeId -> {x,y,scale,viewZ}
   var hoverNode = null, hoverTraceId = null;
+  // What a hover lights up, eased in and out so sweeping across the archive
+  // breathes instead of flickering: the point, its links and its neighbours,
+  // and for a visitor's point the whole trace it belongs to.
+  var HOVER = { k:0, lit:null, last:0 };
   var cursorScreen = null;   // drawn reticle + line erosion follow this
   var cursorIsMouse = false;
   var erodeFade = 0;         // eases the erosion in and out
@@ -2997,7 +3023,10 @@
     }
     edgeDraw.sort(function(x,y){ return y.z-x.z; });
     edgeDraw.forEach(function(d){ d.rel = shellOf(d.z); });
-    var dimming = hoverTraceId && hoverTraceId!=='GENESIS';
+    var HL = (HOVER.lit && HOVER.k > 0.003) ? HOVER.lit : null;
+    var dimming = !!HL, HK = HOVER.k;
+    function dimV(normal, atDefault){ return normal + (hoverDimmed(normal, atDefault) - normal)*HK; }
+    for(var li=0; li<edgeDraw.length; li++) edgeDraw[li].lit = HL ? (HL.edges[edgeDraw[li].e.id] || 0) : 0;
     // Resolve the bite before drawing: measure every candidate, find the
     // nearest of them, then let depth and focus decide which actually give
     // way. Doing it up front also fixes a budget bug — edgeDraw runs far to
@@ -3008,7 +3037,8 @@
     var reach = [];
     for(var bi=0; bi<edgeDraw.length; bi++){
       var bd = edgeDraw[bi];
-      bd.bite2d = erodeBite(bd.pa, bd.pb);
+      // what the hover has lit stays whole: the point is to see it
+      bd.bite2d = (bd.lit && HK > 0.2) ? 0 : erodeBite(bd.pa, bd.pb);
       bd.gate = 0; bd.bite = 0;
       if(bd.bite2d > 0.01) reach.push(bd);
     }
@@ -3037,14 +3067,18 @@
     }
     var erodeBreathe = (reduceMotion || SETTINGS.grainDrift <= 0)
       ? 0 : Math.sin(performance.now()*0.00045)*0.6*SETTINGS.grainDrift;
+    var litEdgeQ = [], litNodeQ = [];
     function renderEdges(relMin, relMax){
     edgeDraw.forEach(function(d){
       if(d.rel < relMin || d.rel >= relMax) return;
+      if(d.lit){ litEdgeQ.push(d); return; }        // drawn after the lens, in focus
+      edgeBody(d);
+    });
+    }
+    function edgeBody(d){
       var fog = depthFade(d.z);
-      var aIn = dimming && nodeById[d.e.a] && nodeById[d.e.a].traceId===hoverTraceId;
-      var bIn = dimming && nodeById[d.e.b] && nodeById[d.e.b].traceId===hoverTraceId;
-      var hlBoth = aIn && bIn;
-      var hlOne = dimming && !hlBoth && (aIn || bIn);
+      var hlBoth = d.lit === 2;
+      var hlOne = d.lit === 1;
       var hl = hlBoth || hlOne;
       var bite = d.bite || 0;
       var isBeam = hasBeam(d.e);
@@ -3063,24 +3097,29 @@
         } else {
           ctx.moveTo(d.pa.x,d.pa.y); ctx.lineTo(d.pb.x,d.pb.y);
         }
-        ctx.strokeStyle = rgba(THEME.ink, Math.min(1, agedAlpha(d.e, (dimming?hoverDimmed(0.2,0.08):0.2)*fog) * LINES.beamOpacity));
+        ctx.strokeStyle = rgba(THEME.ink, Math.min(1, agedAlpha(d.e, (dimming?dimV(0.2,0.08):0.2)*fog) * LINES.beamOpacity));
         ctx.lineWidth = Math.max(0.4, 5*midScale*LINES.beamWeight*beamGauge(d.e));
         ctx.lineCap = 'round'; ctx.lineJoin = 'round';
         ctx.stroke();
         ctx.restore();
       }
       var hc = hl ? hoverRgb() : null;
-      var eStyle = hlBoth ? rgba(hc, 0.95) : hlOne ? rgba(hc, 0.55) : edgeColor(d.e, dimming ? fog*hoverDimmed(1,0.22) : fog);
-      var eWidth = hlBoth ? 2 : hlOne ? 1.5 : (isBeam ? 1.1 : (d.e.origin==='visitor' ? 1 : (d.e.generation===0?0.9:0.6)));
+      var eStyle = hlBoth ? rgba(hc, lerp(0.5*fog, 0.96, HK)) : hlOne ? rgba(hc, lerp(0.5*fog, 0.6, HK))
+                 : edgeColor(d.e, dimming ? fog*dimV(1,0.22) : fog);
+      var eWidth = isBeam ? 1.1 : (d.e.origin==='visitor' ? 1 : (d.e.generation===0?0.9:0.6));
+      if(hl){
+        // about 1.5 px on screen at any line weight, times the highlight weight
+        var litW = Math.max(2, 1.5/Math.max(0.05, LINES.weight)) * Math.max(0.3, SETTINGS.hoverWeight);
+        eWidth = lerp(eWidth, hlBoth ? litW : litW*0.6, HK);
+      }
       if(bite > 0){
         var grainCol = hl ? hc : THEME.ink;
-        var grainA = agedAlpha(d.e, (dimming && !hl ? hoverDimmed(0.66,0.2) : 0.66) * fog);
+        var grainA = agedAlpha(d.e, (dimming && !hl ? dimV(0.66,0.2) : 0.66) * fog);
         strokeEroded(d.pa, d.pb, eStyle, eWidth, d.e.seed, erodeBreathe, grainCol, grainA,
                      nodeById[d.e.a], nodeById[d.e.b], d.gate);
       } else {
         strokeSeg(d.pa, d.pb, eStyle, eWidth, d.e.seed);
       }
-    });
     }
 
     var nodeDraw = [];
@@ -3102,25 +3141,30 @@
       lastProjected[n.id] = p;
     }
     nodeDraw.sort(function(x,y){ return y.p.viewZ-x.p.viewZ; });
-    nodeDraw.forEach(function(d){ d.rel = shellOf(d.p.viewZ); });
+    nodeDraw.forEach(function(d){ d.rel = shellOf(d.p.viewZ); d.lit = !!(HL && HL.nodes[d.n.id]); });
 
     function renderNodes(relMin, relMax){
     nodeDraw.forEach(function(d){
       if(d.rel < relMin || d.rel >= relMax) return;
+      if(d.lit){ litNodeQ.push(d); return; }
+      nodeBody(d);
+    });
+    }
+    function nodeBody(d){
       var n=d.n, p=d.p;
       var fog = depthFade(p.viewZ);
       var rr = Math.max(0.8, n.r*p.scale);
-      var isHoverGroup = dimming && n.traceId===hoverTraceId;
+      var isHoverGroup = d.lit;
       var hcN = isHoverGroup ? hoverRgb() : null;
-      var nc = isHoverGroup ? rgba(hcN, Math.min(1, 0.9+0.1*fog)) : nodeColor(n, dimming ? fog*hoverDimmed(1,0.22) : fog);
+      var nc = isHoverGroup ? rgba(hcN, lerp(0.9*fog, 1, HK)) : nodeColor(n, dimming ? fog*dimV(1,0.22) : fog);
       var halfSize = n.r * (n.big ? 0.95 : 0.8) * (d.grow < 1 ? 0.25 + 0.75*d.grow : 1);
       var corners = projectCube(n, halfSize);
       if(corners){
         if(isHoverGroup){
           var halo = projectCube(n, halfSize*1.9);
-          if(halo) strokeCube(halo, rgba(hcN, 0.45), 1.1);
+          if(halo) strokeCube(halo, rgba(hcN, 0.5*HK), 1.2);
         }
-        strokeCube(corners, nc, n.big ? 1.3 : (showFineStroke ? 1 : 0.8));
+        strokeCube(corners, nc, isHoverGroup ? (n.big ? 1.7 : 1.5) : (n.big ? 1.3 : (showFineStroke ? 1 : 0.8)));
       } else {
         // fallback for the rare case a corner is behind the near plane
         ctx.beginPath(); ctx.arc(p.x,p.y,rr,0,Math.PI*2); ctx.fillStyle = nc; ctx.fill();
@@ -3128,16 +3172,15 @@
       var textX = p.x + rr*1.45 + 6;
       if(showLabels && n.label){
         ctx.font = '12px "MBM Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace';
-        ctx.fillStyle = isHoverGroup ? rgba(hcN, 0.95) : rgba(THEME.ink, agedAlpha(n, (dimming?hoverDimmed(0.6,0.25):0.6)*fog));
+        ctx.fillStyle = isHoverGroup ? rgba(hcN, lerp(0.6*fog, 1, HK)) : rgba(THEME.ink, agedAlpha(n, (dimming?dimV(0.6,0.25):0.6)*fog));
         ctx.fillText(n.label, textX, p.y + 4);
       }
       if(showCoords){
         // the surveyed position, in the manner of the plates this borrows from
         ctx.font = '8px "MBM Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace';
-        ctx.fillStyle = isHoverGroup ? rgba(hcN, 0.8) : rgba(THEME.ink, agedAlpha(n, (dimming?hoverDimmed(0.36,0.14):0.36)*fog));
+        ctx.fillStyle = isHoverGroup ? rgba(hcN, lerp(0.36*fog, 0.85, HK)) : rgba(THEME.ink, agedAlpha(n, (dimming?dimV(0.36,0.14):0.36)*fog));
         ctx.fillText(coordText(n.x, n.y, nodeZ(n)), textX, p.y + (showLabels && n.label ? 15 : 4));
       }
-    });
     }
 
     // ---- lay the shells down, far to near ----
@@ -3162,6 +3205,10 @@
       renderEdges(-Infinity, midEdge);
       renderNodes(-Infinity, midEdge);
     }
+    // what the hover has lit comes forward, sharp, over everything else
+    litEdgeQ.forEach(edgeBody);
+    litNodeQ.forEach(nodeBody);
+    drawHoverMark();
 
     pending.edges.forEach(function(pe){
       var a = nodeById[pe.a] || pending.nodes.find(function(n){return n.id===pe.a;});
@@ -3315,6 +3362,7 @@
     updateErode();
     updateGhost();
     updateIntro();
+    updateHover();
     draw();
     updatePinnedTooltip();
     updateEvolutionAutoplay();
@@ -3453,6 +3501,10 @@
   canvas.addEventListener('pointerleave', function(){
     ghostScreen = null;
     cursorScreen = null;
+    if(!pinnedNode && hoverNode){
+      hoverNode = null; hoverTraceId = null;
+      tooltipEl.classList.remove('show');
+    }
     canvas.classList.remove('reticle');
   });
   window.addEventListener('keyup', function(ev){
@@ -3488,6 +3540,91 @@
     return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
   }
   function smoothT(t){ return t*t*(3-2*t); }
+  function hoverLitFor(n){
+    var tid = n.traceId && n.traceId !== 'GENESIS' ? n.traceId : null;
+    var lit = { node:n, trace:tid, nodes:{}, edges:{}, t0:performance.now() };
+    lit.nodes[n.id] = true;
+    if(tid) nodes.forEach(function(m){ if(m.traceId === tid) lit.nodes[m.id] = true; });
+    edges.forEach(function(e){
+      if(e.a === n.id || e.b === n.id){ lit.edges[e.id] = 2; lit.nodes[e.a] = true; lit.nodes[e.b] = true; }
+    });
+    if(tid) edges.forEach(function(e){
+      if(lit.edges[e.id]) return;
+      var A = nodeById[e.a], B = nodeById[e.b];
+      var ai = !!(A && A.traceId === tid), bi = !!(B && B.traceId === tid);
+      if(ai && bi) lit.edges[e.id] = 2; else if(ai || bi) lit.edges[e.id] = 1;
+    });
+    return lit;
+  }
+  function updateHover(){
+    var now = performance.now();
+    var dt = HOVER.last ? Math.min(0.1, (now - HOVER.last)/1000) : 0.016;
+    HOVER.last = now;
+    var t = (mode === 'idle' && !introActive()) ? hoverNode : null;
+    if(t && nodeById[t.id] === t){
+      if(!HOVER.lit || HOVER.lit.node !== t) HOVER.lit = hoverLitFor(t);
+      HOVER.k += (1 - HOVER.k) * (reduceMotion ? 1 : 1 - Math.exp(-dt/0.09));
+    } else if(HOVER.lit){
+      HOVER.k += (0 - HOVER.k) * (reduceMotion ? 1 : 1 - Math.exp(-dt/0.22));
+      if(HOVER.k < 0.004){ HOVER.k = 0; HOVER.lit = null; }
+    }
+  }
+  // convex outline of a projected cube, to fill it solid
+  function hull2(pts){
+    var P = pts.slice().sort(function(a, b){ return a.x - b.x || a.y - b.y; });
+    function cross(o, a, b){ return (a.x-o.x)*(b.y-o.y) - (a.y-o.y)*(b.x-o.x); }
+    var lo = [], up = [];
+    for(var i=0;i<P.length;i++){
+      while(lo.length >= 2 && cross(lo[lo.length-2], lo[lo.length-1], P[i]) <= 0) lo.pop();
+      lo.push(P[i]);
+    }
+    for(var j=P.length-1;j>=0;j--){
+      while(up.length >= 2 && cross(up[up.length-2], up[up.length-1], P[j]) <= 0) up.pop();
+      up.push(P[j]);
+    }
+    lo.pop(); up.pop();
+    return lo.concat(up);
+  }
+  // The hovered point: solid, never smaller than a few pixels, framed by four
+  // registration corners that close in on it as it is found.
+  function drawHoverMark(){
+    var L = HOVER.lit, m = SETTINGS.hoverMark;
+    if(!L || HOVER.k < 0.01 || !(m > 0.01)) return;
+    var n = L.node, p = project(n);
+    if(!p) return;
+    var K = HOVER.k, col = hoverRgb();
+    var pop = reduceMotion ? 1 : Math.min(1, (performance.now() - L.t0)/260);
+    var e = 1 - Math.pow(1 - pop, 3);
+    var half = Math.max(n.r*(n.big ? 0.95 : 0.8), 3.8*m/p.scale) * (1.3 - 0.3*e);
+    var C = projectCube(n, half);
+    if(C){
+      var hl = hull2(C);
+      ctx.beginPath(); ctx.moveTo(hl[0].x, hl[0].y);
+      for(var i=1;i<hl.length;i++) ctx.lineTo(hl[i].x, hl[i].y);
+      ctx.closePath();
+      ctx.fillStyle = rgba(col, 0.94*K); ctx.fill();
+      // its edges in the paper colour, so it still reads as a cube
+      ctx.strokeStyle = rgba(THEME.paperRgb, 0.55*K); ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      for(var c=0;c<CUBE_EDGES.length;c++){
+        var ce = CUBE_EDGES[c];
+        ctx.moveTo(C[ce[0]].x, C[ce[0]].y); ctx.lineTo(C[ce[1]].x, C[ce[1]].y);
+      }
+      ctx.stroke();
+    }
+    var R = Math.max(12, half*p.scale*2.3) * Math.max(0.6, Math.min(1.6, m)) * (1.8 - 0.8*e);
+    var arm = Math.max(3.5, R*0.4);
+    var x = Math.round(p.x) + 0.5, y = Math.round(p.y) + 0.5;
+    ctx.strokeStyle = rgba(col, 0.9*K*e); ctx.lineWidth = 1.2;
+    ctx.lineCap = 'butt'; ctx.lineJoin = 'miter';
+    ctx.beginPath();
+    [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(function(sg){
+      var cx = x + sg[0]*R, cy = y + sg[1]*R;
+      ctx.moveTo(cx - sg[0]*arm, cy); ctx.lineTo(cx, cy); ctx.lineTo(cx, cy - sg[1]*arm);
+    });
+    ctx.stroke();
+  }
+
   function hash3(ix, iy, iz){
     var h = (Math.imul(ix, 374761393) + Math.imul(iy, 668265263) + Math.imul(iz, 1274126177)) >>> 0;
     h = (h ^ (h >>> 13)) >>> 0;
@@ -3633,6 +3770,8 @@
     { key:'grainDrift',   input:'setDrift',    out:'valDrift',    fmt:x2 },
     { key:'reticleSize',  input:'setReticleSz',out:'valReticleSz',fmt:x2 },
     { key:'hoverDim',     input:'setHoverDim', out:'valHoverDim', fmt:function(v){ return Math.round(v*100)+'%'; } },
+    { key:'hoverWeight',  input:'setHoverW',   out:'valHoverW',   fmt:x2 },
+    { key:'hoverMark',    input:'setHoverMark', out:'valHoverMark', fmt:function(v){ return v < 0.01 ? 'Off' : v.toFixed(2)+'x'; } },
     { key:'erodeSoft',    input:'setErodeSoft',out:'valErodeSoft',fmt:function(v){ return v.toFixed(2); } },
     { key:'erodeCore',    input:'setErodeCore',out:'valErodeCore',fmt:function(v){ return v.toFixed(2); } },
     { key:'erodeWake',    input:'setWake',     out:'valWake',     fmt:x2 },
