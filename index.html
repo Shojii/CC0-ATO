@@ -678,6 +678,15 @@
 
       <div class="setting">
         <div class="setting-top">
+          <span class="setting-name">Main stroke</span>
+          <span class="setting-val" id="valLnLead">1.80x</span>
+        </div>
+        <input type="range" id="lnLead" min="1" max="4" step="0.05" value="1.8" aria-label="Main stroke">
+        <span class="setting-note">The first pass of the nib, heavier than the ones beside it. 1 draws all the passes alike.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
           <span class="setting-name">Extra stroke ink</span>
           <span class="setting-val" id="valLnDbl">1.50x</span>
         </div>
@@ -2093,7 +2102,7 @@
   ------------------------------------------------------------------- */
   var LINE_DEFAULTS = {
     weight:0.2, opacity:1, cubeWeight:0.6,
-    jitter:4.9, grain:10, passes:4, dbl:1.5, taper:0.6, life:1.23, lifeSpeed:0.75,
+    jitter:4.9, grain:10, passes:4, lead:1.8, dbl:1.5, taper:0.6, life:1.23, lifeSpeed:0.75,
     dash:0, gap:0.5, cap:0, join:0,
     beamWeight:0.65, beamOpacity:0.25, beamSpread:0.17,
     wave:12.5, waves:1.5, waveSpeed:0.1
@@ -2248,7 +2257,9 @@
       }
     }
 
-    onePass(0, 1, 1);
+    // the first pass carries the line: a touch heavier than its echoes
+    var lead = (LINES.dbl > 0.01 && LINES.passes >= 2) ? Math.max(1, LINES.lead || 1) : 1;
+    onePass(0, lead, 1);
     if(LINES.dbl > 0.01){
       // each further pass lies beside the last, a little thinner and fainter,
       // with its own wobble seed
@@ -3916,6 +3927,7 @@
     { key:'jitter',      input:'lnJitter',  out:'valLnJitter',  fmt:x2 },
     { key:'grain',       input:'lnGrain',   out:'valLnGrain',   fmt:function(v){ return String(Math.round(v)); } },
     { key:'passes',      input:'lnPasses',  out:'valLnPasses',  fmt:function(v){ return String(Math.round(v)); } },
+    { key:'lead',        input:'lnLead',    out:'valLnLead',    fmt:x2 },
     { key:'dbl',         input:'lnDbl',     out:'valLnDbl',     fmt:x2 },
     { key:'taper',       input:'lnTaper',   out:'valLnTaper',   fmt:x2 },
     { key:'life',        input:'lnLife',    out:'valLnLife',    fmt:x2 },
