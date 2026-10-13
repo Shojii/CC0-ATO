@@ -243,7 +243,7 @@
 
   .intro-foot{
     position:absolute; left:0; right:0; bottom:0;
-    display:grid; grid-template-columns:1fr auto 1fr; align-items:end; gap:16px;
+    display:flex; justify-content:space-between; align-items:flex-end; gap:16px;
     padding: clamp(14px, 2.4vw, 26px) clamp(16px, 3vw, 34px);
     font-family:var(--font); font-size:11px; letter-spacing:0.14em; text-transform:uppercase;
     color:var(--ink);
@@ -254,18 +254,8 @@
   }
   .intro-count.on{ opacity:0.72; }
   .intro-count b{ font-weight:400; }
-  .intro-center{ display:flex; flex-direction:column; align-items:center; gap:11px; }
-  .intro-steps{ display:flex; gap:8px; margin:0; padding:0; list-style:none; }
-  .intro-steps li{
-    width:7px; height:7px; box-sizing:border-box; border:1px solid var(--ink); opacity:0.3;
-    transition: background-color .5s ease, border-color .5s ease, opacity .5s ease;
-  }
-  .intro-steps li.done{ background:var(--ink); opacity:0.42; }
-  .intro-steps li.now{ background:var(--accent); border-color:var(--accent); opacity:1; }
-  .intro-hint{ font-size:9.5px; letter-spacing:0.16em; white-space:nowrap; opacity:0; transition: opacity .8s ease; }
-  .intro-hint.on{ opacity:0.42; }
   .intro-skip{
-    justify-self:end; background:none; border:0; border-bottom:1px solid transparent;
+    margin-left:auto; background:none; border:0; border-bottom:1px solid transparent;
     padding:0 0 2px; cursor:pointer; white-space:nowrap;
     font:inherit; letter-spacing:inherit; text-transform:inherit; color:var(--ink);
     opacity:0; visibility:hidden; transition: opacity .8s ease, visibility .8s, border-color .2s ease;
@@ -281,7 +271,7 @@
     opacity:0; transition-duration:.6s; transition-delay:0s;
   }
   @media (max-width:640px){
-    .intro-count-more, .intro-hint{ display:none; }
+    .intro-count-more{ display:none; }
   }
   @media (prefers-reduced-motion: reduce){
     .intro-curtain, .intro-scrim{ transition-duration:1.2s; }
@@ -562,10 +552,6 @@
     <p class="sr-only" id="introLive" aria-live="polite"></p>
     <div class="intro-foot">
       <span class="intro-count" id="introCount" aria-hidden="true"><b id="introCountN">0000</b> traces<span class="intro-count-more"> inherited</span></span>
-      <div class="intro-center" aria-hidden="true">
-        <ol class="intro-steps" id="introSteps"></ol>
-        <span class="intro-hint" id="introHint">Click or press space</span>
-      </div>
       <button class="intro-skip" id="introSkip">Skip intro -&gt;</button>
     </div>
   </section>
@@ -1381,15 +1367,15 @@
   /* ------------------------------------------------------------------
      Live parameters — exposed through the on-screen settings panel.
   ------------------------------------------------------------------- */
-  var SETTINGS_DEFAULTS = { rotSpeed:1, fov:1, depth:1, depthFalloff:1.2, inertia:0.5, reach:1,
-    erode:1, grainSpread:1, grainSize:1, grainDrift:1,
-    dust:2.55, dustCount:340, dustSize:0.7, dof:1, focusRange:1, fadeSpan:60,
-    springback:0.15, follow:0.5, grainNoise:0.5, dustForm:1, dustSpin:1,
+  var SETTINGS_DEFAULTS = { rotSpeed:0.7, fov:0.68, depth:1.85, depthFalloff:1.55, inertia:0.95, reach:1.25,
+    erode:1.05, grainSpread:5.85, grainSize:1.2, grainDrift:0.3,
+    dust:2.65, dustCount:640, dustSize:0.5, dof:3, focusRange:0.75, fadeSpan:45,
+    springback:0.8, follow:0.45, grainNoise:0.25, dustForm:1, dustSpin:0.8,
     sound:0, volume:0.7, chimes:1, noteVol:1, gestureAmt:1, spaceAmt:1,
-    reticle:0, reticleSize:1, hoverDim:0.22, hoverCol:0, hoverWeight:1, hoverMark:1, erodeSoft:1.5, erodeCore:0.42, erodeWake:0, cordon:1,
+    reticle:2, reticleSize:1.4, hoverDim:0.62, hoverCol:0, hoverWeight:1, hoverMark:1, erodeSoft:1.5, erodeCore:0.42, erodeWake:0.8, cordon:0.4,
     grainVar:1, grainDensity:1, grainAlpha:1, grainColour:0, grainForm:0,
     grainGravity:0, grainSwirl:0, grainPush:0,
-    bgMode:0, bgA:'#F2EDE1', bgB:'#D8CCB2', bgType:0, bgAngle:180, bgInk:0, bgVignette:0.55 };
+    bgMode:1, bgA:'#ED4B1E', bgB:'#D8CCB2', bgType:0, bgAngle:180, bgInk:1, bgVignette:1 };
   var SETTINGS = Object.assign({}, SETTINGS_DEFAULTS);
 
   function v3(x,y,z){ return {x:x,y:y,z:z}; }
@@ -1612,7 +1598,14 @@
     return { hub:hubTop, ring:topSat.concat(lowSat), anchors:growthAnchors };
   }
 
+  // The plate is laid out point from point (each offset from its parent's
+  // depth), so it is drawn at true depth and the 3D-depth setting is applied
+  // once afterwards (applyDepth at boot). Built at any other depth, the offsets
+  // would compound down the chain.
+  var _bootDepth = SETTINGS.depth;
+  SETTINGS.depth = 1;
   var genesis = buildGenesis();
+  SETTINGS.depth = _bootDepth;
   var GENESIS_COUNT = nodes.length;
   nodes.forEach(function(n){ n.isOriginal = true; });
 
@@ -2319,6 +2312,51 @@
     return d;
   }
 
+  // The orbit distance at which every point in a list sits inside the frame,
+  // with room left above for the tooltip.
+  function fitDistanceFor(list){
+    var hx = W/2 * 0.72, hy = H/2 * 0.64;
+    var d = cam.dist;
+    for(var it=0; it<14; it++){
+      var maxErr = 0, clipped = false;
+      for(var i=0;i<list.length;i++){
+        var cs = toCameraSpace(list[i]);
+        var vz = cs.z + d;
+        if(vz < 24){ clipped = true; break; }
+        var sc = FOCAL/vz;
+        var e = Math.max(Math.abs(cs.x*sc)/hx, Math.abs(cs.y*sc)/hy);
+        if(e > maxErr) maxErr = e;
+      }
+      if(clipped){ d *= 1.6; continue; }
+      if(maxErr < 0.001) break;
+      if(Math.abs(maxErr - 1) < 0.01) break;
+      d *= maxErr;
+    }
+    return d;
+  }
+
+  // Clicking a point: it stays lit, its card stays with it, and the camera
+  // draws back just far enough to show every point attached to it.
+  function focusNode(n){
+    var lit = hoverLitFor(n);
+    var list = [];
+    for(var id in lit.nodes){ if(nodeById[id]) list.push(nodeById[id]); }
+    hoverNode = n; hoverTraceId = n.traceId;
+    tooltipEl.innerHTML = tooltipHTML(n);
+    tooltipEl.classList.add('show');
+    pinTooltip(n, 3200);
+    lastInteraction = performance.now();
+    var to = Math.min(DIST_MAX, fitDistanceFor(list));
+    if(to > cam.dist * 1.02){
+      camPulse = {
+        fromYaw: cam.yaw, toYaw: cam.yaw, fromPitch: cam.pitch, toPitch: cam.pitch,
+        fromDist: cam.dist, toDist: to,
+        start: performance.now(), duration: reduceMotion ? 1 : 1100
+      };
+    }
+    if(audioReady()) audioTrace(list);
+  }
+
   function beginFit(){
     if(distBeforeFit !== null) return;      // already held
     distBeforeFit = cam.dist;
@@ -2569,6 +2607,7 @@
   var pointers = {};
   var dragLast=null, dragStartScreen=null, dragMoved=false, pinchStartDist=null, pinchStartCamDist=null;
   var tapEligible=false;
+  var tapNode = null;   // the point lit when the press began: what a click on a point means
   var mode = 'idle'; // idle | placing | triangulating | confirming | merging
   var pending = { nodes:[], edges:[] };
   var lastInteraction = 0;
@@ -3405,7 +3444,7 @@
   }
 
   function updateAmbientRotation(){
-    if(reduceMotion || mode!=='idle' || evolutionMode) return;
+    if(reduceMotion || mode!=='idle' || evolutionMode || introActive()) return;
     var idleFor = performance.now() - lastInteraction;
     if(idleFor > 4000){ cam.yaw += 0.00035 * SETTINGS.rotSpeed; }
   }
@@ -3430,6 +3469,9 @@
       var isTouch = ev.pointerType !== 'mouse';
       var canRotate = isTouch || ev.button===1 || ev.button===2;
       tapEligible = isTouch || ev.button===0;
+      // the form leans with the cursor, so the point may have slid a little
+      // by the time the button comes up: the click belongs to what was lit
+      tapNode = (mode === 'idle' && hoverNode && nodeById[hoverNode.id] === hoverNode) ? hoverNode : null;
       dragStartScreen = { x:ev.clientX, y:ev.clientY };
       dragMoved = false;
       dragLast = canRotate ? { x:ev.clientX, y:ev.clientY } : null;
@@ -3475,6 +3517,12 @@
 
     if(mode==='idle' && !dragMoved && !pinnedNode){
       var hn = pickNear(ev.clientX, ev.clientY, 13);
+      // a point once found holds on a little: the form leans toward the
+      // cursor, and the point should not slip out from under it
+      if(!hn && hoverNode && nodeById[hoverNode.id] === hoverNode){
+        var hp = lastProjected[hoverNode.id];
+        if(hp && Math.hypot(hp.x - ev.clientX, hp.y - ev.clientY) < 34) hn = hoverNode;
+      }
       if(hn !== hoverNode){
         hoverNode = hn;
         hoverTraceId = hn ? hn.traceId : null;
@@ -3729,6 +3777,12 @@
   }
 
   function handleCanvasTap(sx, sy){
+    if(mode==='idle' && !evolutionMode){
+      var hit = tapNode || pickNear(sx, sy, 13);
+      tapNode = null;
+      if(hit && nodeById[hit.id] === hit) focusNode(hit);
+      return;
+    }
     if(mode==='placing'){
       if(pending.nodes.length >= MAX_POINTS) return;
       // use the previewed position verbatim when the click lands on it
@@ -3998,8 +4052,9 @@
   // Bumped whenever a default is changed on purpose. A browser holding a
   // tuning saved before that change gets the new default for those values,
   // rather than keeping the old one alive for ever because it was saved.
-  var TUNING_REV = 2;
+  var TUNING_REV = 3;
   var TUNING_REDEFAULTS = {
+    3: { settings: ["rotSpeed", "fov", "depth", "depthFalloff", "inertia", "reach", "erode", "grainSpread", "grainSize", "grainDrift", "dust", "dustCount", "dustSize", "dof", "focusRange", "fadeSpan", "springback", "follow", "grainNoise", "dustSpin", "reticle", "reticleSize", "hoverDim", "erodeWake", "cordon", "bgMode", "bgA", "bgInk", "bgVignette"], lines: [] },
     2: { settings:['dustForm'] }          // the motes went back to squares
   };
   var saveTuningTimer = null;
@@ -4388,9 +4443,9 @@
   ========================================================================= */
   var INTRO_SCENES = [
     { lines:[{ text:'LIVING ARCHIVE', cls:'intro-title', speed:95, lead:1300 }],
-      title:true, hold:1600, hint:true },
+      title:true, hold:1600 },
     { lines:[{ text:'Nothing starts from nothing.' }],
-      hold:1800, hint:true },
+      hold:1800 },
     { lines:[{ text:'This drawing began as an archive from the past.' }],
       curtain:0.4, scrim:0.9, build:0.55, buildDur:5200, count:true, hold:2100 },
     { lines:[{ text:'Every visitor inherits what came before,' },
@@ -4409,12 +4464,9 @@
   var introLive = document.getElementById('introLive');
   var introCount = document.getElementById('introCount');
   var introCountN = document.getElementById('introCountN');
-  var introSteps = document.getElementById('introSteps');
-  var introHint = document.getElementById('introHint');
   var introSkip = document.getElementById('introSkip');
   var enterBtn = document.getElementById('enterBtn');
   var introHud = [document.querySelector('.hud-top'), document.querySelector('.hud-bottom')];
-  INTRO_SCENES.forEach(function(){ introSteps.appendChild(document.createElement('li')); });
 
   var INTRO = {
     on:false, scene:-1, token:0, typing:false, rush:false, timers:[], cur:null,
@@ -4527,9 +4579,14 @@
       markViewMove(); updateZoomLabel();
       if(v >= 1) INTRO.cam = null;
     }
+    // while the form appears the camera only ever moves in: as the drawing
+    // builds it closes part of the way, the last beat carries it inside
+    if(INTRO.on && INTRO.path && !INTRO.cam){
+      var b01 = Math.max(0, Math.min(1, introBuild));
+      var want = INTRO.path.start + (INTRO.path.mid - INTRO.path.start) * smoothT(b01);
+      if(want < cam.dist - 0.01){ cam.dist = want; markViewMove(); updateZoomLabel(); }
+    }
     if(INTRO.on){
-      INTRO.yawK += (INTRO.yawTo - INTRO.yawK)*0.02;
-      if(!reduceMotion) cam.yaw += 0.0007 * SETTINGS.rotSpeed * INTRO.yawK;
       var total = traceCountTotal;
       var shown = Math.round(Math.max(0, Math.min(1, introBuild)) * total);
       if(shown !== INTRO.shown){
@@ -4629,13 +4686,10 @@
     introScrimLow.style.opacity = String(sc.final ? (sc.scrim || 0) : 0);
     if(sc.build !== undefined) introBuildTo(Math.max(introBuild, sc.build), sc.buildDur || 1600);
     introCount.classList.toggle('on', !!sc.count);
-    introHint.classList.remove('on');
     enterBtn.hidden = true;
-    var lis = introSteps.children;
-    for(var i=0;i<lis.length;i++) lis[i].className = i < k ? 'done' : (i === k ? 'now' : '');
     var spotHere = sc.lines.some(function(l){ return l.cue === 'spot'; });
     if(!spotHere && introSpot && !introSpot.out) introSpot.out = performance.now();
-    if(sc.dolly){ introCamTo(introOpenDist(), 4200); INTRO.yawTo = 0.3; }
+    if(sc.dolly && INTRO.path && cam.dist > INTRO.path.end) introCamTo(INTRO.path.end, 4200);
     if(sc.final) introSkip.classList.remove('on');      // the door is right there now
     else if(INTRO.skipReady) introSkip.classList.add('on');
     if(audioReady() && SETTINGS.noteVol > 0.01){
@@ -4684,7 +4738,6 @@
       if(INTRO.keys){ try{ enterBtn.focus({ preventScroll:true }); }catch(e){ enterBtn.focus(); } }
       return;
     }
-    if(sc.hint) introHint.classList.add('on');
     await introWait((sc.hold || 2000) + (reduceMotion ? 1200 : 0));
     if(tk !== INTRO.token) return;
     await introDecay();
@@ -4796,9 +4849,7 @@
     introSetHud(true);
     introBlock.innerHTML = ''; introLive.textContent = '';
     enterBtn.hidden = true;
-    introCount.classList.remove('on'); introHint.classList.remove('on');
-    var lis = introSteps.children;
-    for(var i=0;i<lis.length;i++) lis[i].className = '';
+    introCount.classList.remove('on');
     // the ground goes back up at once; on a replay the whole intro fades in over it
     introCurtain.style.transition = 'none'; introCurtain.style.opacity = '1';
     introScrim.style.transition = 'none'; introScrim.style.opacity = '0';
@@ -4822,7 +4873,12 @@
       introComputeKeys();
       introBuild = 0; INTRO.build = null; INTRO.cam = null; introSpot = null;
       pinnedNode = null; tooltipEl.classList.remove('show');
-      cam.dist = fitAllDistance()*1.05; updateZoomLabel();
+      // the way in: from where the whole drawing fills the frame to inside it
+      var fitD = fitAllDistance();
+      var endD = Math.min(introOpenDist(), fitD*0.9);
+      var startD = Math.max(fitD*1.7, endD*1.6);
+      INTRO.path = { start:startD, mid:startD + (endD - startD)*0.45, end:endD };
+      cam.dist = startD; updateZoomLabel();
       var fonts = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
       fonts.then(function(){
         if(tk !== INTRO.token) return;
@@ -4839,8 +4895,8 @@
     lastInteraction = INTRO.enteredAt;
     // whatever is still on its way in arrives quickly
     introBuildTo(1, 1100);
-    var open = introOpenDist();
-    if(!(INTRO.cam && INTRO.cam.to === open) && Math.abs(cam.dist - open) > 1) introCamTo(open, 1700);
+    var open = INTRO.path ? INTRO.path.end : introOpenDist();
+    if(!(INTRO.cam && INTRO.cam.to === open) && cam.dist > open + 1) introCamTo(open, 1700);
     if(introSpot && !introSpot.out) introSpot.out = performance.now();
     introEl.classList.add('hidden');
     introSetHud(false);
