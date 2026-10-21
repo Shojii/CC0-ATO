@@ -465,7 +465,7 @@
     border:1px solid var(--accent); border-radius:0;
   }
   .setting input[type="range"]:focus-visible{ outline:1px solid var(--accent); outline-offset:4px; }
-  .settings-actions{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-top:2px; }
+  .settings-actions{ display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:8px 12px; margin-top:2px; }
   .settings-reset{
     align-self:flex-start;
     font-family:var(--font); font-size:9px;
@@ -525,6 +525,42 @@
 
   [hidden]{display:none!important;}
 
+  /* ---------- Installation (html.install) ---------- */
+  html:not(.install) .install-only{ display:none !important; }
+  html.install:not(.install-admin) .admin-only{ display:none !important; }
+  .install-panel{ right:auto; left:26px; }
+  /* opened from the secret corner, the panels sit above everything, the intro included */
+  html.install.install-admin .settings-panel{ z-index:140; }
+  .install-actions{ flex-wrap:wrap; justify-content:flex-start; row-gap:8px; }
+  html.install .hud-top, html.install .hud-bottom, html.install .contrib-bar, html.install .toast,
+  html.install .nudge, html.install .intro-foot, html.install .enter-btn, html.install #nodeTip{ zoom: var(--ui-scale, 1); }
+  html.install .hud-top, html.install .hud-bottom{ transition: opacity var(--ui-fade, 1.2s) ease; }
+  html.install.ui-asleep .hud-top, html.install.ui-asleep .hud-bottom{ opacity:0; }
+  html.install.ui-asleep .hud-top > *, html.install.ui-asleep .hud-bottom > *{ pointer-events:none; }
+  html.install .ghost-btn{ padding:10px 6px; }
+  html.install .zbtn{ width:32px; height:32px; }
+  html.install.inst-hide-zoom .hud-zoom,
+  html.install.inst-hide-evo #evolutionBtn,
+  html.install.inst-hide-sound #soundToggle,
+  html.install.inst-hide-count #traceCount,
+  html.install.inst-hide-fps #fpsTag{ visibility:hidden; }
+  html.install, html.install body{ -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent; }
+  #adminCorner{
+    position:fixed; width:64px; height:64px; z-index:130; touch-action:none;
+    -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
+  }
+  #adminCorner.corner-tl{ top:0; left:0; }
+  #adminCorner.corner-tr{ top:0; right:0; }
+  #adminCorner.corner-bl{ bottom:0; left:0; }
+  #adminCorner.corner-br{ bottom:0; right:0; }
+  /* a square that draws itself while the press lasts, so the one who knows sees it working */
+  #adminCorner::after{
+    content:''; position:absolute; inset:20px; border:1px solid var(--ink);
+    opacity:0; transform:scale(0.4); transition: opacity .2s ease;
+  }
+  #adminCorner.holding::after{ opacity:0.55; animation: adminHold var(--hold, 2s) linear forwards; }
+  @keyframes adminHold{ from{ transform:scale(0.4); } to{ transform:scale(1); } }
+
   @media (max-width: 720px){
     .hud-center{ display:none; }
     .hud-corner{ min-width:auto; }
@@ -565,8 +601,9 @@
     <div class="hud-center"><span class="wordmark">Living Archive</span></div>
     <div class="hud-corner hud-corner--right">
       <span class="mono-count" id="traceCount">1,284 traces</span>
-      <button class="settings-toggle" id="settingsToggle" aria-expanded="false" aria-controls="settingsPanel">Settings</button>
-      <button class="settings-toggle" id="linesToggle" aria-expanded="false" aria-controls="linesPanel">Lines</button>
+      <button class="settings-toggle admin-only" id="settingsToggle" aria-expanded="false" aria-controls="settingsPanel">Settings</button>
+      <button class="settings-toggle admin-only" id="linesToggle" aria-expanded="false" aria-controls="linesPanel">Lines</button>
+      <button class="settings-toggle admin-only install-only" id="installToggle" aria-expanded="false" aria-controls="installPanel">Install</button>
       <button class="settings-toggle" id="soundToggle" aria-pressed="false">Sound</button>
     </div>
   </header>
@@ -818,6 +855,18 @@
     <div class="settings-head">
       <span class="settings-title mono">Parameters</span>
       <button class="settings-close" id="settingsClose" aria-label="Close parameters">x</button>
+    </div>
+
+    <div class="settings-group">
+      <span class="settings-group-name">Mode</span>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Version</span>
+          <button class="setting-cycle" id="modeToggle">Normal</button>
+        </div>
+        <span class="setting-note">Normal is the piece on a computer. Installation is the iPad in front of the wall: a touch interface that fades away, and these panels hidden behind a long press in a corner (top left, unless changed in the Installation panel). The page reloads to switch.</span>
+      </div>
     </div>
 
     <div class="settings-group">
@@ -1335,6 +1384,210 @@
     <p class="settings-credit">Type: MBM Mono by Mason Mulcahy, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a></p>
   </aside>
 
+  <aside class="settings-panel install-panel install-only" id="installPanel" hidden>
+    <div class="settings-head">
+      <span class="settings-title mono">Installation</span>
+      <button class="settings-close" id="installClose" aria-label="Close installation">x</button>
+    </div>
+
+    <div class="settings-group">
+      <span class="settings-group-name">Screen</span>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Interface size</span>
+          <span class="setting-val" id="valIUiScale"></span>
+        </div>
+        <input type="range" id="iUiScale" min="0.8" max="2.4" step="0.05" value="1.35" aria-label="Interface size">
+        <span class="setting-note">How big the buttons and words are drawn, for a finger and for the wall.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Hide interface after</span>
+          <span class="setting-val" id="valIHideAfter"></span>
+        </div>
+        <input type="range" id="iHideAfter" min="0" max="90" step="1" value="12" aria-label="Hide interface after">
+        <span class="setting-note">Seconds without a touch before the interface fades and the wall shows the drawing alone. A touch brings it back. 0 keeps it on.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Fade</span>
+          <span class="setting-val" id="valIHideFade"></span>
+        </div>
+        <input type="range" id="iHideFade" min="0.2" max="4" step="0.1" value="1.2" aria-label="Fade">
+        <span class="setting-note">How long the interface takes to fade out.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Resolution</span>
+          <span class="setting-val" id="valIDpr"></span>
+        </div>
+        <input type="range" id="iDpr" min="0.75" max="2.5" step="0.05" value="1.5" aria-label="Resolution">
+        <span class="setting-note">Pixels drawn per screen point. Lower runs smoother on the iPad, higher is crisper on the wall.</span>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <span class="settings-group-name">Touch</span>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Finger reach</span>
+          <span class="setting-val" id="valIPick"></span>
+        </div>
+        <input type="range" id="iPick" min="10" max="60" step="1" value="30" aria-label="Finger reach">
+        <span class="setting-note">How close a tap has to land to a point to focus it.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Finger erodes</span>
+          <button class="setting-cycle" id="iTouchErode"></button>
+        </div>
+        <span class="setting-note">A finger resting on the drawing turns the lines under it to dust, as the cursor does on a computer.</span>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <span class="settings-group-name">When nobody is there</span>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Idle after</span>
+          <span class="setting-val" id="valIIdle"></span>
+        </div>
+        <input type="range" id="iIdle" min="0.5" max="20" step="0.5" value="3" aria-label="Idle after">
+        <span class="setting-note">Minutes without a touch before the piece tidies itself up.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Then</span>
+          <button class="setting-cycle" id="iAttract"></button>
+        </div>
+        <span class="setting-note">Do nothing, go back to the resting view, or play the intro again to draw people in.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Intro again after</span>
+          <span class="setting-val" id="valILoop"></span>
+        </div>
+        <input type="range" id="iLoop" min="10" max="300" step="5" value="60" aria-label="Intro again after">
+        <span class="setting-note">With the intro as the idle screen: how long its last beat waits before it plays again.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Resting view</span>
+          <span class="setting-val" id="valIRestZoom"></span>
+        </div>
+        <input type="range" id="iRestZoom" min="0.4" max="2.5" step="0.05" value="1" aria-label="Resting view">
+        <span class="setting-note">How close the camera sits when the piece is at rest, and where the intro lands. Below 1 is closer.</span>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <span class="settings-group-name">Visitors</span>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Signature</span>
+          <button class="setting-cycle" id="iSign"></button>
+        </div>
+        <span class="setting-note">Let visitors sign their trace. Off keeps the keyboard off the wall altogether.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Signature length</span>
+          <span class="setting-val" id="valISignMax"></span>
+        </div>
+        <input type="range" id="iSignMax" min="4" max="24" step="1" value="16" aria-label="Signature length">
+        <span class="setting-note">The most characters a signature can have.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Zoom buttons</span>
+          <button class="setting-cycle" id="iShowZoom"></button>
+        </div>
+        <span class="setting-note">The - and + in the corner.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">View evolution</span>
+          <button class="setting-cycle" id="iShowEvo"></button>
+        </div>
+        <span class="setting-note">The button that replays the archive growing.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Sound button</span>
+          <button class="setting-cycle" id="iShowSound"></button>
+        </div>
+        <span class="setting-note">Lets visitors switch the sound on or off.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Trace count</span>
+          <button class="setting-cycle" id="iShowCount"></button>
+        </div>
+        <span class="setting-note">The number of traces in the corner.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Frame rate</span>
+          <button class="setting-cycle" id="iShowFps"></button>
+        </div>
+        <span class="setting-note">Frames per second, for checking the iPad keeps up.</span>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <span class="settings-group-name">Access</span>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Secret corner</span>
+          <button class="setting-cycle" id="iCorner"></button>
+        </div>
+        <span class="setting-note">Where a long press opens these panels. Nothing shows there for the public.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Press for</span>
+          <span class="setting-val" id="valIHold"></span>
+        </div>
+        <input type="range" id="iHold" min="0.5" max="6" step="0.1" value="2" aria-label="Press for">
+        <span class="setting-note">How long the press has to last.</span>
+      </div>
+
+      <span class="setting-note">On a computer, Option + I does the same.</span>
+    </div>
+
+    <div class="settings-actions install-actions">
+      <button class="settings-reset" id="iFullscreen">Full screen</button>
+      <button class="settings-reset" id="iExport">Export traces</button>
+      <button class="settings-reset" id="iImport">Import traces</button>
+      <button class="settings-reset" id="iClear">Clear traces</button>
+      <button class="settings-reset" id="iLock">Lock</button>
+      <button class="settings-reset" id="iNormal">Normal mode</button>
+    </div>
+    <input type="file" id="iImportFile" accept=".json,application/json" hidden>
+    <p class="settings-credit">Traces live on this device. Export them now and then: clearing the browser's data clears them too.</p>
+  </aside>
+
+  <div id="adminCorner" class="install-only corner-tl" aria-hidden="true"></div>
+
   <div class="toast" id="toast">
     <div class="toast-line1">Trace added.</div>
     <div class="toast-line2">The archive keeps loading.</div>
@@ -1376,6 +1629,22 @@
   function gaussLike(){ return (rand()+rand()+rand()-1.5)/1.5; }
 
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // The installation build — the piece projected on a wall, mirrored from an
+  // iPad in front of it — sets this true; ?installation in the address does
+  // the same on the web.
+  var INSTALL = false;
+  // the mode last chosen with the Installation mode button wins, so one page
+  // can be tried both ways on the iPad
+  var MODE_KEY = 'livingArchive.mode';
+  try{
+    var savedMode = localStorage.getItem(MODE_KEY);
+    if(savedMode === 'install') INSTALL = true; else if(savedMode === 'normal') INSTALL = false;
+  }catch(e){}
+  try{ if(/[?&#]installation\b/.test(location.search + location.hash)) INSTALL = true; }catch(e){}
+  function switchMode(install){
+    try{ localStorage.setItem(MODE_KEY, install ? 'install' : 'normal'); }catch(e){}
+    location.reload();
+  }
 
   /* ------------------------------------------------------------------
      Live parameters — exposed through the on-screen settings panel.
@@ -1388,7 +1657,11 @@
     reticle:2, reticleSize:1.4, hoverDim:0.62, hoverCol:0, hoverWeight:1, hoverMark:1, erodeSoft:1.5, erodeCore:0.42, erodeWake:0.8, cordon:0.4,
     grainVar:1, grainDensity:1, grainAlpha:1, grainColour:0, grainForm:0,
     grainGravity:0, grainSwirl:0, grainPush:0,
-    bgMode:1, bgA:'#ED4B1E', bgB:'#D8CCB2', bgType:0, bgAngle:180, bgInk:1, bgVignette:1 };
+    bgMode:1, bgA:'#ED4B1E', bgB:'#D8CCB2', bgType:0, bgAngle:180, bgInk:1, bgVignette:1,
+    // installation
+    iUiScale:1.35, iHideAfter:12, iHideFade:1.2, iDpr:1.5, iPick:30, iTouchErode:1,
+    iIdle:3, iAttract:2, iLoop:60, iRestZoom:1, iSign:1, iSignMax:16,
+    iShowZoom:1, iShowEvo:0, iShowSound:1, iShowCount:1, iShowFps:0, iCorner:0, iHold:2 };
   var SETTINGS = Object.assign({}, SETTINGS_DEFAULTS);
 
   function v3(x,y,z){ return {x:x,y:y,z:z}; }
@@ -2638,7 +2911,8 @@
   var pointers = {};
   var dragLast=null, dragStartScreen=null, dragMoved=false, pinchStartDist=null, pinchStartCamDist=null;
   var tapEligible=false;
-  var tapNode = null;   // the point lit when the press began: what a click on a point means
+  var tapNode = null;
+  var lastTapTouch = false;   // the point lit when the press began: what a click on a point means
   var mode = 'idle'; // idle | placing | triangulating | confirming | merging
   var pending = { nodes:[], edges:[] };
   var lastInteraction = 0;
@@ -3388,7 +3662,7 @@
 
   function updateErode(){
     var moving = viewIsMoving();
-    var target = (cursorScreen && cursorIsMouse && !moving) ? 1 : 0;
+    var target = (cursorScreen && (cursorIsMouse || (INSTALL && INST.touchErode)) && !moving) ? 1 : 0;
     // it lets go quickly and comes back gently
     var ease = reduceMotion ? 1 : (moving ? 0.34 : 0.16);
     erodeFade += (target - erodeFade) * ease;
@@ -3449,6 +3723,7 @@
     updateErode();
     updateGhost();
     updateIntro();
+    updateInstall();
     updateHover();
     draw();
     updatePinnedTooltip();
@@ -3515,7 +3790,12 @@
       tapEligible = isTouch || ev.button===0;
       // the form leans with the cursor, so the point may have slid a little
       // by the time the button comes up: the click belongs to what was lit
-      tapNode = (mode === 'idle' && hoverNode && nodeById[hoverNode.id] === hoverNode) ? hoverNode : null;
+      // (a finger has no hover: what it means is where it lands)
+      tapNode = (!isTouch && mode === 'idle' && hoverNode && nodeById[hoverNode.id] === hoverNode) ? hoverNode : null;
+      lastTapTouch = isTouch;
+      if(INSTALL && isTouch && Math.round(SETTINGS.iTouchErode) === 1){
+        INST.touchErode = true; cursorScreen = { x:ev.clientX, y:ev.clientY };
+      }
       dragStartScreen = { x:ev.clientX, y:ev.clientY };
       dragMoved = false;
       dragLast = canRotate ? { x:ev.clientX, y:ev.clientY } : null;
@@ -3552,6 +3832,7 @@
 
     cursorIsMouse = (ev.pointerType !== 'touch');
     if(cursorIsMouse) cursorScreen = { x:ev.clientX, y:ev.clientY };
+    else if(INSTALL && INST.touchErode && pointers[ev.pointerId]) cursorScreen = { x:ev.clientX, y:ev.clientY };
     canvas.classList.toggle('reticle', cursorIsMouse);
 
     if(mode==='placing'){
@@ -3590,6 +3871,7 @@
   }
 
   function endPointer(ev){
+    if(INSTALL && ev.pointerType !== 'mouse') INST.touchErode = false;   // the dust settles back gently
     var wasSingle = Object.keys(pointers).length===1;
     delete pointers[ev.pointerId];
     canvas.classList.remove('dragging');
@@ -3823,7 +4105,7 @@
 
   function handleCanvasTap(sx, sy){
     if(mode==='idle' && !evolutionMode){
-      var hit = tapNode || pickNear(sx, sy, 13);
+      var hit = tapNode || pickNear(sx, sy, lastTapTouch ? (INSTALL ? SETTINGS.iPick : 24) : 13);
       tapNode = null;
       if(hit && nodeById[hit.id] === hit) focusNode(hit);
       else focusPt = null;                          // empty space lets the focus go
@@ -3908,6 +4190,20 @@
   ];
 
 
+  var iSecs = function(v){ return v < 0.5 ? 'Never' : Math.round(v) + ' s'; };
+  SETTING_CONTROLS.push(
+    { key:'iUiScale',   input:'iUiScale',   out:'valIUiScale',   fmt:x2, onChange:applyInstall },
+    { key:'iHideAfter', input:'iHideAfter', out:'valIHideAfter', fmt:iSecs, onChange:applyInstall },
+    { key:'iHideFade',  input:'iHideFade',  out:'valIHideFade',  fmt:function(v){ return v.toFixed(1) + ' s'; }, onChange:applyInstall },
+    { key:'iDpr',       input:'iDpr',       out:'valIDpr',       fmt:x2, onChange:applyInstall },
+    { key:'iPick',      input:'iPick',      out:'valIPick',      fmt:function(v){ return Math.round(v) + ' px'; } },
+    { key:'iIdle',      input:'iIdle',      out:'valIIdle',      fmt:function(v){ return v.toFixed(1) + ' min'; } },
+    { key:'iLoop',      input:'iLoop',      out:'valILoop',      fmt:function(v){ return Math.round(v) + ' s'; } },
+    { key:'iRestZoom',  input:'iRestZoom',  out:'valIRestZoom',  fmt:x2 },
+    { key:'iSignMax',   input:'iSignMax',   out:'valISignMax',   fmt:function(v){ return Math.round(v) + ' chars'; }, onChange:applyInstall },
+    { key:'iHold',      input:'iHold',      out:'valIHold',      fmt:function(v){ return v.toFixed(1) + ' s'; }, onChange:applyInstall }
+  );
+
   var SETTING_CYCLERS = [
     { key:'dustForm', btn:'setShape', labels:['Dot','Square','Wireframe','Solid'] },
     { key:'reticle',     btn:'setReticle',    labels:['Square','Circle','Cross','Hidden'] },
@@ -3916,7 +4212,16 @@
     { key:'grainForm',   btn:'setGrainShape', labels:['Square','Dot','Cross'] },
     { key:'bgMode',      btn:'setBgMode',     labels:['Theme','Solid','Gradient'], onChange:applyBackground },
     { key:'bgType',      btn:'setBgType',     labels:['Linear','Radial'],          onChange:applyBackground },
-    { key:'bgInk',       btn:'setBgInk',      labels:['Auto','Dark','Light'],      onChange:applyBackground }
+    { key:'bgInk',       btn:'setBgInk',      labels:['Auto','Dark','Light'],      onChange:applyBackground },
+    { key:'iTouchErode', btn:'iTouchErode',   labels:['Off','On'] },
+    { key:'iAttract',    btn:'iAttract',      labels:['Nothing','Resting view','Intro'] },
+    { key:'iSign',       btn:'iSign',         labels:['Off','On'] },
+    { key:'iShowZoom',   btn:'iShowZoom',     labels:['Hidden','Shown'], onChange:applyInstall },
+    { key:'iShowEvo',    btn:'iShowEvo',      labels:['Hidden','Shown'], onChange:applyInstall },
+    { key:'iShowSound',  btn:'iShowSound',    labels:['Hidden','Shown'], onChange:applyInstall },
+    { key:'iShowCount',  btn:'iShowCount',    labels:['Hidden','Shown'], onChange:applyInstall },
+    { key:'iShowFps',    btn:'iShowFps',      labels:['Hidden','Shown'], onChange:applyInstall },
+    { key:'iCorner',     btn:'iCorner',       labels:['Top left','Top right','Bottom left','Bottom right'], onChange:applyInstall }
   ];
 
   var COLOUR_CONTROLS = [
@@ -3953,6 +4258,7 @@
       if(el) el.value = SETTINGS[c.key];
       if(out) out.textContent = c.fmt(SETTINGS[c.key]);
     });
+    applyInstall();
   }
 
   SETTING_CONTROLS.forEach(function(c){
@@ -4276,10 +4582,14 @@
       contribStep.textContent = 'STEP 3 / CONFIRM';
       contribMsg.textContent = 'Your trace will become part of the archive.';
       contribSub.textContent = 'It cannot be erased. A name is optional; it stays with your points.';
-      signWrap.hidden = false;
-      contribBar.classList.add('signing');
-      signInput.value = storeState.signature || '';
-      setTimeout(function(){ try{ signInput.focus(); }catch(e){} }, 40);
+      var canSign = !INSTALL || Math.round(SETTINGS.iSign) === 1;
+      signWrap.hidden = !canSign;
+      if(canSign) contribBar.classList.add('signing');
+      else contribSub.textContent = 'It cannot be erased.';
+      // at an installation every visitor is someone new, and the keyboard
+      // only comes up if they choose to sign
+      signInput.value = INSTALL ? '' : (storeState.signature || '');
+      if(!INSTALL) setTimeout(function(){ try{ signInput.focus(); }catch(e){} }, 40);
       addRightButton('Back', function(){ mode='triangulating'; refreshContribUI(); }, false, true);
       addRightButton('Add to the archive', confirmContribution, false);
     }
@@ -4789,6 +5099,7 @@
       introTimer(function(){ sub.classList.add('on'); }, reduceMotion ? 0 : 500);
     }
     if(sc.final){
+      INTRO.finalAt = performance.now();
       enterBtn.hidden = false;
       if(INTRO.keys){ try{ enterBtn.focus({ preventScroll:true }); }catch(e){ enterBtn.focus(); } }
       return;
@@ -4899,7 +5210,7 @@
   function introStart(replay){
     introCancel();
     INTRO.on = true; INTRO.scene = -1; INTRO.token++; INTRO.typing = false; INTRO.rush = false;
-    INTRO.yawK = INTRO.yawTo = 1; INTRO.shown = -1;
+    INTRO.yawK = INTRO.yawTo = 1; INTRO.shown = -1; INTRO.finalAt = 0;
     var tk = INTRO.token;
     introSetHud(true);
     introBlock.innerHTML = ''; introLive.textContent = '';
@@ -4930,7 +5241,7 @@
       pinnedNode = null; tooltipEl.classList.remove('show');
       // the way in: from where the whole drawing fills the frame to inside it
       var fitD = fitAllDistance();
-      var endD = Math.min(introOpenDist(), fitD*0.9);
+      var endD = Math.min(introOpenDist(), fitD*0.9) * (INSTALL ? Math.max(0.3, SETTINGS.iRestZoom) : 1);
       var startD = Math.max(fitD*1.7, endD*1.6);
       INTRO.path = { start:startD, mid:startD + (endD - startD)*0.45, end:endD };
       cam.dist = startD; updateZoomLabel();
@@ -5533,6 +5844,255 @@
       else if(SETTINGS.sound > 0.5) AUDIO.ctx.resume();
     }catch(e){}
   });
+
+
+  /* ========================================================================
+     Installation — the piece on a wall, driven from an iPad in front of it.
+
+     The iPad's screen is mirrored to the projector, so everything here is
+     about what the wall shows: an interface sized for a finger that fades
+     away when nobody is touching, settings kept from the public behind a
+     long press in a corner, and a piece that tidies itself up and draws a
+     crowd again when the room empties. Every value is in the Installation
+     panel, which only the installation build shows.
+  ========================================================================= */
+  var INST = { last: performance.now(), asleep:false, admin:false, resetDone:false,
+               touchErode:false, holdTimer:0, clearArmed:0 };
+  var installPanel = document.getElementById('installPanel');
+  var modeToggle = document.getElementById('modeToggle');
+  if(modeToggle){
+    modeToggle.textContent = INSTALL ? 'Installation' : 'Normal';
+    modeToggle.addEventListener('click', function(){ switchMode(!INSTALL); });
+  }
+  var iNormalBtn = document.getElementById('iNormal');
+  if(iNormalBtn) iNormalBtn.addEventListener('click', function(){ switchMode(false); });
+  var installToggle = document.getElementById('installToggle');
+  var adminCorner = document.getElementById('adminCorner');
+  var CAM_HOME_PITCH = cam.pitch;
+
+  function iClamp(v, a, b){ v = +v; if(!isFinite(v)) v = a; return Math.max(a, Math.min(b, v)); }
+
+  function applyInstall(){
+    if(!INST) return;                       // called once before this module has run
+    var root = document.documentElement;
+    root.classList.toggle('install', INSTALL);
+    if(!INSTALL) return;
+    var st = root.style;
+    st.setProperty('--ui-scale', String(iClamp(SETTINGS.iUiScale, 0.6, 3)));
+    st.setProperty('--ui-fade', iClamp(SETTINGS.iHideFade, 0, 10) + 's');
+    st.setProperty('--hold', iClamp(SETTINGS.iHold, 0.5, 10) + 's');
+    var show = { zoom:'iShowZoom', evo:'iShowEvo', sound:'iShowSound', count:'iShowCount', fps:'iShowFps' };
+    for(var k in show) root.classList.toggle('inst-hide-' + k, Math.round(SETTINGS[show[k]]) !== 1);
+    if(adminCorner){
+      var holding = adminCorner.classList.contains('holding');
+      adminCorner.className = 'install-only corner-' + (['tl','tr','bl','br'][Math.round(SETTINGS.iCorner)] || 'tl');
+      if(holding) adminCorner.classList.add('holding');
+    }
+    if(signInput) signInput.maxLength = Math.round(iClamp(SETTINGS.iSignMax, 1, 24));
+    var dpr = Math.min(window.devicePixelRatio || 1, iClamp(SETTINGS.iDpr, 0.5, 3));
+    if(Math.abs(dpr - DPR) > 0.01){ DPR = dpr; resize(); }
+  }
+
+  function setInstallOpen(open){
+    if(!installPanel) return;
+    installPanel.hidden = !open;
+    if(installToggle) installToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  function setAdmin(on){
+    INST.admin = !!on;
+    document.documentElement.classList.toggle('install-admin', INST.admin);
+    if(INST.admin) setInstallOpen(true);
+    else { setInstallOpen(false); setSettingsOpen(false); setLinesOpen(false); }
+  }
+
+  function installTouched(){ INST.last = performance.now(); INST.resetDone = false; }
+
+  // the resting view: where the intro lands, at the chosen closeness
+  function installRestDist(){
+    return Math.min(introOpenDist(), fitAllDistance()*0.9) * iClamp(SETTINGS.iRestZoom, 0.3, 3);
+  }
+  function installReset(){
+    if(mode !== 'idle') exitContribution(true);
+    if(evolutionMode) closeEvolution();
+    setAdmin(false);
+    focusPt = null; hoverNode = null; hoverTraceId = null; pinnedNode = null;
+    tooltipEl.classList.remove('show');
+    if(Math.round(SETTINGS.iAttract) === 2){ introStart(true); return; }
+    camPulse = {
+      fromYaw: cam.yaw, toYaw: cam.yaw, fromPitch: cam.pitch, toPitch: CAM_HOME_PITCH,
+      fromDist: cam.dist, toDist: installRestDist(),
+      start: performance.now(), duration: reduceMotion ? 1 : 2600
+    };
+  }
+
+  function updateInstall(){
+    if(!INSTALL) return;
+    var now = performance.now(), idle = now - INST.last;
+    var panelsOpen = !settingsPanel.hidden || !linesPanel.hidden || (installPanel && !installPanel.hidden);
+    // the interface steps back when nobody is touching
+    var hideAfter = SETTINGS.iHideAfter;
+    var asleep = hideAfter >= 0.5 && idle > hideAfter*1000 && mode === 'idle' && !evolutionMode
+                 && !panelsOpen && !INST.admin && !introActive();
+    if(asleep !== INST.asleep){
+      INST.asleep = asleep;
+      document.documentElement.classList.toggle('ui-asleep', asleep);
+    }
+    // the room has emptied: tidy up, and perhaps start the intro again
+    var then = Math.round(SETTINGS.iAttract);
+    if(then > 0 && !INST.resetDone && !introActive() &&
+       idle > SETTINGS.iIdle*60000 * (panelsOpen ? 3 : 1)){
+      INST.resetDone = true;
+      installReset();
+    }
+    // the intro as the idle screen: its last beat waits, then plays again
+    if(then === 2 && introActive() && INTRO.finalAt && !INTRO.typing &&
+       now - INTRO.finalAt > SETTINGS.iLoop*1000 && idle > SETTINGS.iLoop*1000){
+      INTRO.finalAt = 0;
+      introStart(true);
+    }
+    // a lifted finger lets the dust settle, then lets go of the spot
+    if(!INST.touchErode && cursorScreen && !cursorIsMouse && erodeFade <= 0) cursorScreen = null;
+  }
+
+  // a note on a button for a moment, then its own label back
+  function iNote(btn, text){
+    if(!btn) return;
+    if(!btn.dataset.label) btn.dataset.label = btn.textContent;
+    btn.textContent = text;
+    clearTimeout(btn._noteT);
+    btn._noteT = setTimeout(function(){ btn.textContent = btn.dataset.label; }, 2200);
+  }
+
+  function installFullscreen(btn){
+    var el = document.documentElement;
+    var req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if(!req){ iNote(btn, 'Not available here'); return; }
+    try{
+      var p = req.call(el);
+      if(p && p.catch) p.catch(function(){ iNote(btn, 'Not available here'); });
+    }catch(e){ iNote(btn, 'Not available here'); }
+  }
+
+  async function installExport(btn){
+    var payload = JSON.stringify({
+      kind:'living-archive-traces', version:1, exportedAt:new Date().toISOString(),
+      contributions: storeState.contributions || []
+    }, null, 2);
+    var name = 'living-archive-traces-' + new Date().toISOString().slice(0, 10) + '.json';
+    // inside claude.ai a page offers files through the platform
+    if(window.claude && window.claude.use){
+      var dl = null;
+      try{ dl = await window.claude.use('downloads'); }catch(e){ dl = null; }
+      if(!dl){ iNote(btn, 'Not available here'); return; }
+      try{ await dl.save({ filename:name, data:payload }); iNote(btn, 'Saved'); }
+      catch(e){ iNote(btn, e && e.code === 'declined' ? 'Cancelled' : 'Not available here'); }
+      return;
+    }
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([payload], { type:'application/json' }));
+    a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 800);
+    iNote(btn, 'Saved');
+  }
+
+  // only what a trace is made of comes in, whatever else the file holds
+  function cleanTrace(c){
+    if(!c || !Array.isArray(c.nodes) || !Array.isArray(c.edges) || !c.nodes.length) return null;
+    var num = function(v){ v = +v; return isFinite(v) ? v : null; };
+    var nodesOut = [];
+    for(var i=0;i<c.nodes.length && i<64;i++){
+      var n = c.nodes[i];
+      if(!n || typeof n.id !== 'string') return null;
+      var x = num(n.x), y = num(n.y), z = num(n.z), r = num(n.r);
+      if(x === null || y === null) return null;
+      nodesOut.push({ id:n.id.slice(0, 32), x:x, y:y, z:z || 0, r:r || 2.4 });
+    }
+    var edgesOut = [];
+    for(var j=0;j<c.edges.length && j<256;j++){
+      var e = c.edges[j];
+      if(e && typeof e.a === 'string' && typeof e.b === 'string') edgesOut.push({ a:e.a.slice(0, 32), b:e.b.slice(0, 32) });
+    }
+    var t = num(c.createdAt);
+    return {
+      createdAt: t || Date.now(),
+      contributor: typeof c.contributor === 'string' ? c.contributor.slice(0, 40) : 'IMPORTED',
+      traceId: typeof c.traceId === 'string' ? c.traceId.slice(0, 64) : ('T-import-' + (t || Date.now())),
+      signature: typeof c.signature === 'string' ? c.signature.slice(0, 24) : '',
+      nodes: nodesOut, edges: edgesOut
+    };
+  }
+
+  var iImportFile = document.getElementById('iImportFile');
+  var iImportBtn = document.getElementById('iImport');
+  if(iImportFile) iImportFile.addEventListener('change', function(){
+    var f = iImportFile.files && iImportFile.files[0];
+    iImportFile.value = '';
+    if(!f) return;
+    var rd = new FileReader();
+    rd.onload = function(){
+      var list = null;
+      try{ var data = JSON.parse(rd.result); list = Array.isArray(data) ? data : (data && data.contributions); }catch(e){}
+      if(!Array.isArray(list)){ iNote(iImportBtn, 'Not a trace file'); return; }
+      var have = {};
+      storeState.contributions = storeState.contributions || [];
+      storeState.contributions.forEach(function(c){ have[c.traceId || c.createdAt] = true; });
+      var added = 0;
+      list.forEach(function(c){
+        var t = cleanTrace(c);
+        if(!t || have[t.traceId]) return;
+        have[t.traceId] = true; storeState.contributions.push(t); added++;
+      });
+      storeState.contributions.sort(function(a, b){ return (a.createdAt || 0) - (b.createdAt || 0); });
+      if(!added){ iNote(iImportBtn, 'Nothing new'); return; }
+      persist();
+      iNote(iImportBtn, added + ' added');
+      setTimeout(function(){ location.reload(); }, 900);
+    };
+    rd.readAsText(f);
+  });
+
+  if(INSTALL){
+    ['pointerdown', 'pointermove', 'keydown', 'wheel'].forEach(function(t){
+      window.addEventListener(t, installTouched, { capture:true, passive:true });
+    });
+    if(installToggle) installToggle.addEventListener('click', function(){ setInstallOpen(installPanel.hidden); });
+    document.getElementById('installClose').addEventListener('click', function(){ setInstallOpen(false); });
+    document.getElementById('iLock').addEventListener('click', function(){ setAdmin(false); });
+    document.getElementById('iFullscreen').addEventListener('click', function(){ installFullscreen(this); });
+    document.getElementById('iExport').addEventListener('click', function(){ installExport(this); });
+    if(iImportBtn) iImportBtn.addEventListener('click', function(){ iImportFile.click(); });
+    // clearing takes two taps, three seconds apart at most
+    document.getElementById('iClear').addEventListener('click', function(){
+      var now = performance.now();
+      if(now - INST.clearArmed < 3000){
+        storeState.contributions = []; persist();
+        iNote(this, 'Cleared');
+        setTimeout(function(){ location.reload(); }, 700);
+        return;
+      }
+      INST.clearArmed = now;
+      iNote(this, 'Tap again to clear');
+    });
+    // the long press in the secret corner
+    if(adminCorner){
+      var holdEnd = function(){ clearTimeout(INST.holdTimer); adminCorner.classList.remove('holding'); };
+      adminCorner.addEventListener('pointerdown', function(ev){
+        ev.preventDefault(); ev.stopPropagation();
+        holdEnd();
+        adminCorner.classList.add('holding');
+        INST.holdTimer = setTimeout(function(){
+          adminCorner.classList.remove('holding');
+          setAdmin(!INST.admin);
+        }, iClamp(SETTINGS.iHold, 0.5, 10)*1000);
+      });
+      ['pointerup', 'pointercancel', 'pointerleave'].forEach(function(t){ adminCorner.addEventListener(t, holdEnd); });
+      adminCorner.addEventListener('contextmenu', function(ev){ ev.preventDefault(); });
+    }
+    // and its keyboard twin, for setting up from a computer
+    window.addEventListener('keydown', function(ev){
+      if(ev.altKey && (ev.code === 'KeyI')){ ev.preventDefault(); setAdmin(!INST.admin); }
+    });
+  }
 
   // whatever was dialled in last time, brought back before the first frame
   loadTuning();
