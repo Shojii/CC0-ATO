@@ -544,6 +544,14 @@
   html.install.inst-hide-sound #soundToggle,
   html.install.inst-hide-count #traceCount,
   html.install.inst-hide-fps #fpsTag{ visibility:hidden; }
+  html.install.inst-hide-exit #exitInstall{ display:none; }
+  .exit-install{
+    align-self:flex-start; margin-top:6px; padding:4px 0; background:none; border:0;
+    border-bottom:1px solid var(--line); cursor:pointer;
+    font-family:var(--font); font-size:9.5px; letter-spacing:0.12em; text-transform:uppercase;
+    color:var(--ink); opacity:0.55;
+  }
+  .exit-install:hover, .exit-install.armed{ opacity:1; border-bottom-color:var(--ink); }
   html.install, html.install body{ -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent; }
   #adminCorner{
     position:fixed; width:64px; height:64px; z-index:130; touch-action:none;
@@ -597,6 +605,7 @@
       <span class="tag mono">CC0</span>
       <span class="tag tag--loading mono">PERMANENT LOADING<span class="dots"><span>.</span><span>.</span><span>.</span></span></span>
       <span class="tag mono fps-tag" id="fpsTag">-- fps</span>
+      <button class="exit-install install-only" id="exitInstall">Exit installation</button>
     </div>
     <div class="hud-center"><span class="wordmark">Living Archive</span></div>
     <div class="hud-corner hud-corner--right">
@@ -1571,7 +1580,15 @@
         <span class="setting-note">How long the press has to last.</span>
       </div>
 
-      <span class="setting-note">On a computer, Option + I does the same.</span>
+      <span class="setting-note">Five quick taps in the same corner work too. On a computer, Option + I.</span>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Exit button</span>
+          <button class="setting-cycle" id="iShowExit"></button>
+        </div>
+        <span class="setting-note">An "Exit installation" link under the corner tags, back to the normal version in two taps. Handy while testing; hide it for the opening.</span>
+      </div>
     </div>
 
     <div class="settings-actions install-actions">
@@ -1640,7 +1657,11 @@
     var savedMode = localStorage.getItem(MODE_KEY);
     if(savedMode === 'install') INSTALL = true; else if(savedMode === 'normal') INSTALL = false;
   }catch(e){}
-  try{ if(/[?&#]installation\b/.test(location.search + location.hash)) INSTALL = true; }catch(e){}
+  try{
+    var where = location.search + location.hash;
+    if(/[?&#]installation\b/.test(where)) INSTALL = true;
+    if(/[?&#]normal\b/.test(where)){ INSTALL = false; try{ localStorage.setItem(MODE_KEY, 'normal'); }catch(e){} }
+  }catch(e){}
   function switchMode(install){
     try{ localStorage.setItem(MODE_KEY, install ? 'install' : 'normal'); }catch(e){}
     location.reload();
@@ -1661,7 +1682,7 @@
     // installation
     iUiScale:1.35, iHideAfter:12, iHideFade:1.2, iDpr:1.5, iPick:30, iTouchErode:1,
     iIdle:3, iAttract:2, iLoop:60, iRestZoom:1, iSign:1, iSignMax:16,
-    iShowZoom:1, iShowEvo:0, iShowSound:1, iShowCount:1, iShowFps:0, iCorner:0, iHold:2 };
+    iShowZoom:1, iShowEvo:0, iShowSound:1, iShowCount:1, iShowFps:0, iShowExit:1, iCorner:0, iHold:2 };
   var SETTINGS = Object.assign({}, SETTINGS_DEFAULTS);
 
   function v3(x,y,z){ return {x:x,y:y,z:z}; }
@@ -4221,6 +4242,7 @@
     { key:'iShowSound',  btn:'iShowSound',    labels:['Hidden','Shown'], onChange:applyInstall },
     { key:'iShowCount',  btn:'iShowCount',    labels:['Hidden','Shown'], onChange:applyInstall },
     { key:'iShowFps',    btn:'iShowFps',      labels:['Hidden','Shown'], onChange:applyInstall },
+    { key:'iShowExit',   btn:'iShowExit',     labels:['Hidden','Shown'], onChange:applyInstall },
     { key:'iCorner',     btn:'iCorner',       labels:['Top left','Top right','Bottom left','Bottom right'], onChange:applyInstall }
   ];
 
@@ -5857,7 +5879,7 @@
      panel, which only the installation build shows.
   ========================================================================= */
   var INST = { last: performance.now(), asleep:false, admin:false, resetDone:false,
-               touchErode:false, holdTimer:0, clearArmed:0 };
+               touchErode:false, holdTimer:0, clearArmed:0, exitArmed:0 };
   var installPanel = document.getElementById('installPanel');
   var modeToggle = document.getElementById('modeToggle');
   if(modeToggle){
@@ -5881,7 +5903,7 @@
     st.setProperty('--ui-scale', String(iClamp(SETTINGS.iUiScale, 0.6, 3)));
     st.setProperty('--ui-fade', iClamp(SETTINGS.iHideFade, 0, 10) + 's');
     st.setProperty('--hold', iClamp(SETTINGS.iHold, 0.5, 10) + 's');
-    var show = { zoom:'iShowZoom', evo:'iShowEvo', sound:'iShowSound', count:'iShowCount', fps:'iShowFps' };
+    var show = { zoom:'iShowZoom', evo:'iShowEvo', sound:'iShowSound', count:'iShowCount', fps:'iShowFps', exit:'iShowExit' };
     for(var k in show) root.classList.toggle('inst-hide-' + k, Math.round(SETTINGS[show[k]]) !== 1);
     if(adminCorner){
       var holding = adminCorner.classList.contains('holding');
@@ -6073,12 +6095,30 @@
       INST.clearArmed = now;
       iNote(this, 'Tap again to clear');
     });
+    // the visible way back, two taps so a passing visitor cannot leave by accident
+    var exitBtn = document.getElementById('exitInstall');
+    if(exitBtn) exitBtn.addEventListener('click', function(){
+      var now = performance.now();
+      if(exitBtn.classList.contains('armed') && now - INST.exitArmed < 3000){ switchMode(false); return; }
+      INST.exitArmed = now;
+      exitBtn.classList.add('armed');
+      exitBtn.textContent = 'Tap again to exit';
+      setTimeout(function(){ exitBtn.classList.remove('armed'); exitBtn.textContent = 'Exit installation'; }, 3000);
+    });
     // the long press in the secret corner
     if(adminCorner){
       var holdEnd = function(){ clearTimeout(INST.holdTimer); adminCorner.classList.remove('holding'); };
+      // iOS turns a long touch into its own gestures unless the touch itself is claimed
+      adminCorner.addEventListener('touchstart', function(ev){ ev.preventDefault(); }, { passive:false });
+      var cornerTaps = [];
       adminCorner.addEventListener('pointerdown', function(ev){
         ev.preventDefault(); ev.stopPropagation();
         holdEnd();
+        // five quick taps also open the panels
+        var now = performance.now();
+        cornerTaps = cornerTaps.filter(function(t){ return now - t < 2500; });
+        cornerTaps.push(now);
+        if(cornerTaps.length >= 5){ cornerTaps = []; setAdmin(!INST.admin); return; }
         adminCorner.classList.add('holding');
         INST.holdTimer = setTimeout(function(){
           adminCorner.classList.remove('holding');
