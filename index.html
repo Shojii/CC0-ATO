@@ -8,12 +8,12 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%9C%3C/text%3E%3C/svg%3E" />
 
 <meta property="og:type" content="website" />
-<meta property="og:title" content="Living Archive" />
+<meta property="og:title" content="ATO" />
 <meta property="og:description" content="An ever-growing collective diagram. Nothing starts from nothing. Nothing can be erased." />
 <meta property="og:image" content="/og.png" />
 <meta name="twitter:card" content="summary_large_image" />
 
-<title>Living Archive</title>
+<title>ATO</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 
 <style>
@@ -238,8 +238,6 @@
   }
   .enter-btn:hover{ background:var(--ink); color:var(--paper); }
   @keyframes rise{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:translateY(0); } }
-  .arrow{ display:inline-block; margin-left:4px; transition: transform .2s ease; }
-  .enter-btn:hover .arrow{ transform: translateX(3px); }
 
   .intro-foot{
     position:absolute; left:0; right:0; bottom:0;
@@ -585,18 +583,18 @@
   <div id="vignette"></div>
   <div id="nodeTip"></div>
 
-  <section class="intro" id="intro" role="dialog" aria-modal="true" aria-label="Living Archive, introduction">
+  <section class="intro" id="intro" role="dialog" aria-modal="true" aria-label="ATO, introduction">
     <div class="intro-curtain" id="introCurtain"></div>
     <div class="intro-scrim" id="introScrim"></div>
     <div class="intro-scrim intro-scrim--low" id="introScrimLow"></div>
     <div class="intro-stage">
       <div class="intro-block" id="introBlock" aria-hidden="true"></div>
-      <button class="enter-btn" id="enterBtn" hidden>Enter the archive <span class="arrow">-&gt;</span></button>
+      <button class="enter-btn" id="enterBtn" hidden>Enter the archive</button>
     </div>
     <p class="sr-only" id="introLive" aria-live="polite"></p>
     <div class="intro-foot">
       <span class="intro-count" id="introCount" aria-hidden="true"><b id="introCountN">0000</b> traces<span class="intro-count-more"> inherited</span></span>
-      <button class="intro-skip" id="introSkip">Skip intro -&gt;</button>
+      <button class="intro-skip" id="introSkip">Skip intro</button>
     </div>
   </section>
 
@@ -607,7 +605,7 @@
       <span class="tag mono fps-tag" id="fpsTag">-- fps</span>
       <button class="exit-install install-only" id="exitInstall">Exit installation</button>
     </div>
-    <div class="hud-center"><span class="wordmark">Living Archive</span></div>
+    <div class="hud-center"><span class="wordmark">ATO</span></div>
     <div class="hud-corner hud-corner--right">
       <span class="mono-count" id="traceCount">1,284 traces</span>
       <button class="settings-toggle admin-only" id="settingsToggle" aria-expanded="false" aria-controls="settingsPanel">Settings</button>
@@ -937,6 +935,15 @@
         </div>
         <input type="range" id="setFocus" min="0.2" max="2.5" step="0.05" value="1" aria-label="Focus range">
         <span class="setting-note">How far back the sharp zone reaches before the blur starts.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Focus on zoom</span>
+          <span class="setting-val" id="valDofZoom">1.00x</span>
+        </div>
+        <input type="range" id="setDofZoom" min="0" max="2" step="0.05" value="1" aria-label="Focus on zoom">
+        <span class="setting-note">Moving in clears the blur and lets the sharp zone reach further back, so zooming feels like the camera travelling into the form; moving out clouds it again. The blur and range above are what you get at the resting view. 0 keeps the blur the same at every distance.</span>
       </div>
 
       <div class="setting">
@@ -1319,6 +1326,15 @@
 
       <div class="setting">
         <div class="setting-top">
+          <span class="setting-name">Dust on zoom</span>
+          <span class="setting-val" id="valDustZoom">0.00x</span>
+        </div>
+        <input type="range" id="setDustZoom" min="0" max="1.5" step="0.05" value="0" aria-label="Dust on zoom">
+        <span class="setting-note">How much the motes stream past when you zoom or pinch, as if the camera flew through them. 0 keeps them exactly where they are.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
           <span class="setting-name">Trace fade</span>
           <span class="setting-val" id="valFade">60</span>
         </div>
@@ -1670,11 +1686,11 @@
   /* ------------------------------------------------------------------
      Live parameters — exposed through the on-screen settings panel.
   ------------------------------------------------------------------- */
-  var SETTINGS_DEFAULTS = { rotSpeed:0.7, fov:0.68, depth:1.85, depthFalloff:1.55, inertia:0.95, reach:1.25,
+  var SETTINGS_DEFAULTS = { rotSpeed:0.7, fov:0.58, depth:0.7, depthFalloff:1.25, inertia:0.95, reach:1.4,
     erode:1.05, grainSpread:5.85, grainSize:1.2, grainDrift:0.3,
-    dust:2.65, dustCount:640, dustSize:0.5, dof:3, focusRange:0.75, fadeSpan:45,
+    dust:2.65, dustCount:640, dustSize:0.5, dustZoom:0, dof:1.8, focusRange:1.3, dofZoom:1.45, fadeSpan:45,
     springback:0.8, follow:0.45, grainNoise:0.25, dustForm:1, dustSpin:0.8,
-    sound:0, volume:0.7, chimes:1, noteVol:1, gestureAmt:1, spaceAmt:1,
+    sound:0, volume:0.7, chimes:1, noteVol:1, gestureAmt:1, spaceAmt:0.75,
     reticle:2, reticleSize:1.4, hoverDim:0.62, hoverCol:0, hoverWeight:1, hoverMark:1, erodeSoft:1.5, erodeCore:0.42, erodeWake:0.8, cordon:0.4,
     grainVar:1, grainDensity:1, grainAlpha:1, grainColour:0, grainForm:0,
     grainGravity:0, grainSwirl:0, grainPush:0,
@@ -2006,7 +2022,34 @@
 
   function rotY(p,a){ var c=Math.cos(a), s=Math.sin(a); return { x:p.x*c+p.z*s, y:p.y, z:-p.x*s+p.z*c }; }
   function rotX(p,a){ var c=Math.cos(a), s=Math.sin(a); return { x:p.x, y:p.y*c-p.z*s, z:p.y*s+p.z*c }; }
-  function toCameraSpace(p){ return rotX(rotY(p, view.yaw), view.pitch); }
+  // The camera turns and zooms around the middle of the drawing — the centre
+  // of its bounding box — rather than around the origin it happens to be
+  // laid out from, so a pinch or the wheel closes in on the form itself.
+  var PIVOT = { x:0, y:0, z:0 };
+  function formCentre(){
+    if(!nodes.length) return { x:0, y:0, z:0 };
+    var lx = Infinity, ly = Infinity, lz = Infinity, hx = -Infinity, hy = -Infinity, hz = -Infinity;
+    for(var i=0;i<nodes.length;i++){
+      var n = nodes[i];
+      if(n.x < lx) lx = n.x; if(n.x > hx) hx = n.x;
+      if(n.y < ly) ly = n.y; if(n.y > hy) hy = n.y;
+      if(n.z < lz) lz = n.z; if(n.z > hz) hz = n.z;
+    }
+    return { x:(lx+hx)/2, y:(ly+hy)/2, z:(lz+hz)/2 };
+  }
+  // eased, so a new trace that widens the drawing moves the centre gently
+  function updatePivot(snap){
+    var c = formCentre();
+    var k = (snap || reduceMotion) ? 1 : 0.06;
+    PIVOT.x += (c.x - PIVOT.x)*k; PIVOT.y += (c.y - PIVOT.y)*k; PIVOT.z += (c.z - PIVOT.z)*k;
+  }
+  function toCameraSpace(p){
+    var x = p.x - PIVOT.x, y = p.y - PIVOT.y, z = p.z - PIVOT.z;
+    var cy = Math.cos(view.yaw), sy = Math.sin(view.yaw);
+    var x1 = x*cy + z*sy, z1 = -x*sy + z*cy;
+    var cp = Math.cos(view.pitch), sp = Math.sin(view.pitch);
+    return { x:x1, y:y*cp - z1*sp, z:y*sp + z1*cp };
+  }
   function toWorldVector(v){ return rotY(rotX(v, -view.pitch), -view.yaw); }
 
   // A light lean of the whole composition toward the cursor, eased so it
@@ -2102,11 +2145,28 @@
      it — it simply always loses to anything nearer.
   ------------------------------------------------------------------- */
   var FOCUS_FLOOR = 0;
+  // Depth of field follows the camera. At the resting view it is exactly
+  // what Blur amount and Focus range say; moving in, the blur thins and the
+  // sharp zone reaches further back, so closing in on the form reads as the
+  // camera travelling into it, and stepping back clouds it again.
+  var DOF_HOME = 0;                        // the resting distance the look is tuned at
+  function dofNear(){
+    var home = DOF_HOME || DIST_REF;
+    return Math.pow(Math.max(0.03, cam.dist/home), Math.max(0, SETTINGS.dofZoom));
+  }
+  function dofBlurK(){
+    var home = DOF_HOME || DIST_REF;
+    var atHome = Math.max(0.7, Math.min(2.2, Math.pow(DIST_REF/Math.max(1, home), 0.35)));
+    return atHome * Math.max(0.04, Math.min(1.8, dofNear()));
+  }
+  function dofRangeK(){ return Math.max(0.6, Math.min(4, 1/Math.sqrt(Math.max(0.0625, dofNear())))); }
+
   function focusWeight(viewZ){
     if(!(dofSupported && SETTINGS.dof > 0.01)) return 1;
     var rel = shellOf(viewZ);
-    var midEdge = MID_MIN * SETTINGS.focusRange;
-    var farEdge = FAR_MIN * SETTINGS.focusRange;
+    var rk = dofRangeK();
+    var midEdge = MID_MIN * SETTINGS.focusRange * rk;
+    var farEdge = FAR_MIN * SETTINGS.focusRange * rk;
     if(rel <= midEdge) return 1;
     if(rel >= farEdge) return FOCUS_FLOOR;
     var t = (rel - midEdge)/Math.max(1e-6, farEdge - midEdge);
@@ -2401,11 +2461,11 @@
      so lines never shimmer and never come loose from their points.
   ------------------------------------------------------------------- */
   var LINE_DEFAULTS = {
-    weight:0.2, opacity:1, cubeWeight:0.6,
-    jitter:4.9, grain:10, passes:4, lead:1.8, dbl:1.5, taper:0.6, life:1.23, lifeSpeed:0.75,
+    weight:0.37, opacity:1, cubeWeight:0.65,
+    jitter:1.35, grain:19, passes:4, lead:2.4, dbl:1.15, taper:0.3, life:0.45, lifeSpeed:0.7,
     dash:0, gap:0.5, cap:0, join:0,
-    beamWeight:0.65, beamOpacity:0.25, beamSpread:0.17,
-    wave:12.5, waves:1.5, waveSpeed:0.1
+    beamWeight:0.45, beamOpacity:0.4, beamSpread:0.22,
+    wave:9.5, waves:1.75, waveSpeed:0.1
   };
   var LINES = Object.assign({}, LINE_DEFAULTS);
   var CAP_MODES = ['butt','round','square'];
@@ -2663,7 +2723,7 @@
     // side of the archive so nothing stands between it and the lens
     var c = list.reduce(function(a, m){ return add3(a, m); }, { x:0, y:0, z:0 });
     c = scale3(c, 1/Math.max(1, list.length));
-    var ang = centeringAngles(scale3(c, -1));
+    var ang = centeringAngles(scale3(sub3(c, PIVOT), -1));
     var dYaw = ang.yaw - cam.yaw; dYaw = Math.atan2(Math.sin(dYaw), Math.cos(dYaw));
     var toYaw = cam.yaw + dYaw;
     var toPitch = Math.max(-1.3, Math.min(1.3, ang.pitch));
@@ -2758,7 +2818,7 @@
     var halfMin = Math.min(W,H)/2 || 1;
     var targetDist = (localR*FOCAL)/(halfMin*0.5);
     targetDist = Math.max(DIST_MIN, Math.min(DIST_REF*0.62, targetDist));
-    var ang = centeringAngles(centroid);
+    var ang = centeringAngles(sub3(centroid, PIVOT));
     camPulse = {
       fromYaw: cam.yaw, toYaw: ang.yaw,
       fromPitch: cam.pitch, toPitch: ang.pitch,
@@ -3156,7 +3216,8 @@
     var anyCube = false;
     for(var i=0;i<count;i++){
       var d = dust[i];
-      var par = Math.pow(zoomK, 0.5 * d.depth);
+      // zooming leaves the air alone unless asked to fly the camera through it
+      var par = Math.pow(zoomK, 0.5 * d.depth * Math.max(0, SETTINGS.dustZoom));
       var amp = (10 + d.depth*46) * Math.min(3, par);
       var x = W/2 + (d.nx-0.5)*W*par + Math.sin(t*d.w + d.ph)*amp;
       var y = H/2 + (d.ny-0.5)*H*par + Math.cos(t*d.w*0.77 + d.ph*1.4)*amp*0.8;
@@ -3572,8 +3633,8 @@
       renderEdges(-Infinity, Infinity);
       renderNodes(-Infinity, Infinity);
     } else {
-      var zf = Math.max(0.7, Math.min(2.2, Math.pow(DIST_REF/Math.max(1, cam.dist), 0.35)));
-      var farEdge = FAR_MIN * SETTINGS.focusRange, midEdge = MID_MIN * SETTINGS.focusRange;
+      var zf = dofBlurK(), rk = dofRangeK();
+      var farEdge = FAR_MIN * SETTINGS.focusRange * rk, midEdge = MID_MIN * SETTINGS.focusRange * rk;
       beginLayer(LAYER_FAR);
       renderEdges(farEdge, Infinity);
       renderNodes(farEdge, Infinity);
@@ -3741,6 +3802,7 @@
     updateAmbientRotation();
     updateFit();
     updateSway();
+    updatePivot(false);
     updateErode();
     updateGhost();
     updateIntro();
@@ -4108,7 +4170,7 @@
     csX += organicField(sx, sy, 1) * lateral;
     csY += organicField(sx, sy, 2) * lateral;
 
-    return toWorldVector({ x:csX, y:csY, z:csZ });
+    return add3(toWorldVector({ x:csX, y:csY, z:csZ }), PIVOT);
   }
 
   var MAX_POINTS = 3;
@@ -4172,6 +4234,7 @@
     { key:'depthFalloff', input:'setFalloff',  out:'valFalloff',  fmt:x2 },
     { key:'dof',          input:'setDof',      out:'valDof',      fmt:x2 },
     { key:'focusRange',   input:'setFocus',    out:'valFocus',    fmt:x2 },
+    { key:'dofZoom',      input:'setDofZoom',  out:'valDofZoom',  fmt:x2 },
     { key:'reach',        input:'setReach',    out:'valReach',    fmt:x2 },
     { key:'rotSpeed',     input:'setRot',      out:'valRot',      fmt:function(v){ return v.toFixed(1)+'x'; } },
     { key:'inertia',      input:'setInertia',  out:'valInertia',  fmt:function(v){ return v.toFixed(2); } },
@@ -4202,6 +4265,7 @@
     { key:'dustCount',    input:'setDustN',    out:'valDustN',    fmt:function(v){ return String(Math.round(v)); } },
     { key:'dustSize',     input:'setDustSz',   out:'valDustSz',   fmt:x2 },
     { key:'dustSpin',     input:'setDustSpin', out:'valDustSpin', fmt:x2 },
+    { key:'dustZoom',     input:'setDustZoom', out:'valDustZoom', fmt:x2 },
     { key:'volume',       input:'setVol',      out:'valVol',      fmt:x2 },
     { key:'chimes',       input:'setChime',    out:'valChime',    fmt:x2 },
     { key:'noteVol',      input:'setNotes',    out:'valNotes',    fmt:x2 },
@@ -4435,8 +4499,10 @@
   // Bumped whenever a default is changed on purpose. A browser holding a
   // tuning saved before that change gets the new default for those values,
   // rather than keeping the old one alive for ever because it was saved.
-  var TUNING_REV = 3;
+  var TUNING_REV = 5;
   var TUNING_REDEFAULTS = {
+    5: { settings: ["fov", "depth", "depthFalloff", "reach", "dof", "focusRange", "dofZoom", "spaceAmt"], lines: [] },
+    4: { settings: [], lines: ["weight", "cubeWeight", "jitter", "grain", "lead", "dbl", "taper", "life", "lifeSpeed", "beamWeight", "beamOpacity", "beamSpread", "wave", "waves"] },   // Elisa's line tuning, 2026-10-22
     3: { settings: ["rotSpeed", "fov", "depth", "depthFalloff", "inertia", "reach", "erode", "grainSpread", "grainSize", "grainDrift", "dust", "dustCount", "dustSize", "dof", "focusRange", "fadeSpan", "springback", "follow", "grainNoise", "dustSpin", "reticle", "reticleSize", "hoverDim", "erodeWake", "cordon", "bgMode", "bgA", "bgInk", "bgVignette"], lines: [] },
     2: { settings:['dustForm'] }          // the motes went back to squares
   };
@@ -4829,7 +4895,7 @@
      The words live in INTRO_SCENES and can be edited freely.
   ========================================================================= */
   var INTRO_SCENES = [
-    { lines:[{ text:'LIVING ARCHIVE', cls:'intro-title', speed:95, lead:1300 }],
+    { lines:[{ text:'ATO', cls:'intro-title', speed:140, lead:1300 }],
       title:true, hold:1600 },
     { lines:[{ text:'Nothing starts from nothing.' }],
       hold:1800 },
@@ -5266,6 +5332,7 @@
       var endD = Math.min(introOpenDist(), fitD*0.9) * (INSTALL ? Math.max(0.3, SETTINGS.iRestZoom) : 1);
       var startD = Math.max(fitD*1.7, endD*1.6);
       INTRO.path = { start:startD, mid:startD + (endD - startD)*0.45, end:endD };
+      DOF_HOME = endD;                      // the look is tuned for where the intro lands
       cam.dist = startD; updateZoomLabel();
       var fonts = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
       fonts.then(function(){
@@ -6000,7 +6067,7 @@
       kind:'living-archive-traces', version:1, exportedAt:new Date().toISOString(),
       contributions: storeState.contributions || []
     }, null, 2);
-    var name = 'living-archive-traces-' + new Date().toISOString().slice(0, 10) + '.json';
+    var name = 'ato-traces-' + new Date().toISOString().slice(0, 10) + '.json';
     // inside claude.ai a page offers files through the platform
     if(window.claude && window.claude.use){
       var dl = null;
@@ -6138,6 +6205,8 @@
   loadTuning();
   applyFov();
   applyDepth();
+  updatePivot(true);
+  if(!DOF_HOME) DOF_HOME = cam.dist;
   applyBackground();
   syncSettingsUI();
   syncLinesUI();

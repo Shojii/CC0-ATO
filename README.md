@@ -1,4 +1,4 @@
-# Living Archive — *Permanent Loading*
+# ATO — *Permanent Loading*
 
 An interactive installation piece. A single ever-growing diagram: every visitor
 inherits what came before, adds up to three points, and each point is fixed to
