@@ -71,4 +71,4 @@ link goes out.
 
 ## Licence
 
-CC0 — as the piece says in its own corner.
+CC0.

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="description" content="An ever-growing collective diagram. Every visitor inherits what came before, adds a small trace, then passes it forward. Nothing can be erased." />
-<meta name="theme-color" media="(prefers-color-scheme: light)" content="#F2EDE1" />
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#FFFFFF" />
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#14120D" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%9C%3C/text%3E%3C/svg%3E" />
 
@@ -30,36 +30,42 @@
   }
   :root{
     --font: "MBM Mono", ui-monospace, "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
-    --paper: #F2EDE1;
-    --paper-2: #ECE5D3;
-    --ink: #1D1912;
-    --ash: #8B8172;
-    --ash-pale: #CFC6B4;
-    --accent: #A8402A;
-    --line: rgba(29,25,18,0.14);
-    --line-soft: rgba(29,25,18,0.08);
+    /* black on white, nothing warm: every tone of the piece is a grey */
+    --paper: #FFFFFF;
+    --paper-2: #F6F6F6;
+    --ink: #000000;
+    --ash: #000000;
+    --ash-pale: #CCCCCC;
+    --accent: #000000;
+    /* the one colour left: a point being added, until it joins the archive */
+    --place: #ED4B1E;
+    --line: rgba(0,0,0,0.14);
+    --line-soft: rgba(0,0,0,0.08);
+    /* the visitor's surfaces (the trace bar and card, the point card, the
+       evolution bar) are the ground itself, white unless the ground changes */
+    --surface: var(--bg-core, var(--paper));
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
-      --paper: #14120D;
-      --paper-2: #1B1812;
-      --ink: #EAE2D1;
-      --ash: #857A67;
-      --ash-pale: #3A352A;
-      --accent: #D9724F;
-      --line: rgba(234,226,209,0.16);
-      --line-soft: rgba(234,226,209,0.08);
+      --paper: #0A0A0A;
+      --paper-2: #141414;
+      --ink: #FFFFFF;
+      --ash: #FFFFFF;
+      --ash-pale: #333333;
+      --accent: #FFFFFF;
+      --line: rgba(255,255,255,0.16);
+      --line-soft: rgba(255,255,255,0.08);
     }
   }
   :root[data-theme="dark"]{
-    --paper: #14120D;
-    --paper-2: #1B1812;
-    --ink: #EAE2D1;
-    --ash: #857A67;
-    --ash-pale: #3A352A;
-    --accent: #D9724F;
-    --line: rgba(234,226,209,0.16);
-    --line-soft: rgba(234,226,209,0.08);
+    --paper: #0A0A0A;
+    --paper-2: #141414;
+    --ink: #FFFFFF;
+    --ash: #FFFFFF;
+    --ash-pale: #333333;
+    --accent: #FFFFFF;
+    --line: rgba(255,255,255,0.16);
+    --line-soft: rgba(255,255,255,0.08);
   }
 
   *{ box-sizing:border-box; }
@@ -74,7 +80,8 @@
     -webkit-font-smoothing: antialiased;
   }
   #app{ position:fixed; inset:0; background: var(--bg, var(--paper)); }
-  #stage{ position:absolute; inset:0; display:block; touch-action:none; cursor: grab; }
+  #stage{ position:absolute; inset:0; display:block; touch-action:none; cursor: grab;
+    -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
   #stage.dragging{ cursor: grabbing; }
   #stage.crosshair{ cursor: crosshair; }
   #stage.reticle{ cursor: none; }
@@ -194,7 +201,6 @@
   .intro-line{
     margin:0; line-height:1.45; color:var(--ink); text-wrap:balance; --caret:var(--ink);
   }
-  .intro-line--accent{ color:var(--accent); --caret:var(--accent); }
   .intro-title{
     font-size: clamp(22px, 3.3vw, 42px); line-height:1.2;
     letter-spacing:0.32em; margin-right:-0.32em;   /* the tracking after the last letter */
@@ -209,51 +215,61 @@
   .intro-ch.intro-sp{ display:inline; white-space:normal; }
   .intro-ch.on{ color:inherit; }
   .intro-ch.gone{ opacity:0; }
-  .intro-ch.cur::after{
-    content:''; position:absolute; left:100%; top:0.17em; bottom:0.1em;
-    width:0.5em; margin-left:0.06em; background:var(--caret);
-    animation: introCaret 1.06s steps(1) infinite;
-  }
-  .intro-ch.cur0::after{ left:0; margin-left:0; }
-  .intro-typing .intro-ch.cur::after{ animation:none; }
-  @keyframes introCaret{ 0%{ opacity:1; } 50%{ opacity:0; } }
   .intro-rule{
     width: clamp(80px, 12vw, 160px); height:1px; margin-top:0.45em;
     background:var(--ink); opacity:0.5; transform:scaleX(0);
     transition: transform 1.2s cubic-bezier(.2,.7,.1,1), opacity .6s ease;
   }
   .intro-rule.on{ transform:scaleX(1); }
-  .intro-sub{
-    margin:0.35em 0 0; font-size:11px; letter-spacing:0.18em; text-transform:uppercase;
-    color:var(--ink); opacity:0; transition: opacity 1s ease;
+  /* the last beat: the name, large, at the centre of the screen and over the
+     drawing; a breath of ground around the letters keeps them clear of the
+     lines without hiding them */
+  .intro-mark{
+    position:absolute; inset:0; pointer-events:none;
+    display:flex; align-items:center; justify-content:center;
   }
-  .intro-sub.on{ opacity:0.6; }
-  .intro-block.leaving .intro-rule, .intro-block.leaving .intro-sub{ opacity:0; }
+  .intro-mark b{
+    font-weight:400; color:var(--ink); line-height:1; white-space:nowrap;
+    font-size: clamp(64px, min(17vw, 27vh), 260px);
+    letter-spacing:0.24em; margin-right:-0.24em;   /* the tracking after the last letter */
+    text-shadow: 0 0 0.08em var(--bg-core, var(--paper)), 0 0 0.22em var(--bg-core, var(--paper));
+  }
+  .intro-mark i{ font-style:normal; opacity:0; transition: opacity .2s ease; }
+  /* typed in like the title at the start, a letter at a time */
+  .intro.is-final .intro-mark i{ opacity:1; transition-duration:.45s; }
+  .intro.is-final .intro-mark i:nth-child(1){ transition-delay:.5s; }
+  .intro.is-final .intro-mark i:nth-child(2){ transition-delay:.68s; }
+  .intro.is-final .intro-mark i:nth-child(3){ transition-delay:.86s; }
+  .intro-block.leaving .intro-rule{ opacity:0; }
 
   .enter-btn{
-    margin-top:2.4em; background:var(--bg-core, var(--paper)); border:1px solid var(--ink); color:var(--ink);
+    margin:0; background:var(--bg-core, var(--paper)); border:1px solid var(--ink); color:var(--ink);
     font-family:var(--font); font-size:12.5px; letter-spacing:0.1em; text-transform:uppercase;
     padding:13px 26px; cursor:pointer; opacity:0; animation: rise 1s ease forwards; animation-delay:.45s;
     transition: background .2s ease, color .2s ease;
   }
-  .enter-btn:hover{ background:var(--ink); color:var(--paper); }
+  .enter-btn:hover{ background:var(--ink); color:var(--surface); }
+  .enter-btn:focus-visible{ outline-color:var(--ink); }
   @keyframes rise{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:translateY(0); } }
 
+  /* the foot: the counter on the left, the door in the middle with its
+     bottom edge on the counter's, Skip on the right */
   .intro-foot{
     position:absolute; left:0; right:0; bottom:0;
-    display:flex; justify-content:space-between; align-items:flex-end; gap:16px;
+    display:grid; grid-template-columns:1fr auto 1fr; align-items:end; gap:16px;
     padding: clamp(14px, 2.4vw, 26px) clamp(16px, 3vw, 34px);
     font-family:var(--font); font-size:11px; letter-spacing:0.14em; text-transform:uppercase;
     color:var(--ink);
   }
   .intro-count{
-    justify-self:start; white-space:nowrap; font-variant-numeric:tabular-nums;
+    grid-column:1; grid-row:1; justify-self:start; white-space:nowrap; font-variant-numeric:tabular-nums;
     opacity:0; transition: opacity 1.2s ease;
   }
   .intro-count.on{ opacity:0.72; }
   .intro-count b{ font-weight:400; }
+  .intro-foot .enter-btn{ grid-column:2; grid-row:1; margin-bottom:2px; }   /* its bottom border on the baseline of the count */
   .intro-skip{
-    margin-left:auto; background:none; border:0; border-bottom:1px solid transparent;
+    grid-column:3; grid-row:1; justify-self:end; background:none; border:0; border-bottom:1px solid transparent;
     padding:0 0 2px; cursor:pointer; white-space:nowrap;
     font:inherit; letter-spacing:inherit; text-transform:inherit; color:var(--ink);
     opacity:0; visibility:hidden; transition: opacity .8s ease, visibility .8s, border-color .2s ease;
@@ -271,43 +287,30 @@
   @media (max-width:640px){
     .intro-count-more{ display:none; }
   }
+  /* too narrow for three columns: the door takes Skip's place on the right */
+  @media (max-width:520px){
+    .intro-foot{ grid-template-columns:1fr auto; }
+    .intro-foot .enter-btn, .intro-skip{ grid-column:2; }
+  }
   @media (prefers-reduced-motion: reduce){
     .intro-curtain, .intro-scrim{ transition-duration:1.2s; }
     .intro-ch{ transition: opacity .4s ease; }
-    .intro-ch.cur::after{ display:none; }
     .intro-rule{ transition:none; }
     .enter-btn{ animation:none; opacity:1; }
+    .intro.is-final .intro-mark i{ transition-delay:0s !important; }
   }
 
   /* ---------- Contribution bar ---------- */
-  .contrib-bar.signing{ grid-template-columns:1fr auto auto; }
   .contrib-bar{
     position:fixed; left:0; right:0; bottom:0; z-index:30;
-    background: var(--paper); border-top:1px solid var(--line);
+    background: var(--surface); border-top:1px solid var(--line);
     padding: 20px clamp(18px,4vw,40px) 24px;
     display:flex; align-items:center; justify-content:space-between; gap:24px;
     flex-wrap:wrap;
   }
   .contrib-left{ display:flex; flex-direction:column; gap:4px; max-width:640px; }
-  .contrib-step{
-    font-family:var(--font); font-size:11px; letter-spacing:0.14em;
-    text-transform:uppercase; color:var(--accent); opacity:0.85;
-  }
   .contrib-msg{ font-family:var(--font); font-size:14px; color:var(--ink); text-wrap:balance; }
   .contrib-sub{ font-family:var(--font); font-size:11.5px; color:var(--ink); opacity:0.55; }
-  .contrib-sign{ display:flex; flex-direction:column; gap:5px; justify-self:center; min-width:210px; }
-  .contrib-sign-label{
-    font-size:9.5px; letter-spacing:0.14em; text-transform:uppercase;
-    color:var(--accent); opacity:0.85;
-  }
-  .contrib-sign-input{
-    font-family:var(--font); font-size:13px;
-    color:var(--ink); background:transparent;
-    border:0; border-bottom:1px solid var(--line);
-    padding:3px 1px; width:100%;
-  }
-  .contrib-sign-input::placeholder{ opacity:0.34; }
-  .contrib-sign-input:focus{ outline:none; border-bottom-color:var(--accent); }
   .contrib-right{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; justify-content:flex-end; }
   .btn-text{
     background:none; border:none; font-family:var(--font); font-size:12px;
@@ -315,13 +318,48 @@
     white-space:nowrap;
   }
   .btn-text:hover{ opacity:0.9; }
+  /* the same door as "Enter the archive": a black frame that fills on hover */
   .btn-primary{
-    background:var(--ink); color:var(--paper); border:none; padding:12px 22px;
-    font-family:var(--font); font-size:12.5px; letter-spacing:0.07em; text-transform:uppercase;
-    cursor:pointer; transition: opacity .2s ease; white-space:nowrap;
+    background:var(--surface); color:var(--ink); border:1px solid var(--ink); padding:13px 26px;
+    font-family:var(--font); font-size:12.5px; letter-spacing:0.1em; text-transform:uppercase;
+    cursor:pointer; transition: background .2s ease, color .2s ease, opacity .2s ease; white-space:nowrap;
   }
   .btn-primary:disabled{ opacity:0.32; cursor:default; }
-  .btn-primary:not(:disabled):hover{ opacity:0.82; }
+  .btn-primary:not(:disabled):hover{ background:var(--ink); color:var(--surface); }
+
+  /* ---------- The trace card: three points down, sign and add ---------- */
+  .trace-card{
+    position:fixed; left:50%; top:50%; z-index:31;
+    width:min(340px, calc(100vw - 32px));
+    transform:translate(-50%, -50%);
+    display:flex; flex-direction:column; gap:26px;
+    padding:30px 30px 24px;
+    background:var(--surface); color:var(--ink);
+    border:1px solid var(--ink);
+    box-shadow:0 24px 54px -30px rgba(0,0,0,0.42);
+    font-family:var(--font);
+    animation: cardIn .45s cubic-bezier(.2,.7,.1,1) both;
+  }
+  @keyframes cardIn{
+    from{ opacity:0; transform:translate(-50%, calc(-50% + 8px)); }
+    to{ opacity:1; transform:translate(-50%, -50%); }
+  }
+  .trace-card-text{ display:flex; flex-direction:column; gap:10px; }
+  .trace-card-msg{ margin:0; font-size:14px; line-height:1.35; text-wrap:balance; }
+  .trace-card-sub{ margin:0; font-size:11px; line-height:1.5; opacity:0.55; }
+  .trace-card-field{ display:flex; flex-direction:column; gap:10px; }
+  .trace-card-label{ font-size:9.5px; letter-spacing:0.14em; text-transform:uppercase; opacity:0.5; }
+  .trace-card-input{
+    font-family:var(--font); font-size:14px; color:var(--ink); background:transparent;
+    border:0; border-bottom:1px solid var(--line); border-radius:0;
+    padding:5px 1px; width:100%;
+  }
+  .trace-card-input::placeholder{ color:var(--ink); opacity:0.3; }
+  .trace-card-input:focus{ outline:none; border-bottom-color:var(--ink); }
+  .trace-card .btn-primary{ width:100%; }
+  .trace-card-more{ display:flex; justify-content:center; gap:12px; margin-top:-8px; }
+  .trace-card-more .btn-text{ padding:2px 0; font-size:10.5px; letter-spacing:0.1em; }
+  @media (prefers-reduced-motion: reduce){ .trace-card{ animation:none; } }
 
   /* ---------- Toast ---------- */
   .toast{
@@ -341,7 +379,7 @@
 
   #nodeTip{
     position:fixed; z-index:25; pointer-events:none; font-family:var(--font);
-    font-size:12.5px; color:var(--ink); background:var(--paper);
+    font-size:12.5px; color:var(--ink); background:var(--surface);
     padding:6px 10px; border:1px solid var(--line); opacity:0; transition:opacity .15s ease;
     white-space:nowrap; transform:translate(-50%,-130%);
   }
@@ -350,8 +388,8 @@
   #nodeTip .tip-id{
     font-size:13px;
   }
-  #nodeTip .tip-sep{ margin:0 6px; color:var(--ash); opacity:0.7; }
-  #nodeTip .tip-liens{ color:var(--ash); }
+  #nodeTip .tip-sep{ margin:0 6px; opacity:0.3; }
+  #nodeTip .tip-liens{ opacity:0.55; }
   #nodeTip .tip-sign{
     margin-top:3px; font-family:var(--font);
     font-size:12px; color:var(--ink); opacity:1;
@@ -370,7 +408,7 @@
   /* ---------- Evolution panel ---------- */
   .evo-panel{
     position:fixed; left:0; right:0; bottom:0; z-index:30;
-    background:var(--paper); border-top:1px solid var(--line);
+    background:var(--surface); border-top:1px solid var(--line);
     padding: 18px clamp(18px,4vw,40px) 22px;
   }
   .evo-row{ display:flex; align-items:center; gap:18px; }
@@ -383,13 +421,14 @@
   #evoCaption{ font-family:var(--font); font-size:11.5px; color:var(--ink); opacity:0.75; }
   input[type="range"]{
     -webkit-appearance:none; appearance:none; flex:1; height:1px; background:var(--line); outline:none;
+    color:var(--ink); accent-color:var(--ink);   /* not the browser's own warm grey */
   }
   input[type="range"]::-webkit-slider-thumb{
     -webkit-appearance:none; width:11px; height:11px; border-radius:50%; background:var(--ink);
-    cursor:pointer; border:2px solid var(--paper); box-shadow:0 0 0 1px var(--ink);
+    cursor:pointer; border:2px solid var(--surface); box-shadow:0 0 0 1px var(--ink);
   }
   input[type="range"]::-moz-range-thumb{
-    width:11px; height:11px; border-radius:50%; background:var(--ink); border:2px solid var(--paper);
+    width:11px; height:11px; border-radius:50%; background:var(--ink); border:2px solid var(--surface);
     box-shadow:0 0 0 1px var(--ink); cursor:pointer;
   }
 
@@ -531,18 +570,22 @@
   html.install.install-admin .settings-panel{ z-index:140; }
   .install-actions{ flex-wrap:wrap; justify-content:flex-start; row-gap:8px; }
   html.install .hud-top, html.install .hud-bottom, html.install .contrib-bar, html.install .toast,
-  html.install .nudge, html.install .intro-foot, html.install .enter-btn, html.install #nodeTip{ zoom: var(--ui-scale, 1); }
+  html.install .nudge, html.install .intro-foot, html.install #nodeTip, html.install .trace-card{ zoom: var(--ui-scale, 1); }
   html.install .hud-top, html.install .hud-bottom{ transition: opacity var(--ui-fade, 1.2s) ease; }
   html.install.ui-asleep .hud-top, html.install.ui-asleep .hud-bottom{ opacity:0; }
   html.install.ui-asleep .hud-top > *, html.install.ui-asleep .hud-bottom > *{ pointer-events:none; }
   html.install .ghost-btn{ padding:10px 6px; }
   html.install .zbtn{ width:32px; height:32px; }
+  /* the zoom gauge is gone from the normal version too; the installation
+     can still bring it back from its own panel */
+  html:not(.install) .hud-zoom,
   html.install.inst-hide-zoom .hud-zoom,
   html.install.inst-hide-evo #evolutionBtn,
   html.install.inst-hide-sound #soundToggle,
   html.install.inst-hide-count #traceCount,
   html.install.inst-hide-fps #fpsTag{ visibility:hidden; }
   html.install.inst-hide-exit #exitInstall{ display:none; }
+  html:not(.has-sound) .sound-only{ display:none !important; }
   .exit-install{
     align-self:flex-start; margin-top:6px; padding:4px 0; background:none; border:0;
     border-bottom:1px solid var(--line); cursor:pointer;
@@ -587,31 +630,30 @@
     <div class="intro-curtain" id="introCurtain"></div>
     <div class="intro-scrim" id="introScrim"></div>
     <div class="intro-scrim intro-scrim--low" id="introScrimLow"></div>
+    <div class="intro-mark" aria-hidden="true"><b><i>A</i><i>T</i><i>O</i></b></div>
     <div class="intro-stage">
       <div class="intro-block" id="introBlock" aria-hidden="true"></div>
-      <button class="enter-btn" id="enterBtn" hidden>Enter the archive</button>
     </div>
     <p class="sr-only" id="introLive" aria-live="polite"></p>
     <div class="intro-foot">
-      <span class="intro-count" id="introCount" aria-hidden="true"><b id="introCountN">0000</b> traces<span class="intro-count-more"> inherited</span></span>
+      <span class="intro-count" id="introCount" aria-hidden="true"><b id="introCountN">000</b> traces<span class="intro-count-more"> inherited</span></span>
+      <button class="enter-btn" id="enterBtn" hidden>Enter the archive</button>
       <button class="intro-skip" id="introSkip">Skip intro</button>
     </div>
   </section>
 
   <header class="hud-top">
     <div class="hud-corner hud-corner--left">
-      <span class="tag mono">CC0</span>
-      <span class="tag tag--loading mono">PERMANENT LOADING<span class="dots"><span>.</span><span>.</span><span>.</span></span></span>
       <span class="tag mono fps-tag" id="fpsTag">-- fps</span>
       <button class="exit-install install-only" id="exitInstall">Exit installation</button>
     </div>
     <div class="hud-center"><span class="wordmark">ATO</span></div>
     <div class="hud-corner hud-corner--right">
-      <span class="mono-count" id="traceCount">1,284 traces</span>
+      <span class="mono-count" id="traceCount"></span>
       <button class="settings-toggle admin-only" id="settingsToggle" aria-expanded="false" aria-controls="settingsPanel">Settings</button>
       <button class="settings-toggle admin-only" id="linesToggle" aria-expanded="false" aria-controls="linesPanel">Lines</button>
       <button class="settings-toggle admin-only install-only" id="installToggle" aria-expanded="false" aria-controls="installPanel">Install</button>
-      <button class="settings-toggle" id="soundToggle" aria-pressed="false">Sound</button>
+      <button class="settings-toggle sound-only" id="soundToggle" aria-pressed="false">Sound</button>
     </div>
   </header>
 
@@ -627,16 +669,24 @@
 
   <div class="contrib-bar" id="contribBar" hidden>
     <div class="contrib-left">
-      <div class="contrib-step mono" id="contribStep">STEP 1 / ADD YOUR POINTS</div>
       <div class="contrib-msg serif" id="contribMsg">3 points remaining</div>
       <div class="contrib-sub" id="contribSub">Click anywhere in the archive to place your first point.</div>
     </div>
-    <div class="contrib-sign" id="contribSign" hidden>
-      <label class="contrib-sign-label mono" for="signInput">Sign it</label>
-      <input class="contrib-sign-input" id="signInput" type="text" maxlength="24"
-             autocomplete="off" spellcheck="false" placeholder="your name, or leave it blank" />
-    </div>
     <div class="contrib-right" id="contribRight"></div>
+  </div>
+
+  <div class="trace-card" id="traceCard" role="dialog" aria-labelledby="traceCardMsg" hidden>
+    <div class="trace-card-text">
+      <p class="trace-card-msg" id="traceCardMsg">Your trace is in place.</p>
+      <p class="trace-card-sub" id="traceCardSub"></p>
+    </div>
+    <label class="trace-card-field" id="traceCardField">
+      <span class="trace-card-label">First name</span>
+      <input class="trace-card-input" id="signInput" type="text" maxlength="24"
+             autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Optional" />
+    </label>
+    <button class="btn-primary" id="traceCardDone">Done adding</button>
+    <div class="trace-card-more" id="traceCardMore"></div>
   </div>
 
   <aside class="settings-panel lines-panel" id="linesPanel" hidden>
@@ -1229,7 +1279,7 @@
       <div class="setting bg-custom">
         <div class="setting-top">
           <span class="setting-name" id="lblBgA">Colour</span>
-          <label class="setting-swatch"><span class="setting-val" id="valBgA">#F2EDE1</span><input type="color" id="setBgA" value="#f2ede1" aria-label="Colour"></label>
+          <label class="setting-swatch"><span class="setting-val" id="valBgA">#FFFFFF</span><input type="color" id="setBgA" value="#ffffff" aria-label="Colour"></label>
         </div>
         <span class="setting-note">The fill, or where the gradient starts.</span>
       </div>
@@ -1237,7 +1287,7 @@
       <div class="setting bg-grad">
         <div class="setting-top">
           <span class="setting-name" id="lblBgB">To</span>
-          <label class="setting-swatch"><span class="setting-val" id="valBgB">#D8CCB2</span><input type="color" id="setBgB" value="#d8ccb2" aria-label="To"></label>
+          <label class="setting-swatch"><span class="setting-val" id="valBgB">#CCCCCC</span><input type="color" id="setBgB" value="#cccccc" aria-label="To"></label>
         </div>
         <span class="setting-note">Where the gradient ends.</span>
       </div>
@@ -1343,7 +1393,7 @@
       </div>
     </div>
 
-    <div class="settings-group">
+    <div class="settings-group sound-only">
       <span class="settings-group-name">Sound</span>
 
       <div class="setting">
@@ -1403,6 +1453,9 @@
       <div><dt>Hold wheel + drag</dt><dd>orbit</dd></div>
       <div><dt>Right-drag</dt><dd>orbit</dd></div>
       <div><dt>Wheel</dt><dd>zoom</dd></div>
+      <div><dt>Left-drag</dt><dd>slide, springs back</dd></div>
+      <div><dt>Two fingers</dt><dd>slide, springs back</dd></div>
+      <div><dt>Hold a finger</dt><dd>hover</dd></div>
       <div><dt>Left click</dt><dd>place a point</dd></div>
       <div><dt>Hold space</dt><dd>see it all</dd></div>
     </dl>
@@ -1551,7 +1604,7 @@
         <span class="setting-note">The button that replays the archive growing.</span>
       </div>
 
-      <div class="setting">
+      <div class="setting sound-only">
         <div class="setting-top">
           <span class="setting-name">Sound button</span>
           <button class="setting-cycle" id="iShowSound"></button>
@@ -1662,6 +1715,10 @@
   function gaussLike(){ return (rand()+rand()+rand()-1.5)/1.5; }
 
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // The piece is silent. The room's sound is still written below, asleep:
+  // set this true and its button and settings come back with it.
+  var SOUND = false;
+  document.documentElement.classList.toggle('has-sound', SOUND);
   // The installation build — the piece projected on a wall, mirrored from an
   // iPad in front of it — sets this true; ?installation in the address does
   // the same on the web.
@@ -1694,11 +1751,11 @@
     reticle:2, reticleSize:1.4, hoverDim:0.62, hoverCol:0, hoverWeight:1, hoverMark:1, erodeSoft:1.5, erodeCore:0.42, erodeWake:0.8, cordon:0.4,
     grainVar:1, grainDensity:1, grainAlpha:1, grainColour:0, grainForm:0,
     grainGravity:0, grainSwirl:0, grainPush:0,
-    bgMode:1, bgA:'#ED4B1E', bgB:'#D8CCB2', bgType:0, bgAngle:180, bgInk:1, bgVignette:1,
+    bgMode:1, bgA:'#FFFFFF', bgB:'#CCCCCC', bgType:0, bgAngle:180, bgInk:1, bgVignette:1,
     // installation
     iUiScale:1.35, iHideAfter:12, iHideFade:1.2, iDpr:1.5, iPick:30, iTouchErode:1,
     iIdle:3, iAttract:2, iLoop:60, iRestZoom:1, iSign:1, iSignMax:16,
-    iShowZoom:1, iShowEvo:0, iShowSound:1, iShowCount:1, iShowFps:0, iShowExit:1, iCorner:0, iHold:2 };
+    iShowZoom:0, iShowEvo:0, iShowSound:1, iShowCount:1, iShowFps:0, iShowExit:1, iCorner:0, iHold:2 };
   var SETTINGS = Object.assign({}, SETTINGS_DEFAULTS);
 
   function v3(x,y,z){ return {x:x,y:y,z:z}; }
@@ -1989,10 +2046,11 @@
     });
   });
   var CURRENT_MAX_GEN = liveGen;
-  // The archive the piece opens with is already this long. It belongs in the
-  // code, not in a visitor's storage — a browser that has never been here
-  // before still inherits the whole history.
-  var BASELINE_TRACES = 1284;
+  // A trace is three points set down. The plate the piece opens with is
+  // counted the same way, its points in threes, so the number on screen is
+  // the drawing's own.
+  var ARCHIVE_POINTS = nodes.filter(function(n){ return n.origin !== 'visitor'; }).length;
+  var BASELINE_TRACES = Math.round(ARCHIVE_POINTS / 3);
   var traceCountTotal = BASELINE_TRACES + (storeState.contributions||[]).length;
 
   /* ========================================================================
@@ -2093,12 +2151,15 @@
     pending.nodes.forEach(function(pn){ pn.z = pn.z0 * k; });
   }
 
+  // PAN slides the whole view sideways and up or down, in the camera's own
+  // plane: the look-around of the left button, which always comes back to 0
+  var PAN = { x:0, y:0 }, PAN_RET = null;
   function project(p){
     var cs = toCameraSpace(p);
     var viewZ = cs.z + cam.dist;
     if(viewZ < 24) return null;
     var scale = FOCAL/viewZ;
-    return { x: W/2 + cs.x*scale, y: H/2 - cs.y*scale, scale:scale, viewZ:viewZ };
+    return { x: W/2 + (cs.x - PAN.x)*scale, y: H/2 - (cs.y - PAN.y)*scale, scale:scale, viewZ:viewZ };
   }
 
   // Every point is a tiny axis-aligned cube in world space, so it reads as
@@ -2418,7 +2479,7 @@
     // placing a point is a precision job, so it always gets the square
     var shape = placing ? 0 : Math.round(SETTINGS.reticle);
     if(shape === 3) return;                       // hidden: the dust is the cursor
-    var col = placing ? THEME.accent : THEME.ink;
+    var col = placing ? THEME.place : THEME.ink;
     var half = placing ? 8 : 6.5 * Math.max(0.3, SETTINGS.reticleSize);
     // on a point, the marker frames it instead
     var give = (placing || !(SETTINGS.hoverMark > 0.01)) ? 1 : 1 - 0.85*HOVER.k;
@@ -2833,7 +2894,7 @@
     var eased = 1 - Math.pow(1-t, 3);
     cam.yaw = lerp(camPulse.fromYaw, camPulse.toYaw, eased);
     cam.pitch = lerp(camPulse.fromPitch, camPulse.toPitch, eased);
-    cam.dist = lerp(camPulse.fromDist, camPulse.toDist, eased);
+    if(!camPulse.keepDist) cam.dist = lerp(camPulse.fromDist, camPulse.toDist, eased);
     markViewMove();
     updateZoomLabel();
     if(t>=1) camPulse = null;
@@ -2918,14 +2979,15 @@
     refreshTheme();
   }
   function refreshTheme(){
-    THEME.ink = hexToRgb(rootVar('--ink') || '#1D1912');
-    THEME.ash = hexToRgb(rootVar('--ash') || '#8B8172');
-    THEME.accent = hexToRgb(rootVar('--accent') || '#A8402A');
+    THEME.ink = hexToRgb(rootVar('--ink') || '#000000');
+    THEME.ash = hexToRgb(rootVar('--ash') || '#000000');
+    THEME.accent = hexToRgb(rootVar('--accent') || '#000000');
+    THEME.place = hexToRgb(rootVar('--place') || '#ED4B1E');
     // the hover colour: the ink taken down to a deep black, or, on a dark
     // ground where black would vanish, the ink itself
     var inkLum = (0.2126*THEME.ink.r + 0.7152*THEME.ink.g + 0.0722*THEME.ink.b)/255;
     THEME.deep = inkLum < 0.5 ? mixRgb(THEME.ink, { r:0, g:0, b:0 }, 0.55) : THEME.ink;
-    THEME.paper = rootVar('--paper') || '#F2EDE1';
+    THEME.paper = rootVar('--paper') || '#FFFFFF';
     THEME.paperRgb = hexToRgb(THEME.paper);
   }
   refreshTheme();
@@ -2964,10 +3026,10 @@
 
   function nodeColor(n, alphaMul){
     alphaMul = alphaMul===undefined?1:alphaMul;
-    if(n._pending) return rgba(THEME.accent, 1*alphaMul);
+    if(n._pending) return rgba(THEME.place, 1*alphaMul);
     if(n._settle !== undefined){
       var t = n._settle;
-      return rgba(mixRgb(THEME.accent, THEME.ink, t), (0.85+0.15*t)*alphaMul);
+      return rgba(mixRgb(THEME.place, THEME.ink, t), (0.85+0.15*t)*alphaMul);
     }
     if(n.isOriginal) return rgba(THEME.ink, agedAlpha(n, 0.92*alphaMul));
     var f = ageFrac(n);
@@ -2975,10 +3037,10 @@
   }
   function edgeColor(e, alphaMul){
     alphaMul = alphaMul===undefined?1:alphaMul;
-    if(e._pending) return rgba(THEME.accent, 0.9*alphaMul);
+    if(e._pending) return rgba(THEME.place, 0.9*alphaMul);
     if(e._settle !== undefined){
       var t = e._settle;
-      return rgba(mixRgb(THEME.accent, THEME.ink, t), (0.55+0.25*t)*alphaMul);
+      return rgba(mixRgb(THEME.place, THEME.ink, t), (0.55+0.25*t)*alphaMul);
     }
     if(e.origin==='visitor') return rgba(THEME.ink, agedAlpha(e, 0.7*alphaMul));
     if(e.generation===0) return rgba(THEME.ink, agedAlpha(e, 0.5*alphaMul));
@@ -2992,6 +3054,13 @@
   var pointers = {};
   var dragLast=null, dragStartScreen=null, dragMoved=false, pinchStartDist=null, pinchStartCamDist=null;
   var tapEligible=false;
+  // A look around that gives itself back: holding the left button and
+  // dragging (two fingers on a tablet) slides the view sideways or up and
+  // down, and letting go glides it back to where it was.
+  var PEEK = { active:false, mouse:false, mid:null };
+  var PEEK_RETURN_MS = 900;
+  // a finger has no hover of its own, so holding it down is the hover
+  var touchHold = null, TOUCH_HOLD_MS = 350;
   var tapNode = null;
   var lastTapTouch = false;   // the point lit when the press began: what a click on a point means
   var mode = 'idle'; // idle | placing | triangulating | confirming | merging
@@ -3660,7 +3729,7 @@
       var pa = project(a), pb = project(b);
       if(!pa||!pb) return;
       ctx.beginPath(); ctx.moveTo(pa.x,pa.y); ctx.lineTo(pb.x,pb.y);
-      ctx.strokeStyle = rgba(THEME.accent,0.85); ctx.lineWidth=1.2;
+      ctx.strokeStyle = rgba(THEME.place,0.85); ctx.lineWidth=1.2;
       ctx.setLineDash([4,4]); ctx.stroke(); ctx.setLineDash([]);
     });
 
@@ -3669,9 +3738,9 @@
       if(!p) return;
       lastProjected[pn.id] = p;
       var haloC = projectCube(pn, Math.max(2.2, pn.r*0.8)*2.1);
-      if(haloC) strokeCube(haloC, rgba(THEME.accent,0.4), 1);
+      if(haloC) strokeCube(haloC, rgba(THEME.place,0.4), 1);
       var mainC = projectCube(pn, Math.max(2.2, pn.r*0.8));
-      if(mainC) strokeCube(mainC, rgba(THEME.accent,1), 1.6);
+      if(mainC) strokeCube(mainC, rgba(THEME.place,1), 1.6);
     });
 
     drawIntroSpot();
@@ -3693,7 +3762,7 @@
       if(!rp) return;
       ctx.beginPath();
       ctx.moveTo(gp.x, gp.y); ctx.lineTo(rp.x, rp.y);
-      ctx.strokeStyle = rgba(THEME.accent, 0.5);
+      ctx.strokeStyle = rgba(THEME.place, 0.5);
       ctx.lineWidth = 1;
       ctx.stroke();
     });
@@ -3702,30 +3771,30 @@
     // ring the candidate anchors so the chosen references are unmistakable
     ghost.refs.forEach(function(ref){
       var halo = projectCube(ref.node, Math.max(2.6, ref.node.r*0.9)*1.75);
-      if(halo) strokeCube(halo, rgba(THEME.accent, 0.55), 1);
+      if(halo) strokeCube(halo, rgba(THEME.place, 0.55), 1);
     });
 
     var half = 2.4;
     var outer = projectCube(ghost.pos, half*2.1);
     if(outer){
       ctx.setLineDash([2,3]);
-      strokeCube(outer, rgba(THEME.accent, 0.3), 1);
+      strokeCube(outer, rgba(THEME.place, 0.3), 1);
       ctx.setLineDash([]);
     }
     var main = projectCube(ghost.pos, half);
     if(main){
       ctx.setLineDash([2,2]);
-      strokeCube(main, rgba(THEME.accent, 0.85), 1.4);
+      strokeCube(main, rgba(THEME.place, 0.85), 1.4);
       ctx.setLineDash([]);
     } else {
       ctx.beginPath(); ctx.arc(gp.x, gp.y, 3, 0, Math.PI*2);
-      ctx.strokeStyle = rgba(THEME.accent, 0.85); ctx.lineWidth = 1.4; ctx.stroke();
+      ctx.strokeStyle = rgba(THEME.place, 0.85); ctx.lineWidth = 1.4; ctx.stroke();
     }
 
     ctx.font = '9px "MBM Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace';
-    ctx.fillStyle = rgba(THEME.accent, 0.9);
+    ctx.fillStyle = rgba(THEME.place, 0.9);
     ctx.fillText(coordText(ghost.pos.x, ghost.pos.y, unscaleZ(ghost.pos.z)), gp.x + 13, gp.y - 23);
-    ctx.fillStyle = rgba(THEME.accent, 0.6);
+    ctx.fillStyle = rgba(THEME.place, 0.6);
     ctx.fillText(ghost.refs.length + ' liens', gp.x + 13, gp.y - 12);
   }
 
@@ -3799,6 +3868,7 @@
     updateFps();
     updateSettleAnimations();
     updateCamPulse();
+    updatePanReturn();
     updateAmbientRotation();
     updateFit();
     updateSway();
@@ -3845,10 +3915,22 @@
     });
   }
 
+  // The form turns on its own, very slowly, whenever nobody is steering it:
+  // all through the intro, and after a few seconds of stillness. The turn
+  // eases in rather than starting with a jolt and stops the moment a hand
+  // takes over. It is counted in seconds, not frames, so a 120 Hz iPad turns
+  // no faster than a 60 Hz screen: at 1x, a full turn in about five minutes.
+  var AMBIENT = { v:0, last:0 };
   function updateAmbientRotation(){
-    if(reduceMotion || mode!=='idle' || evolutionMode || introActive()) return;
-    var idleFor = performance.now() - lastInteraction;
-    if(idleFor > 4000){ cam.yaw += 0.00035 * SETTINGS.rotSpeed; }
+    var now = performance.now();
+    var dt = AMBIENT.last ? Math.min(0.1, (now - AMBIENT.last)/1000) : 0;
+    AMBIENT.last = now;
+    var free = !reduceMotion && !evolutionMode && !camPulse && !Object.keys(pointers).length;
+    var still = introActive() || (mode === 'idle' && now - lastInteraction > 4000);
+    if(!free || !still){ AMBIENT.v = 0; return; }
+    var want = 0.021 * Math.max(0, SETTINGS.rotSpeed);
+    AMBIENT.v += (want - AMBIENT.v) * Math.min(1, dt * 0.6);
+    cam.yaw += AMBIENT.v * dt;
   }
 
   /* ========================================================================
@@ -3861,32 +3943,85 @@
   canvas.addEventListener('mousedown', function(ev){ if(ev.button===1) ev.preventDefault(); });
   canvas.addEventListener('auxclick', function(ev){ if(ev.button===1) ev.preventDefault(); });
 
+  // the view a look-around should come back to: where the camera is, or,
+  // if it is still on its way back from the last one, where it is going
+  function peekBegin(){
+    PEEK.active = true;
+    PAN_RET = null;                       // caught on its way back: carry on from here
+  }
+  // the screen moves with the hand, the same distance on screen whatever the zoom
+  function panBy(dx, dy){
+    var k = cam.dist / FOCAL, lim = Math.max(WORLD_RADIUS, 120) * 1.4;
+    PAN.x = Math.max(-lim, Math.min(lim, PAN.x - dx*k));
+    PAN.y = Math.max(-lim, Math.min(lim, PAN.y + dy*k));
+    if(dx || dy) markViewMove();
+  }
+  function peekRelease(){
+    if(!PEEK.active) return;
+    PEEK.active = false; PEEK.mouse = false; PEEK.mid = null;
+    if(Math.abs(PAN.x) < 0.01 && Math.abs(PAN.y) < 0.01){ PAN.x = PAN.y = 0; return; }
+    PAN_RET = { x:PAN.x, y:PAN.y, t0:performance.now(), dur: reduceMotion ? 1 : PEEK_RETURN_MS };
+  }
+  function updatePanReturn(){
+    if(!PAN_RET) return;
+    var u = Math.min(1, (performance.now() - PAN_RET.t0) / PAN_RET.dur);
+    var e = 1 - Math.pow(1 - u, 3);
+    PAN.x = PAN_RET.x * (1 - e); PAN.y = PAN_RET.y * (1 - e);
+    markViewMove();
+    if(u >= 1){ PAN.x = PAN.y = 0; PAN_RET = null; }
+  }
+  function setHoverNode(n){
+    if(n === hoverNode) return;
+    hoverNode = n;
+    hoverTraceId = n ? n.traceId : null;
+    if(n){ tooltipEl.innerHTML = tooltipHTML(n); tooltipEl.classList.add('show'); }
+    else tooltipEl.classList.remove('show');
+  }
+
   canvas.addEventListener('pointerdown', function(ev){
     canvas.setPointerCapture(ev.pointerId);
     pointers[ev.pointerId] = { x:ev.clientX, y:ev.clientY };
     lastInteraction = performance.now();
-    camPulse = null;
     var count = Object.keys(pointers).length;
+    var isTouch = ev.pointerType !== 'mouse';
+    var peekable = !introActive() && !evolutionMode;
+    // the left button and the second finger look around; anything else
+    // takes the camera for good, and a return still under way stops there
+    if(peekable && ((!isTouch && ev.button===0 && count===1) || (isTouch && count===2))) peekBegin();
+    camPulse = null;
     if(count===1){
-      var isTouch = ev.pointerType !== 'mouse';
       var canRotate = isTouch || ev.button===1 || ev.button===2;
       tapEligible = isTouch || ev.button===0;
+      PEEK.mouse = PEEK.active && !isTouch;
       // the form leans with the cursor, so the point may have slid a little
       // by the time the button comes up: the click belongs to what was lit
-      // (a finger has no hover: what it means is where it lands)
+      // (a finger has no hover: holding it down is the hover, and what it
+      // means is where it lands)
       tapNode = (!isTouch && mode === 'idle' && hoverNode && nodeById[hoverNode.id] === hoverNode) ? hoverNode : null;
+      if(isTouch){
+        touchHold = { at:performance.now(), node:null };
+        if(mode === 'idle' && !evolutionMode && !introActive() && !pinnedNode){
+          var held = pickNear(ev.clientX, ev.clientY, INSTALL ? SETTINGS.iPick : 24);
+          setHoverNode(held);
+          touchHold.node = held;
+          tapNode = held;
+        }
+      }
       lastTapTouch = isTouch;
       if(INSTALL && isTouch && Math.round(SETTINGS.iTouchErode) === 1){
         INST.touchErode = true; cursorScreen = { x:ev.clientX, y:ev.clientY };
       }
       dragStartScreen = { x:ev.clientX, y:ev.clientY };
       dragMoved = false;
-      dragLast = canRotate ? { x:ev.clientX, y:ev.clientY } : null;
+      dragLast = (canRotate || PEEK.mouse) ? { x:ev.clientX, y:ev.clientY } : null;
       if(canRotate) canvas.classList.add('dragging');
     } else if(count===2){
       var pts = Object.values(pointers);
       pinchStartDist = Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
       pinchStartCamDist = cam.dist;
+      // two fingers: the pair's midpoint turns the view, for as long as they stay
+      PEEK.mid = { x:(pts[0].x+pts[1].x)/2, y:(pts[0].y+pts[1].y)/2 };
+      tapEligible = false; dragLast = null;
     }
   });
 
@@ -3899,16 +4034,27 @@
       var pts = Object.values(pointers);
       var d = Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
       setDist(pinchStartCamDist * (pinchStartDist/Math.max(20,d)));
+      if(PEEK.active && PEEK.mid){
+        var mx = (pts[0].x+pts[1].x)/2, my = (pts[0].y+pts[1].y)/2;
+        panBy(mx - PEEK.mid.x, my - PEEK.mid.y);
+        PEEK.mid = { x:mx, y:my };
+      }
       return;
     }
 
     if(count===1 && dragStartScreen){
-      if(Math.hypot(ev.clientX-dragStartScreen.x, ev.clientY-dragStartScreen.y) > 6) dragMoved = true;
+      if(Math.hypot(ev.clientX-dragStartScreen.x, ev.clientY-dragStartScreen.y) > 6){
+        if(!dragMoved && PEEK.mouse) canvas.classList.add('dragging');
+        dragMoved = true;
+      }
       if(dragLast && dragMoved){
         var dx = ev.clientX - dragLast.x, dy = ev.clientY - dragLast.y;
-        cam.yaw += dx*0.0055;
-        cam.pitch = Math.max(-1.35, Math.min(1.35, cam.pitch + dy*0.0055));
-        if(dx || dy) markViewMove();
+        if(PEEK.mouse) panBy(dx, dy);       // the left button slides the view
+        else {
+          cam.yaw += dx*0.0055;
+          cam.pitch = Math.max(-1.35, Math.min(1.35, cam.pitch + dy*0.0055));
+          if(dx || dy) markViewMove();
+        }
       }
       if(dragLast){ dragLast = { x:ev.clientX, y:ev.clientY }; }
     }
@@ -3923,7 +4069,7 @@
       ghostScreen = (count===0) ? { x:ev.clientX, y:ev.clientY } : null;
     }
 
-    if(mode==='idle' && !dragMoved && !pinnedNode){
+    if(mode==='idle' && !dragMoved && !pinnedNode && ev.pointerType !== 'touch'){
       var hn = pickNear(ev.clientX, ev.clientY, 13);
       // a point once found holds on a little: the form leans toward the
       // cursor, and the point should not slip out from under it
@@ -3953,23 +4099,35 @@
     var c=0; for(var i=0;i<nodes.length;i++){ if(nodes[i].traceId===tid) c++; } return c;
   }
 
-  function endPointer(ev){
+  function endPointer(ev, cancelled){
     if(INSTALL && ev.pointerType !== 'mouse') INST.touchErode = false;   // the dust settles back gently
-    var wasSingle = Object.keys(pointers).length===1;
+    var before = Object.keys(pointers).length;
+    var wasSingle = before===1;
     delete pointers[ev.pointerId];
+    var left = Object.keys(pointers).length;
     canvas.classList.remove('dragging');
-    if(Object.keys(pointers).length<2){ pinchStartDist=null; }
-    if(wasSingle && tapEligible && !dragMoved){
+    if(left<2){ pinchStartDist=null; }
+    // the look-around ends with the left button, or with the second finger
+    if(PEEK.active && ((PEEK.mouse && ev.pointerType === 'mouse') || (before===2 && left<2))){
+      peekRelease();
+      if(left===1){ dragLast = null; tapEligible = false; }   // the finger left behind does not turn the view
+    }
+    // a finger held on a point is a hover, not a click: lifting it leaves
+    // the point lit, as a cursor would; a quick tap still focuses
+    var heldLong = ev.pointerType !== 'mouse' && touchHold && touchHold.node &&
+                   performance.now() - touchHold.at >= TOUCH_HOLD_MS;
+    if(wasSingle && tapEligible && !dragMoved && !cancelled && !heldLong){
       handleCanvasTap(ev.clientX, ev.clientY);
     }
-    if(Object.keys(pointers).length===0){ dragLast=null; dragStartScreen=null; tapEligible=false; }
+    if(left===0){ dragLast=null; dragStartScreen=null; tapEligible=false; touchHold=null; }
   }
-  canvas.addEventListener('pointerup', endPointer);
-  canvas.addEventListener('pointercancel', endPointer);
-  canvas.addEventListener('pointerleave', function(){
+  canvas.addEventListener('pointerup', function(ev){ endPointer(ev, false); });
+  canvas.addEventListener('pointercancel', function(ev){ endPointer(ev, true); });
+  canvas.addEventListener('pointerleave', function(ev){
     ghostScreen = null;
     cursorScreen = null;
-    if(!pinnedNode && hoverNode){
+    // a cursor that leaves takes its hover with it; a lifted finger leaves its own
+    if(!pinnedNode && hoverNode && ev.pointerType !== 'touch'){
       hoverNode = null; hoverTraceId = null;
       tooltipEl.classList.remove('show');
     }
@@ -3984,7 +4142,7 @@
   canvas.addEventListener('wheel', function(ev){
     ev.preventDefault();
     lastInteraction = performance.now();
-    camPulse = null;
+    if(!(camPulse && camPulse.keepDist)) camPulse = null;   // zooming does not cut short a return
     var unit = ev.deltaMode===1 ? 16 : (ev.deltaMode===2 ? 100 : 1);
     setDist(cam.dist * Math.pow(1.0016, ev.deltaY*unit));
   }, { passive:false });
@@ -4162,8 +4320,8 @@
     // solve the screen ray at the depth actually chosen, so the point stays
     // under the cursor however far back or forward it ended up
     var scale = FOCAL / Math.max(24, cam.dist + csZ);
-    var csX = (sx - W/2)/scale;
-    var csY = -(sy - H/2)/scale;
+    var csX = (sx - W/2)/scale + PAN.x;
+    var csY = -(sy - H/2)/scale + PAN.y;
 
     // a light lateral drift, so the lattice never reads as machined
     var lateral = 7 + reach*0.05;
@@ -4208,7 +4366,7 @@
       pending.nodes.push(pn);
       audioPoint(pn, 'place');
       refreshPendingPreview();
-      if(pending.nodes.length >= MAX_POINTS){ enterTriangulating(); }
+      if(pending.nodes.length >= MAX_POINTS){ enterConfirming(); }
       else { refreshContribUI(); }
     }
   }
@@ -4499,8 +4657,10 @@
   // Bumped whenever a default is changed on purpose. A browser holding a
   // tuning saved before that change gets the new default for those values,
   // rather than keeping the old one alive for ever because it was saved.
-  var TUNING_REV = 5;
+  var TUNING_REV = 7;
   var TUNING_REDEFAULTS = {
+    7: { settings: ["bgB"], lines: [] },
+    6: { settings: ["bgA", "iShowZoom"], lines: [] },
     5: { settings: ["fov", "depth", "depthFalloff", "reach", "dof", "focusRange", "dofZoom", "spaceAmt"], lines: [] },
     4: { settings: [], lines: ["weight", "cubeWeight", "jitter", "grain", "lead", "dbl", "taper", "life", "lifeSpeed", "beamWeight", "beamOpacity", "beamSpread", "wave", "waves"] },   // Elisa's line tuning, 2026-10-22
     3: { settings: ["rotSpeed", "fov", "depth", "depthFalloff", "inertia", "reach", "erode", "grainSpread", "grainSize", "grainDrift", "dust", "dustCount", "dustSize", "dof", "focusRange", "fadeSpan", "springback", "follow", "grainNoise", "dustSpin", "reticle", "reticleSize", "hoverDim", "erodeWake", "cordon", "bgMode", "bgA", "bgInk", "bgVignette"], lines: [] },
@@ -4570,19 +4730,28 @@
   document.getElementById('zoomOut').addEventListener('click', function(){ lastInteraction=performance.now(); setDist(cam.dist*1.45); });
 
   /* ========================================================================
-     Contribution flow — Add points → Triangulate (automatic) → Confirm
+     Contribution flow — three points, then a card in the middle of the
+     screen: the trace is already fixed to the archive, the visitor signs it
+     (or not) and adds it. A trace is three points, so the card only comes
+     up once the third is down.
   ========================================================================= */
   var contribBar = document.getElementById('contribBar');
   var leaveTraceBtn = document.getElementById('leaveTraceBtn');
-  var contribStep = document.getElementById('contribStep');
   var contribMsg = document.getElementById('contribMsg');
   var contribSub = document.getElementById('contribSub');
   var contribRight = document.getElementById('contribRight');
-  var signWrap = document.getElementById('contribSign');
+  var traceCard = document.getElementById('traceCard');
+  var traceCardMsg = document.getElementById('traceCardMsg');
+  var traceCardSub = document.getElementById('traceCardSub');
+  var traceCardField = document.getElementById('traceCardField');
+  var traceCardDone = document.getElementById('traceCardDone');
+  var traceCardMore = document.getElementById('traceCardMore');
   var signInput = document.getElementById('signInput');
+  var traceCardAction = null;
+  traceCardDone.addEventListener('click', function(){ if(traceCardAction) traceCardAction(); });
   // Enter validates from the field, which is where the hand already is
   signInput.addEventListener('keydown', function(ev){
-    if(ev.key === 'Enter'){ ev.preventDefault(); if(mode==='confirming') confirmContribution(); }
+    if(ev.key === 'Enter'){ ev.preventDefault(); if(mode==='confirming' && traceCardAction) traceCardAction(); }
   });
 
   // Names are shown in a tooltip built with innerHTML, and once the archive is
@@ -4606,17 +4775,14 @@
     resetPending();
     canvas.classList.add('crosshair');
     leaveTraceBtn.classList.add('active');
-    contribBar.hidden = false;
     refreshContribUI();
   }
-  function enterTriangulating(){
-    mode = 'triangulating';
-    canvas.classList.remove('crosshair');
-    refreshPendingPreview();
-    refreshContribUI();
-  }
+  // the third point is down: the trace is fixed to the archive at once, and
+  // the card comes up to sign it and add it
   function enterConfirming(){
     mode = 'confirming';
+    canvas.classList.remove('crosshair');
+    refreshPendingPreview();
     refreshContribUI();
   }
   function exitContribution(discard){
@@ -4625,6 +4791,9 @@
     canvas.classList.remove('crosshair');
     leaveTraceBtn.classList.remove('active');
     contribBar.hidden = true;
+    traceCard.hidden = true;
+    traceCardAction = null;
+    if(traceCard.contains(document.activeElement)) document.activeElement.blur();
   }
   function tryAgain(){
     mode = 'placing';
@@ -4634,53 +4803,60 @@
   }
   function removeLastPoint(){
     pending.nodes.pop();
+    if(mode !== 'placing'){ mode = 'placing'; canvas.classList.add('crosshair'); }
     refreshPendingPreview();
     refreshContribUI();
   }
 
   function refreshContribUI(){
     contribRight.innerHTML = '';
-    signWrap.hidden = true;
-    contribBar.classList.remove('signing');
-    if(mode==='placing'){
+    traceCardMore.innerHTML = '';
+    var placing = mode === 'placing', confirming = mode === 'confirming';
+    contribBar.hidden = !placing;
+    if(!confirming && traceCard.contains(document.activeElement)) document.activeElement.blur();
+    traceCard.hidden = !confirming;
+    traceCardAction = null;
+    if(placing){
       var remaining = MAX_POINTS - pending.nodes.length;
-      contribStep.textContent = 'STEP 1 / ADD YOUR POINTS';
       contribMsg.textContent = remaining + (remaining===1 ? ' point remaining' : ' points remaining');
       contribSub.textContent = pending.nodes.length
-        ? 'Click to add another point, or continue.'
+        ? 'Click to place the next one.'
         : 'Click anywhere in the archive to place your first point.';
-      addRightButton('Done adding', enterTriangulating, pending.nodes.length===0);
       addRightButton('Remove last point', removeLastPoint, pending.nodes.length===0, true);
       addRightButton('Cancel', function(){ exitContribution(true); }, false, true);
-    } else if(mode==='triangulating'){
-      var linked = pendingLinkedCount() === pending.nodes.length;
-      var full = linked && pendingFullyTriangulated();
-      var multi = pending.nodes.length > 1;
-      contribStep.textContent = 'STEP 2 / TRIANGULATION';
-      contribMsg.textContent = full
-        ? (multi ? 'Your points are located.' : 'Your point is located.')
-        : (multi ? 'Some points could not be located.' : 'Your point could not be located.');
-      contribSub.textContent = full
-        ? (multi ? 'Each point fixed by lines to its nearest points in the archive.' : 'Fixed by lines to its four nearest points in the archive.')
-        : 'This spot is too crowded to triangulate. Try again.';
-      addRightButton('Continue', enterConfirming, !full);
-      addRightButton('Try again', tryAgain, false, true);
-      addRightButton('Cancel', function(){ exitContribution(true); }, false, true);
-    } else if(mode==='confirming'){
-      contribStep.textContent = 'STEP 3 / CONFIRM';
-      contribMsg.textContent = 'Your trace will become part of the archive.';
-      contribSub.textContent = 'It cannot be erased. A name is optional; it stays with your points.';
-      var canSign = !INSTALL || Math.round(SETTINGS.iSign) === 1;
-      signWrap.hidden = !canSign;
-      if(canSign) contribBar.classList.add('signing');
-      else contribSub.textContent = 'It cannot be erased.';
+    } else if(confirming){
+      var full = pendingLinkedCount() === pending.nodes.length && pendingFullyTriangulated();
+      var canSign = full && (!INSTALL || Math.round(SETTINGS.iSign) === 1);
+      traceCardField.hidden = !canSign;
+      if(full){
+        traceCardMsg.textContent = 'Your trace is in place.';
+        traceCardSub.textContent = canSign
+          ? 'Leave your first name with it if you like. Once added, it cannot be erased.'
+          : 'Once added, it cannot be erased.';
+        traceCardDone.textContent = 'Done adding';
+        traceCardAction = confirmContribution;
+      } else {
+        traceCardMsg.textContent = 'These points could not be fixed.';
+        traceCardSub.textContent = 'This spot is too crowded to triangulate. Try somewhere else.';
+        traceCardDone.textContent = 'Try again';
+        traceCardAction = tryAgain;
+      }
+      addCardButton('Cancel', function(){ exitContribution(true); });
       // at an installation every visitor is someone new, and the keyboard
       // only comes up if they choose to sign
-      signInput.value = INSTALL ? '' : (storeState.signature || '');
-      if(!INSTALL) setTimeout(function(){ try{ signInput.focus(); }catch(e){} }, 40);
-      addRightButton('Back', function(){ mode='triangulating'; refreshContribUI(); }, false, true);
-      addRightButton('Add to the archive', confirmContribution, false);
+      if(canSign) signInput.value = INSTALL ? '' : (storeState.signature || '');
+      if(!INSTALL) setTimeout(function(){
+        if(mode !== 'confirming') return;
+        try{ (canSign ? signInput : traceCardDone).focus({ preventScroll:true }); }catch(e){}
+      }, 60);
     }
+  }
+  function addCardButton(label, onClick){
+    var btn = document.createElement('button');
+    btn.textContent = label;
+    btn.className = 'btn-text';
+    btn.addEventListener('click', onClick);
+    traceCardMore.appendChild(btn);
   }
   function addRightButton(label, onClick, disabled, isText){
     var btn = document.createElement('button');
@@ -4705,6 +4881,9 @@
   function confirmContribution(){
     mode = 'merging';
     contribBar.hidden = true;
+    traceCard.hidden = true;
+    traceCardAction = null;
+    if(traceCard.contains(document.activeElement)) document.activeElement.blur();
     leaveTraceBtn.classList.remove('active');
 
     CURRENT_MAX_GEN++;
@@ -4761,7 +4940,7 @@
   }
 
   function animateTraceCount(){
-    document.getElementById('traceCount').textContent = traceCountTotal.toLocaleString() + ' traces';
+    document.getElementById('traceCount').textContent = traceCountTotal.toLocaleString() + (traceCountTotal === 1 ? ' trace' : ' traces');
   }
   animateTraceCount();
 
@@ -4879,10 +5058,11 @@
 
 
   /* ========================================================================
-     The intro — a short piece of theatre, in five beats.
+     The intro — a short piece of theatre, in four beats.
 
-     The house is dark: a caret blinks on an empty stage, then types the
-     title. The lines arrive one at a time, typed, and leave the way the
+     The house is dark and the first line types itself on an empty stage;
+     the name only comes at the end, large, over the drawing. The lines
+     arrive one at a time, typed, and leave the way the
      drawing gives way under the cursor — their letters crumble to grit and
      fall. Halfway through, the curtain thins and the archive draws itself
      in behind the words, from the oldest strokes at its heart outward, with
@@ -4895,9 +5075,7 @@
      The words live in INTRO_SCENES and can be edited freely.
   ========================================================================= */
   var INTRO_SCENES = [
-    { lines:[{ text:'ATO', cls:'intro-title', speed:140, lead:1300 }],
-      title:true, hold:1600 },
-    { lines:[{ text:'Nothing starts from nothing.' }],
+    { lines:[{ text:'Nothing starts from nothing.', lead:800 }],
       hold:1800 },
     { lines:[{ text:'This drawing began as an archive from the past.' }],
       curtain:0.4, scrim:0.9, build:0.55, buildDur:5200, count:true, hold:2100 },
@@ -4905,7 +5083,7 @@
              { text:'adds a small trace,', cue:'spot' },
              { text:'then passes it forward.', cue:'release' }],
       curtain:0.2, scrim:0.9, build:1, buildDur:6800, count:true, hold:2100 },
-    { lines:[{ text:'Nothing can be erased.', cls:'intro-line--accent', lead:900 }],
+    { lines:[{ text:'Nothing can be erased.', lead:900 }],
       curtain:0, scrim:0.82, build:1, buildDur:1600, count:true, dolly:true, final:true }
   ];
 
@@ -5044,7 +5222,7 @@
       var shown = Math.round(Math.max(0, Math.min(1, introBuild)) * total);
       if(shown !== INTRO.shown){
         INTRO.shown = shown;
-        var str = String(shown), w = String(total).length;
+        var str = String(shown), w = Math.max(3, String(total).length);
         while(str.length < w) str = '0' + str;
         introCountN.textContent = str;
       }
@@ -5089,7 +5267,7 @@
         done();
       }
       if(INTRO.rush || reduceMotion){ finish(); return; }
-      introCaret(chars[0], true);              // the caret waits at the start, blinking
+      introCaret(chars[0], true);              // marks the line's start (no caret is drawn)
       introBlock.classList.remove('intro-typing');
       function step(){
         if(tk !== INTRO.token) return done();
@@ -5163,12 +5341,10 @@
     var els = sc.lines.map(function(line){
       var p = introMakeLine(line); introBlock.appendChild(p); return p;
     });
-    var rule = null, sub = null;
+    var rule = null;
     if(sc.title){
       rule = document.createElement('div'); rule.className = 'intro-rule';
-      sub = document.createElement('p'); sub.className = 'intro-sub';
-      sub.innerHTML = 'CC0 / Permanent loading<span class="dots"><span>.</span><span>.</span><span>.</span></span>';
-      introBlock.appendChild(rule); introBlock.appendChild(sub);
+      introBlock.appendChild(rule);
     }
     introLive.textContent = sc.lines.map(function(l){ return l.text; }).join(' ');
     for(var i=0;i<els.length;i++){
@@ -5182,10 +5358,7 @@
     }
     introBlock.classList.remove('intro-typing');
     INTRO.typing = false; INTRO.rush = false;
-    if(rule){
-      rule.classList.add('on');
-      introTimer(function(){ sub.classList.add('on'); }, reduceMotion ? 0 : 500);
-    }
+    if(rule) rule.classList.add('on');
     if(sc.final){
       INTRO.finalAt = performance.now();
       enterBtn.hidden = false;
@@ -5276,9 +5449,9 @@
       if(ap <= 0) continue;
       var n = s.nodes[i], half = n.r*(n.big ? 0.95 : 0.8);
       var halo = projectCube(n, half*1.9*(1.7 - 0.7*ap));
-      if(halo) strokeCube(halo, rgba(THEME.accent, 0.45*ap*k), 1.1);
+      if(halo) strokeCube(halo, rgba(THEME.place, 0.45*ap*k), 1.1);
       var cc = projectCube(n, half);
-      if(cc) strokeCube(cc, rgba(THEME.accent, ap*k), 1.4);
+      if(cc) strokeCube(cc, rgba(THEME.place, ap*k), 1.4);
     }
     // then the line goes round them, the way a visitor's trace is drawn
     var lt = reduceMotion ? 3 : Math.max(0, (t - 0.85)/0.42);
@@ -5287,7 +5460,7 @@
       if(f <= 0) break;
       var a = P[j], b = P[(j+1)%3];
       strokeSeg(a, f < 1 ? lerpProj(a, b, 1 - Math.pow(1-f, 3)) : b,
-                rgba(THEME.accent, 0.95*k), Math.max(1.7, 1.3/Math.max(0.05, LINES.weight)), s.edges[j].seed);
+                rgba(THEME.place, 0.95*k), Math.max(1.7, 1.3/Math.max(0.05, LINES.weight)), s.edges[j].seed);
     }
   }
 
@@ -5576,7 +5749,7 @@
   }
 
   function audioStart(){
-    if(AUDIO.failed || !(SETTINGS.sound > 0.5)) return;
+    if(!SOUND || AUDIO.failed || !(SETTINGS.sound > 0.5)) return;
     try{
       if(!AUDIO.ctx && !audioBuild()){ AUDIO.failed = true; return; }
       if(AUDIO.ctx.state === 'suspended') AUDIO.ctx.resume();
@@ -5590,7 +5763,7 @@
   }
 
   function audioReady(){
-    return !!(AUDIO.ctx && AUDIO.started && SETTINGS.sound > 0.5);
+    return !!(SOUND && AUDIO.ctx && AUDIO.started && SETTINGS.sound > 0.5);
   }
 
   // A star — and the voice of the plate's own points: a pure note with its
@@ -5923,8 +6096,10 @@
       window.removeEventListener('keydown', audioFirstGesture, true);
     }
   }
-  window.addEventListener('pointerdown', audioFirstGesture, true);
-  window.addEventListener('keydown', audioFirstGesture, true);
+  if(SOUND){
+    window.addEventListener('pointerdown', audioFirstGesture, true);
+    window.addEventListener('keydown', audioFirstGesture, true);
+  }
 
   document.addEventListener('visibilitychange', function(){
     if(!AUDIO.ctx) return;
