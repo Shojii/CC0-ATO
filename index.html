@@ -69,7 +69,9 @@
   }
 
   *{ box-sizing:border-box; }
-  html,body{ margin:0; padding:0; height:100%; overflow:hidden; }
+  html,body{ margin:0; padding:0; height:100%; overflow:hidden; overscroll-behavior:none; }
+  /* the page itself never scrolls, not even when the iPad keyboard comes up */
+  body{ position:fixed; inset:0; width:100%; }
   /* one weight, one style: nothing is faked bold or slanted */
   html{ font-synthesis:none; }
   button, input, select, textarea{ font-family:inherit; }
@@ -300,6 +302,37 @@
     .intro.is-final .intro-mark i{ transition-delay:0s !important; }
   }
 
+  /* ---------- Idle screen: the archive draws itself again, the name
+     waits in the middle, the door at the foot ---------- */
+  .idle{
+    position:fixed; inset:0; z-index:90; cursor:pointer; pointer-events:none;
+    -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
+    opacity:0; transition: opacity .9s ease;
+  }
+  .idle.on{ opacity:1; pointer-events:auto; }
+  .idle-veil{
+    position:absolute; inset:0; background:var(--bg, var(--paper)); opacity:0;
+    transition: opacity .9s ease; pointer-events:none;
+  }
+  .idle-veil.up{ opacity:1; }
+  .idle .intro-mark i{ opacity:0; transition: opacity .2s ease; }
+  .idle.on .intro-mark i{ opacity:1; transition-duration:.6s; }
+  .idle.on .intro-mark i:nth-child(1){ transition-delay:.3s; }
+  .idle.on .intro-mark i:nth-child(2){ transition-delay:.5s; }
+  .idle.on .intro-mark i:nth-child(3){ transition-delay:.7s; }
+  .idle-foot{
+    position:absolute; left:0; right:0; bottom:0; display:flex; justify-content:center;
+    padding: clamp(14px, 2.4vw, 26px) clamp(16px, 3vw, 34px);
+  }
+  .idle-foot .enter-btn{ margin-bottom:2px; animation: rise 1s ease .6s forwards, idleBreath 3.2s ease-in-out 1.8s infinite; }
+  @keyframes idleBreath{ 0%,100%{ opacity:1; } 50%{ opacity:.4; } }
+  html.idle-on .hud-top, html.idle-on .hud-bottom{ opacity:0; pointer-events:none; transition: opacity .8s ease; }
+  html.install .idle-foot{ zoom: var(--ui-scale, 1); }
+  @media (prefers-reduced-motion: reduce){
+    .idle-foot .enter-btn{ animation:none; opacity:1; }
+    .idle.on .intro-mark i{ transition-delay:0s !important; }
+  }
+
   /* ---------- Contribution bar ---------- */
   .contrib-bar{
     position:fixed; left:0; right:0; bottom:0; z-index:30;
@@ -329,7 +362,8 @@
 
   /* ---------- The trace card: three points down, sign and add ---------- */
   .trace-card{
-    position:fixed; left:50%; top:50%; z-index:31;
+    position:fixed; left:50%; top:var(--card-y, 50%); z-index:31;
+    transition: top .28s cubic-bezier(.2,.7,.1,1);
     width:min(340px, calc(100vw - 32px));
     transform:translate(-50%, -50%);
     display:flex; flex-direction:column; gap:26px;
@@ -635,6 +669,12 @@
       <button class="enter-btn" id="enterBtn" hidden>Enter the archive</button>
       <button class="intro-skip" id="introSkip">Skip intro</button>
     </div>
+  </section>
+
+  <section class="idle" id="idleScreen" aria-label="ATO" hidden>
+    <div class="idle-veil" id="idleVeil"></div>
+    <div class="intro-mark" aria-hidden="true"><b><i>A</i><i>T</i><i>O</i></b></div>
+    <div class="idle-foot"><button class="enter-btn" id="idleEnter" tabindex="-1">Enter the archive</button></div>
   </section>
 
   <header class="hud-top">
@@ -1010,6 +1050,15 @@
         </div>
         <input type="range" id="setRot" min="0" max="4" step="0.1" value="1" aria-label="Rotation speed">
         <span class="setting-note">Idle drift of the whole composition.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Idle screen after</span>
+          <span class="setting-val" id="valIdleAfter">60 s</span>
+        </div>
+        <input type="range" id="setIdleAfter" min="0" max="300" step="5" value="60" aria-label="Idle screen after">
+        <span class="setting-note">When nobody has touched the piece for this long, the archive draws itself again from the start, with the name in the middle and the door at the foot, until someone comes. 0 turns it off.</span>
       </div>
 
       <div class="setting">
@@ -1728,7 +1777,7 @@
   /* ------------------------------------------------------------------
      Live parameters — exposed through the on-screen settings panel.
   ------------------------------------------------------------------- */
-  var SETTINGS_DEFAULTS = { rotSpeed:0.7, fov:0.58, depth:0.7, depthFalloff:1.25, inertia:0.95, reach:1.4,
+  var SETTINGS_DEFAULTS = { idleAfter:60, rotSpeed:0.7, fov:0.58, depth:0.7, depthFalloff:1.25, inertia:0.95, reach:1.4,
     erode:1.05, grainSpread:5.85, grainSize:1.2, grainDrift:0.3,
     dust:2.65, dustCount:640, dustSize:0.5, dustZoom:0, dof:1.8, focusRange:1.3, dofZoom:1.45, fadeSpan:45,
     springback:0.8, follow:0.45, grainNoise:0.25, dustForm:1, dustSpin:0.8,
@@ -3859,6 +3908,7 @@
     draw();
     updatePinnedTooltip();
     updateEvolutionAutoplay();
+    updateIdleScreen();
     audioUpdate();
     requestAnimationFrame(tick);
   }
@@ -4374,6 +4424,7 @@
     { key:'dofZoom',      input:'setDofZoom',  out:'valDofZoom',  fmt:x2 },
     { key:'reach',        input:'setReach',    out:'valReach',    fmt:x2 },
     { key:'rotSpeed',     input:'setRot',      out:'valRot',      fmt:function(v){ return v.toFixed(1)+'x'; } },
+    { key:'idleAfter',    input:'setIdleAfter', out:'valIdleAfter', fmt:function(v){ return v < 5 ? 'Off' : Math.round(v) + ' s'; } },
     { key:'inertia',      input:'setInertia',  out:'valInertia',  fmt:function(v){ return v.toFixed(2); } },
     { key:'erode',        input:'setErode',    out:'valErode',    fmt:x2 },
     { key:'springback',   input:'setSpring',   out:'valSpring',   fmt:x2 },
@@ -4721,6 +4772,45 @@
   var signInput = document.getElementById('signInput');
   var traceCardAction = null;
   traceCardDone.addEventListener('click', function(){ if(traceCardAction) traceCardAction(); });
+
+  // The iPad keyboard must not scroll the piece. The page is pinned at the
+  // top, and while the keyboard is up the card moves into the space left
+  // above it, so Safari has no field to bring into view and nothing to push.
+  var VV = window.visualViewport || null;
+  var KB_GUESS = 0.3;                       // before the keyboard has measured itself
+  function pinPage(){
+    if(window.scrollX || window.scrollY) window.scrollTo(0, 0);
+    var se = document.scrollingElement || document.documentElement;
+    if(se && (se.scrollTop || se.scrollLeft)){ se.scrollTop = 0; se.scrollLeft = 0; }
+    if(document.body.scrollTop) document.body.scrollTop = 0;
+  }
+  function placeCard(){
+    if(traceCard.hidden){ traceCard.style.removeProperty('--card-y'); return; }
+    var H = window.innerHeight || 1;
+    var covered = VV ? H - (VV.offsetTop + VV.height) : 0;
+    if(covered > 60){
+      // the middle of what is still visible, as a share of the screen
+      var mid = (VV.offsetTop + VV.height/2) / H;
+      traceCard.style.setProperty('--card-y', (Math.max(0.18, mid)*100).toFixed(2) + '%');
+    } else if(document.activeElement !== signInput){
+      traceCard.style.removeProperty('--card-y');
+    }
+  }
+  function keyboardMoved(){ pinPage(); placeCard(); }
+  if(VV){
+    VV.addEventListener('resize', keyboardMoved);
+    VV.addEventListener('scroll', keyboardMoved);
+  }
+  window.addEventListener('scroll', pinPage, { passive:true });
+  // on a touch screen the card steps up as soon as the field is touched,
+  // before the keyboard arrives, so there is nothing to scroll to
+  signInput.addEventListener('focus', function(){
+    if(lastTapTouch || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches))
+      traceCard.style.setProperty('--card-y', (KB_GUESS*100) + '%');
+    pinPage();
+    setTimeout(keyboardMoved, 60); setTimeout(keyboardMoved, 400);
+  });
+  signInput.addEventListener('blur', function(){ setTimeout(keyboardMoved, 120); setTimeout(keyboardMoved, 500); });
   // Enter validates from the field, which is where the hand already is
   signInput.addEventListener('keydown', function(ev){
     if(ev.key === 'Enter'){ ev.preventDefault(); if(mode==='confirming' && traceCardAction) traceCardAction(); }
@@ -4787,6 +4877,7 @@
     contribBar.hidden = !placing;
     if(!confirming && traceCard.contains(document.activeElement)) document.activeElement.blur();
     traceCard.hidden = !confirming;
+    if(!confirming) traceCard.style.removeProperty('--card-y');
     traceCardAction = null;
     if(placing){
       var remaining = MAX_POINTS - pending.nodes.length;
@@ -6084,6 +6175,97 @@
 
 
   /* ========================================================================
+     The idle screen — when nobody has touched the piece for a while.
+
+     The archive draws itself again stroke by stroke in the order it was
+     made, as the intro does, turning slowly, with the name large in the
+     middle and the door at the foot. When the drawing is whole it holds,
+     the ground comes up for a moment and it begins again. Any touch, click,
+     key or movement of the mouse lets it go; the touch that wakes it is
+     only a knock on the door, it neither places nor picks anything.
+  ========================================================================= */
+  var idleEl = document.getElementById('idleScreen');
+  var idleVeil = document.getElementById('idleVeil');
+  var IDLE = { on:false, last:performance.now(), phase:'', t0:0, hideT:0 };
+  var IDLE_RETRACE_MS = 15000, IDLE_HOLD_MS = 6000, IDLE_VEIL_MS = 950;
+
+  function idleActivity(){
+    IDLE.last = performance.now();
+    if(IDLE.on) idleWake();
+  }
+  ['pointerdown', 'pointermove', 'keydown', 'wheel', 'touchstart'].forEach(function(t){
+    window.addEventListener(t, idleActivity, { capture:true, passive:true });
+  });
+  // the knock on the door goes no further than the door
+  ['pointerdown', 'pointerup', 'click'].forEach(function(t){
+    idleEl.addEventListener(t, function(ev){ ev.stopPropagation(); if(ev.cancelable) ev.preventDefault(); });
+  });
+
+  function idleAllowed(){
+    var after = SETTINGS.idleAfter;
+    if(!(after >= 5)) return false;
+    if(mode !== 'idle' || evolutionMode || introActive() || INTRO.on) return false;
+    if(!settingsPanel.hidden || !linesPanel.hidden) return false;
+    var ip = document.getElementById('installPanel');
+    if(ip && !ip.hidden) return false;
+    if(INSTALL && typeof INST !== 'undefined' && INST && INST.admin) return false;
+    if(document.hidden) return false;
+    return true;
+  }
+
+  function idleShow(){
+    IDLE.on = true;
+    clearTimeout(IDLE.hideT);
+    idleEl.hidden = false;
+    void idleEl.offsetWidth;
+    idleEl.classList.add('on');
+    document.documentElement.classList.add('idle-on');
+    // a clean stage: nothing lit, nothing slid, the whole form in view
+    focusPt = null; pinnedNode = null; setHoverNode(null);
+    if(PEEK.active) peekRelease();
+    var home = (typeof CAM_HOME_PITCH === 'number') ? CAM_HOME_PITCH : cam.pitch;
+    var rest = INTRO.path ? INTRO.path.end : introOpenDist();
+    camPulse = { fromYaw:cam.yaw, toYaw:cam.yaw, fromPitch:cam.pitch, toPitch:home,
+                 fromDist:cam.dist, toDist:rest, start:performance.now(), duration: reduceMotion ? 1 : 2600 };
+    introComputeKeys();
+    idleVeilUp();
+  }
+  function idleVeilUp(){
+    IDLE.phase = 'veil'; IDLE.t0 = performance.now();
+    idleVeil.classList.add('up');
+  }
+  function idleWake(){
+    IDLE.on = false; IDLE.phase = '';
+    idleEl.classList.remove('on');
+    idleVeil.classList.remove('up');
+    document.documentElement.classList.remove('idle-on');
+    introBuildTo(1, 700);                 // whatever was still to come arrives at once
+    clearTimeout(IDLE.hideT);
+    IDLE.hideT = setTimeout(function(){ if(!IDLE.on) idleEl.hidden = true; }, 950);
+    lastInteraction = performance.now();
+  }
+
+  function updateIdleScreen(){
+    var now = performance.now();
+    if(!IDLE.on){
+      if(idleAllowed() && now - Math.max(IDLE.last, lastInteraction) > SETTINGS.idleAfter*1000) idleShow();
+      return;
+    }
+    if(mode !== 'idle' || introActive()){ idleWake(); return; }
+    if(IDLE.phase === 'veil' && now - IDLE.t0 > IDLE_VEIL_MS){
+      // behind the ground: the paper is wiped, then the drawing begins again
+      introBuild = 0; INTRO.build = null;
+      introBuildTo(1, reduceMotion ? 1 : IDLE_RETRACE_MS);
+      idleVeil.classList.remove('up');
+      IDLE.phase = 'build'; IDLE.t0 = now;
+    } else if(IDLE.phase === 'build' && !INTRO.build && introBuild >= 1){
+      IDLE.phase = 'hold'; IDLE.t0 = now;
+    } else if(IDLE.phase === 'hold' && now - IDLE.t0 > IDLE_HOLD_MS){
+      idleVeilUp();
+    }
+  }
+
+  /* ========================================================================
      Installation — the piece on a wall, driven from an iPad in front of it.
 
      The iPad's screen is mirrored to the projector, so everything here is
@@ -6154,6 +6336,7 @@
     setAdmin(false);
     focusPt = null; hoverNode = null; hoverTraceId = null; pinnedNode = null;
     tooltipEl.classList.remove('show');
+    if(IDLE.on) return;                   // the idle screen is already calling people in
     if(Math.round(SETTINGS.iAttract) === 2){ introStart(true); return; }
     camPulse = {
       fromYaw: cam.yaw, toYaw: cam.yaw, fromPitch: cam.pitch, toPitch: CAM_HOME_PITCH,
