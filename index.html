@@ -372,10 +372,6 @@
   .toast-line2{ font-family:var(--font); font-size:11.5px; letter-spacing:0.05em; color:var(--ink); opacity:0.55; margin-top:2px; }
 
   /* ---------- Node tooltip ---------- */
-  .fps-tag{
-    font-size:9.5px; letter-spacing:0.1em; opacity:0.4;
-    font-variant-numeric: tabular-nums; margin-top:3px;
-  }
 
   #nodeTip{
     position:fixed; z-index:25; pointer-events:none; font-family:var(--font);
@@ -582,8 +578,7 @@
   html.install.inst-hide-zoom .hud-zoom,
   html.install.inst-hide-evo #evolutionBtn,
   html.install.inst-hide-sound #soundToggle,
-  html.install.inst-hide-count #traceCount,
-  html.install.inst-hide-fps #fpsTag{ visibility:hidden; }
+  html.install.inst-hide-count #traceCount{ visibility:hidden; }
   html.install.inst-hide-exit #exitInstall{ display:none; }
   html:not(.has-sound) .sound-only{ display:none !important; }
   .exit-install{
@@ -636,7 +631,7 @@
     </div>
     <p class="sr-only" id="introLive" aria-live="polite"></p>
     <div class="intro-foot">
-      <span class="intro-count" id="introCount" aria-hidden="true"><b id="introCountN">000</b> traces<span class="intro-count-more"> inherited</span></span>
+      <span class="intro-count" id="introCount" aria-hidden="true" hidden><b id="introCountN">000</b> traces<span class="intro-count-more"> inherited</span></span>
       <button class="enter-btn" id="enterBtn" hidden>Enter the archive</button>
       <button class="intro-skip" id="introSkip">Skip intro</button>
     </div>
@@ -644,12 +639,11 @@
 
   <header class="hud-top">
     <div class="hud-corner hud-corner--left">
-      <span class="tag mono fps-tag" id="fpsTag">-- fps</span>
+      <span class="mono-count" id="traceCount"></span>
       <button class="exit-install install-only" id="exitInstall">Exit installation</button>
     </div>
     <div class="hud-center"><span class="wordmark">ATO</span></div>
     <div class="hud-corner hud-corner--right">
-      <span class="mono-count" id="traceCount"></span>
       <button class="settings-toggle admin-only" id="settingsToggle" aria-expanded="false" aria-controls="settingsPanel">Settings</button>
       <button class="settings-toggle admin-only" id="linesToggle" aria-expanded="false" aria-controls="linesPanel">Lines</button>
       <button class="settings-toggle admin-only install-only" id="installToggle" aria-expanded="false" aria-controls="installPanel">Install</button>
@@ -1060,9 +1054,9 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Highlight colour</span>
-          <button class="setting-cycle" id="setHoverCol">Black</button>
+          <button class="setting-cycle" id="setHoverCol">Orange</button>
         </div>
-        <span class="setting-note">The colour a trace lights up in when a point is hovered: deep black (light ink on a dark ground), or the accent.</span>
+        <span class="setting-note">The colour a point and its lines light up in when hovered: the orange of a point being added, or deep black (light ink on a dark ground). A point focused by a click is always orange.</span>
       </div>
 
       <div class="setting">
@@ -1445,7 +1439,6 @@
     <div class="settings-actions">
       <button class="settings-reset" id="settingsReset">Reset defaults</button>
       <button class="settings-reset" id="settingsCopy">Copy all</button>
-      <button class="settings-reset" id="fpsToggle">Hide FPS</button>
       <button class="settings-reset" id="introReplay">Replay intro</button>
     </div>
 
@@ -1617,15 +1610,7 @@
           <span class="setting-name">Trace count</span>
           <button class="setting-cycle" id="iShowCount"></button>
         </div>
-        <span class="setting-note">The number of traces in the corner.</span>
-      </div>
-
-      <div class="setting">
-        <div class="setting-top">
-          <span class="setting-name">Frame rate</span>
-          <button class="setting-cycle" id="iShowFps"></button>
-        </div>
-        <span class="setting-note">Frames per second, for checking the iPad keeps up.</span>
+        <span class="setting-note">The number of traces, top left.</span>
       </div>
     </div>
 
@@ -2994,7 +2979,13 @@
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', refreshTheme);
 
   function lerp(a,b,t){ return a+(b-a)*t; }
-  function hoverRgb(){ return Math.round(SETTINGS.hoverCol) === 1 ? THEME.accent : THEME.deep; }
+  // what the hover and the click light up is drawn in the placing orange;
+  // the Highlight colour setting can put the hover back in deep black, a
+  // point focused by a click stays orange
+  function hoverRgb(){
+    if(HOVER.lit && HOVER.lit.focus) return THEME.place;
+    return Math.round(SETTINGS.hoverCol) === 1 ? THEME.deep : THEME.place;
+  }
   function mixRgb(c1,c2,t){ return { r:lerp(c1.r,c2.r,t), g:lerp(c1.g,c2.g,t), b:lerp(c1.b,c2.b,t) }; }
   function rgba(c,a){ return 'rgba('+Math.round(c.r)+','+Math.round(c.g)+','+Math.round(c.b)+','+Math.max(0,a)+')'; }
 
@@ -3190,7 +3181,7 @@
       '<span class="tip-sep">/</span>' +
       '<span class="tip-liens">' + fmtLiens(n) + '</span>' +
       '</div>' +
-      (sig ? '<div class="tip-sign' + (Math.round(SETTINGS.hoverCol) === 1 ? ' tip-sign--accent' : '') + '">' + escapeHTML(sig) + '</div>' : '') +
+      (sig ? '<div class="tip-sign">' + escapeHTML(sig) + '</div>' : '') +
       '<div class="tip-coord">' + coordHTML(n.x, n.y, nodeZ(n)) + '</div>';
   }
 
@@ -3852,20 +3843,7 @@
     }
   }
 
-  var fpsEl = document.getElementById('fpsTag');
-  var fpsFrames = 0, fpsSince = performance.now(), showFps = true;
-  function updateFps(){
-    fpsFrames++;
-    var now = performance.now();
-    if(now - fpsSince >= 500){
-      var v = Math.round(fpsFrames * 1000 / (now - fpsSince));
-      fpsFrames = 0; fpsSince = now;
-      if(showFps) fpsEl.textContent = v + ' fps';
-    }
-  }
-
   function tick(){
-    updateFps();
     updateSettleAnimations();
     updateCamPulse();
     updatePanReturn();
@@ -4190,6 +4168,7 @@
     var t = (mode === 'idle' && !introActive()) ? (hoverNode || focusPt) : null;
     if(t && nodeById[t.id] === t){
       if(!HOVER.lit || HOVER.lit.node !== t) HOVER.lit = hoverLitFor(t);
+      HOVER.lit.focus = (t === focusPt);      // kept as it was while it fades out
       HOVER.k += (1 - HOVER.k) * (reduceMotion ? 1 : 1 - Math.exp(-dt/0.09));
     } else if(HOVER.lit){
       HOVER.k += (0 - HOVER.k) * (reduceMotion ? 1 : 1 - Math.exp(-dt/0.22));
@@ -4450,7 +4429,7 @@
   var SETTING_CYCLERS = [
     { key:'dustForm', btn:'setShape', labels:['Dot','Square','Wireframe','Solid'] },
     { key:'reticle',     btn:'setReticle',    labels:['Square','Circle','Cross','Hidden'] },
-    { key:'hoverCol',    btn:'setHoverCol',   labels:['Black','Accent'] },
+    { key:'hoverCol',    btn:'setHoverCol',   labels:['Orange','Black'] },
     { key:'grainColour', btn:'setGrainCol',   labels:['Ink','Accent','Mixed'] },
     { key:'grainForm',   btn:'setGrainShape', labels:['Square','Dot','Cross'] },
     { key:'bgMode',      btn:'setBgMode',     labels:['Theme','Solid','Gradient'], onChange:applyBackground },
@@ -4463,7 +4442,6 @@
     { key:'iShowEvo',    btn:'iShowEvo',      labels:['Hidden','Shown'], onChange:applyInstall },
     { key:'iShowSound',  btn:'iShowSound',    labels:['Hidden','Shown'], onChange:applyInstall },
     { key:'iShowCount',  btn:'iShowCount',    labels:['Hidden','Shown'], onChange:applyInstall },
-    { key:'iShowFps',    btn:'iShowFps',      labels:['Hidden','Shown'], onChange:applyInstall },
     { key:'iShowExit',   btn:'iShowExit',     labels:['Hidden','Shown'], onChange:applyInstall },
     { key:'iCorner',     btn:'iCorner',       labels:['Top left','Top right','Bottom left','Bottom right'], onChange:applyInstall }
   ];
@@ -4534,12 +4512,6 @@
   }
   settingsToggle.addEventListener('click', function(){ setSettingsOpen(settingsPanel.hidden); });
   document.getElementById('settingsClose').addEventListener('click', function(){ setSettingsOpen(false); });
-  var fpsToggle = document.getElementById('fpsToggle');
-  fpsToggle.addEventListener('click', function(){
-    showFps = !showFps;
-    fpsEl.hidden = !showFps;
-    fpsToggle.textContent = showFps ? 'Hide FPS' : 'Show FPS';
-  });
 
   document.getElementById('settingsReset').addEventListener('click', function(){
     SETTINGS = Object.assign({}, SETTINGS_DEFAULTS);
@@ -5316,7 +5288,8 @@
     introScrim.style.opacity = String(sc.final ? 0 : (sc.scrim || 0));
     introScrimLow.style.opacity = String(sc.final ? (sc.scrim || 0) : 0);
     if(sc.build !== undefined) introBuildTo(Math.max(introBuild, sc.build), sc.buildDur || 1600);
-    introCount.classList.toggle('on', !!sc.count);
+    // the trace count belongs to the piece itself, not to its intro
+    introCount.classList.remove('on');
     enterBtn.hidden = true;
     var spotHere = sc.lines.some(function(l){ return l.cue === 'spot'; });
     if(!spotHere && introSpot && !introSpot.out) introSpot.out = performance.now();
@@ -6145,7 +6118,7 @@
     st.setProperty('--ui-scale', String(iClamp(SETTINGS.iUiScale, 0.6, 3)));
     st.setProperty('--ui-fade', iClamp(SETTINGS.iHideFade, 0, 10) + 's');
     st.setProperty('--hold', iClamp(SETTINGS.iHold, 0.5, 10) + 's');
-    var show = { zoom:'iShowZoom', evo:'iShowEvo', sound:'iShowSound', count:'iShowCount', fps:'iShowFps', exit:'iShowExit' };
+    var show = { zoom:'iShowZoom', evo:'iShowEvo', sound:'iShowSound', count:'iShowCount', exit:'iShowExit' };
     for(var k in show) root.classList.toggle('inst-hide-' + k, Math.round(SETTINGS[show[k]]) !== 1);
     if(adminCorner){
       var holding = adminCorner.classList.contains('holding');
