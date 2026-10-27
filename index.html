@@ -433,10 +433,14 @@
   @media (prefers-reduced-motion: reduce){ .trace-card{ animation:none; } }
 
   /* ---------- Toast ---------- */
+  /* Messages speak from the top of the screen, just under the name; the
+     foot is left to the point card. A halo in the ground colour keeps them
+     legible over the lines. */
   .toast{
-    position:fixed; left:50%; bottom:104px; transform:translate(-50%,6px);
+    position:fixed; left:50%; top:calc(clamp(14px, 2.4vw, 26px) + 42px); transform:translate(-50%,-6px);
     z-index:40; text-align:center; opacity:0; transition: opacity .5s ease, transform .5s ease;
-    pointer-events:none;
+    pointer-events:none; white-space:nowrap;
+    text-shadow: 0 0 6px var(--surface), 0 0 12px var(--surface), 0 0 2px var(--surface);
   }
   .toast.show{ opacity:1; transform:translate(-50%,0); }
   .toast-line1{ font-family:var(--font); font-size:14px; color:var(--ink); }
@@ -509,14 +513,13 @@
   }
 
   .nudge{
-    position:fixed; left:50%; bottom:104px; transform:translateX(-50%);
+    position:fixed; left:50%; top:calc(clamp(14px, 2.4vw, 26px) + 90px); transform:translateX(-50%);
     font-family:var(--font); font-size:11.5px; letter-spacing:0.04em; color:var(--ink);
-    opacity:0; transition:opacity .8s ease, bottom .3s ease; pointer-events:none; z-index:22; text-align:center;
+    opacity:0; transition:opacity .8s ease; pointer-events:none; z-index:22; text-align:center;
+    max-width:calc(100vw - 40px); text-wrap:balance;
+    text-shadow: 0 0 6px var(--surface), 0 0 12px var(--surface);
   }
   .nudge.show{ opacity:0.6; }
-  /* while the point card is up, the line of help steps above it */
-  html.tip-on .nudge{ bottom:calc(clamp(14px, 2.4vw, 26px) + 146px); }
-  html.install.tip-on .nudge{ bottom:calc(clamp(14px, 2.4vw, 26px) + 156px); }
 
   /* ---- parameters panel ------------------------------------------- */
   .settings-toggle{
@@ -4439,7 +4442,6 @@
     updateHover();
     draw();
     updatePinnedTooltip();
-    syncTipClass();
     updateEvolutionAutoplay();
     updateIdleScreen();
     updateGlitch();
@@ -4461,12 +4463,6 @@
     }
     if(tipShownFor !== n || pinnedNode){ tooltipEl.innerHTML = tooltipHTML(n); tipShownFor = n; }
     tooltipEl.classList.add('show');
-  }
-  // the page knows when the card is up, so the help line can make room
-  var tipOn = false;
-  function syncTipClass(){
-    var on = tooltipEl.classList.contains('show');
-    if(on !== tipOn){ tipOn = on; document.documentElement.classList.toggle('tip-on', on); }
   }
 
   var settling = [];
