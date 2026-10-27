@@ -444,13 +444,22 @@
 
   /* ---------- Node tooltip ---------- */
 
+  /* The card no longer rides on its point: it sits still, centred above
+     "Leave a trace", so a turning camera can never carry it off screen.
+     Auto margins centre it whatever the installation's UI scale. */
   #nodeTip{
     position:fixed; z-index:25; pointer-events:none; font-family:var(--font);
     font-size:12.5px; color:var(--ink); background:var(--surface);
-    padding:6px 10px; border:1px solid var(--line); opacity:0; transition:opacity .15s ease;
-    white-space:nowrap; transform:translate(-50%,-130%);
+    padding:6px 10px; border:1px solid var(--line); opacity:0;
+    transition:opacity .15s ease, transform .2s ease;
+    white-space:nowrap; width:max-content;
+    left:0; right:0; margin:0 auto; top:auto;
+    bottom:calc(clamp(14px, 2.4vw, 26px) + 66px);
+    transform:translateY(4px);
   }
-  #nodeTip.show{ opacity:0.94; }
+  html.install #nodeTip{ bottom:calc(clamp(14px, 2.4vw, 26px) + 76px); }
+  #nodeTip.show{ opacity:0.94; transform:none; }
+  @media (prefers-reduced-motion: reduce){ #nodeTip{ transition:opacity .15s ease; transform:none; } }
   #nodeTip .tip-icon{ font-size:12px; margin-right:6px; opacity:0.85; }
   #nodeTip .tip-id{
     font-size:13px;
@@ -502,9 +511,12 @@
   .nudge{
     position:fixed; left:50%; bottom:104px; transform:translateX(-50%);
     font-family:var(--font); font-size:11.5px; letter-spacing:0.04em; color:var(--ink);
-    opacity:0; transition:opacity .8s ease; pointer-events:none; z-index:22; text-align:center;
+    opacity:0; transition:opacity .8s ease, bottom .3s ease; pointer-events:none; z-index:22; text-align:center;
   }
   .nudge.show{ opacity:0.6; }
+  /* while the point card is up, the line of help steps above it */
+  html.tip-on .nudge{ bottom:calc(clamp(14px, 2.4vw, 26px) + 146px); }
+  html.install.tip-on .nudge{ bottom:calc(clamp(14px, 2.4vw, 26px) + 156px); }
 
   /* ---- parameters panel ------------------------------------------- */
   .settings-toggle{
@@ -630,7 +642,9 @@
   }
   .setting-cycle:hover{ border-color:var(--accent); }
 
-  @media (max-width:1180px){
+  /* Settings, Lines and the left-hand panel side by side down to 1000 px
+     (an iPad held landscape), stacked below that */
+  @media (max-width:1000px){
     .lines-panel{ right:26px; }
   }
   @media (max-width:640px){
@@ -1213,7 +1227,7 @@
           <span class="setting-name">Version</span>
           <button class="setting-cycle" id="modeToggle">Normal</button>
         </div>
-        <span class="setting-note">Normal is the piece on a computer. Installation is the iPad in front of the wall: a touch interface that fades away, and these panels hidden behind a long press in a corner (top left, unless changed in the Installation panel). The page reloads to switch.</span>
+        <span class="setting-note">Normal is the piece on a computer. Installation is the iPad in front of the wall: a touch interface that fades away, and these panels hidden behind a long press in a corner (top left, unless changed in the Installation panel) or a touch with three fingers. The page reloads to switch.</span>
       </div>
     </div>
 
@@ -1316,6 +1330,15 @@
         </div>
         <input type="range" id="setIdleAfter" min="0" max="300" step="5" value="60" aria-label="Idle screen after">
         <span class="setting-note">When nobody has touched the piece for this long, the archive draws itself again from the start, with the name in the middle and the door at the foot, until someone comes. 0 turns it off.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Zoom on entering</span>
+          <span class="setting-val" id="valEnterZoom">1.00x</span>
+        </div>
+        <input type="range" id="setEnterZoom" min="0.5" max="3" step="0.05" value="1" aria-label="Zoom on entering">
+        <span class="setting-note">Where the camera lands after Enter the archive (from the intro or the welcome screen), with the form centred. At 1x the whole form fits between the name and Leave a trace; higher goes in closer.</span>
       </div>
 
       <div class="setting">
@@ -1863,7 +1886,7 @@
           <span class="setting-val" id="valIRestZoom"></span>
         </div>
         <input type="range" id="iRestZoom" min="0.4" max="2.5" step="0.05" value="1" aria-label="Resting view">
-        <span class="setting-note">How close the camera sits when the piece is at rest, and where the intro lands. Below 1 is closer.</span>
+        <span class="setting-note">How close the camera sits when the piece is at rest, against where Enter the archive lands, and at the end of the intro. Below 1 is closer.</span>
       </div>
     </div>
 
@@ -1928,7 +1951,7 @@
           <span class="setting-name">Secret corner</span>
           <button class="setting-cycle" id="iCorner"></button>
         </div>
-        <span class="setting-note">Where a long press opens these panels. Nothing shows there for the public.</span>
+        <span class="setting-note">Where a long press (or five quick taps) opens these panels. Nothing shows there for the public. Three fingers anywhere on the screen at once also open every panel, and close them again.</span>
       </div>
 
       <div class="setting">
@@ -2047,7 +2070,7 @@
   var SETTINGS_DEFAULTS = { glitchOn:1, glitchEvery:3, glitchJitter:0.85, glitchFrames:10, glitchFrameMs:115,
     glitchShift:3, glitchRows:3, glitchSplit:0.7, glitchSplitShift:2, glitchSplitAlpha:1, glitchWhole:0.3,
     welcomeZoom:1.6, welcomeTilt:-16, welcomeX:0, welcomeY:0, welcomeSpin:1, welcomeRetrace:15, welcomeHold:6,
-    idleAfter:60, rotSpeed:0.7, fov:0.58, depth:0.7, depthFalloff:1.25, inertia:0.95, reach:1.4,
+    idleAfter:60, rotSpeed:0.7, enterZoom:1, fov:0.58, depth:0.7, depthFalloff:1.25, inertia:0.95, reach:1.4,
     erode:1.05, grainSpread:5.85, grainSize:1.2, grainDrift:0.3,
     dust:2.65, dustCount:640, dustSize:0.5, dustZoom:0, dof:1.8, focusRange:1.3, dofZoom:1.45, fadeSpan:45,
     springback:0.8, follow:0.45, grainNoise:0.25, dustForm:1, dustSpin:0.8,
@@ -2428,7 +2451,16 @@
   // of its bounding box — rather than around the origin it happens to be
   // laid out from, so a pinch or the wheel closes in on the form itself.
   var PIVOT = { x:0, y:0, z:0 };
+  // How far the orbit centre is raised or lowered from the middle of the
+  // drawing's box so the form sits in the middle of the screen (set on
+  // entering, see enterFrame). A vertical shift survives the form turning.
+  var PIVOT_LIFT = 0;
   function formCentre(){
+    var c = formBoxCentre();
+    c.y += PIVOT_LIFT;
+    return c;
+  }
+  function formBoxCentre(){
     if(!nodes.length) return { x:0, y:0, z:0 };
     var lx = Infinity, ly = Infinity, lz = Infinity, hx = -Infinity, hy = -Infinity, hz = -Infinity;
     for(var i=0;i<nodes.length;i++){
@@ -3146,10 +3178,15 @@
     // side of the archive so nothing stands between it and the lens
     var c = list.reduce(function(a, m){ return add3(a, m); }, { x:0, y:0, z:0 });
     c = scale3(c, 1/Math.max(1, list.length));
-    var ang = centeringAngles(scale3(sub3(c, PIVOT), -1));
-    var dYaw = ang.yaw - cam.yaw; dYaw = Math.atan2(Math.sin(dYaw), Math.cos(dYaw));
-    var toYaw = cam.yaw + dYaw;
-    var toPitch = Math.max(-1.3, Math.min(1.3, ang.pitch));
+    // (the origin sits at the heart of the form already: it keeps the angle
+    // it is seen from and is only brought in or out to fill the frame)
+    var toYaw = cam.yaw, toPitch = cam.pitch;
+    if(!isOrigin(n)){
+      var ang = centeringAngles(scale3(sub3(c, PIVOT), -1));
+      var dYaw = ang.yaw - cam.yaw; dYaw = Math.atan2(Math.sin(dYaw), Math.cos(dYaw));
+      toYaw = cam.yaw + dYaw;
+      toPitch = Math.max(-1.3, Math.min(1.3, ang.pitch));
+    }
     // measure the framing from where the camera is going, lean included
     var keepYaw = view.yaw, keepPitch = view.pitch;
     view.yaw = toYaw + (keepYaw - cam.yaw);
@@ -3236,6 +3273,112 @@
     var qz = -p.x*Math.sin(yaw) + p.z*Math.cos(yaw);
     var pitch = Math.atan2(p.y, qz || 0.0001);
     return { yaw:yaw, pitch:pitch };
+  }
+
+  /* ------------------------------------------------------------------
+     Entering the archive — through the intro's door, the welcome screen's,
+     or the installation's resting view — the camera stands back until the
+     whole form fits between the name at the top and "Leave a trace" at the
+     foot, and the form sits in the middle of the screen. The middle is
+     found on screen rather than in the drawing's box: seen from above, the
+     near end of the form looks larger, so the box's centre sits high. The
+     orbit centre is lifted along the vertical to make up for it, a shift
+     the form keeps as it turns.
+  ------------------------------------------------------------------- */
+  // the room the form has: clear of the name above and the button below
+  function enterBand(){
+    var top = 0, foot = 0;
+    var hc = document.querySelector('.hud-center'), lt = document.getElementById('leaveTraceBtn');
+    if(hc){ var r = hc.getBoundingClientRect(); if(r.height) top = r.bottom; }
+    if(lt){ var q = lt.getBoundingClientRect(); if(q.height) foot = H - q.top; }
+    if(!(top > 0)) top = H*0.08;
+    if(!(foot > 0)) foot = H*0.12;
+    // at most about two thirds of the height and three quarters of the width
+    return { hx: Math.max(60, Math.min(W*0.38, W/2 - 32)),
+             hy: Math.max(60, Math.min(H*0.34, H/2 - Math.max(top, foot) - 24)) };
+  }
+  // the form's box on screen, around the screen's centre, for a camera at
+  // that angle and distance looking at that centre
+  function formBoxAt(pivot, yaw, pitch, d){
+    var cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+    var lx = Infinity, hx = -Infinity, ly = Infinity, hy = -Infinity;
+    for(var i=0;i<nodes.length;i++){
+      var n = nodes[i];
+      var x = n.x - pivot.x, y = n.y - pivot.y, z = n.z - pivot.z;
+      var x1 = x*cy + z*sy, z1 = -x*sy + z*cy;
+      var vz = y*sp + z1*cp + d;
+      if(vz < 30) return null;
+      var s = FOCAL/vz, X = x1*s, Y = -(y*cp - z1*sp)*s;
+      if(X < lx) lx = X; if(X > hx) hx = X;
+      if(Y < ly) ly = Y; if(Y > hy) hy = Y;
+    }
+    return { lx:lx, hx:hx, ly:ly, hy:hy, cy:(ly + hy)/2 };
+  }
+  function enterFraming(yaw, pitch, band, lift0){
+    var base = formBoxCentre();
+    var lift = lift0, d = cam.dist;
+    var cp = Math.max(0.2, Math.cos(pitch));
+    function over(pv, dd){
+      var b = formBoxAt(pv, yaw, pitch, dd);
+      if(!b) return Infinity;
+      return Math.max(Math.max(-b.lx, b.hx)/band.hx, (b.hy - b.ly)/2/band.hy);
+    }
+    for(var k=0; k<5; k++){
+      var pv = { x:base.x, y:base.y + lift, z:base.z };
+      var lo = 1, hi = Math.max(distMax(), cam.dist)*2;
+      for(var g=0; g<8 && over(pv, hi) > 1; g++) hi *= 2;
+      for(var it=0; it<30; it++){
+        var mid = (lo + hi)/2;
+        if(over(pv, mid) > 1) lo = mid; else hi = mid;
+      }
+      d = hi;
+      var b = formBoxAt(pv, yaw, pitch, d);
+      if(!b || Math.abs(b.cy) < 0.5) break;
+      lift -= b.cy / (cp * FOCAL/d);
+    }
+    return { dist:d, lift:lift };
+  }
+  // distMul > 1 lands further out (the installation's resting view)
+  var ENTER_MOVE_MS = 2000, ENTER_DIST = 0;
+  function enterFrame(dur, distMul){
+    if(!nodes.length) return;
+    var D = reduceMotion ? 1 : dur;
+    var pitch = (typeof CAM_HOME_PITCH === 'number') ? CAM_HOME_PITCH : cam.pitch;
+    // a turn already under way carries on and settles, rather than stopping dead
+    var yaw = cam.yaw + ((AMBIENT && AMBIENT.v) || 0) * (D/1000) / 3;
+    var band = enterBand();
+    var f = enterFraming(yaw, pitch, band, PIVOT_LIFT);
+    // far enough back that the form still fits as it turns: the turn shows
+    // it from every side, and some sides are bigger than others
+    var need = f.dist;
+    for(var a=0; a<8; a++){
+      var fa = enterFraming(yaw + a*Math.PI/4, pitch, band, f.lift);
+      if(fa.dist > need) need = fa.dist;
+    }
+    PIVOT_LIFT = f.lift;
+    ENTER_DIST = need;
+    var dist = need * Math.max(0.2, distMul || 1) / Math.max(0.2, SETTINGS.enterZoom || 1);
+    dist = Math.max(DIST_MIN, Math.min(distMax(), dist));
+    pivotGlideTo(formCentre(), D);
+    camPulse = { fromYaw:cam.yaw, toYaw:yaw, fromPitch:cam.pitch, toPitch:pitch,
+                 fromDist:cam.dist, toDist:dist, start:performance.now(), duration:D };
+    panGlideTo(0, 0, D);
+    DOF_HOME = dist;                       // the look is tuned for where the visitor lands
+  }
+
+  // While the form turns on its own with nobody steering, the side facing
+  // the lens changes and with it how high the form looks: the lift follows,
+  // slowly, so the form stays in the middle. Only when the whole form is in
+  // view and nothing is lit, slid, focused or on its way somewhere.
+  function keepCentred(dt){
+    if(!ENTER_DIST || !(AMBIENT && AMBIENT.v > 0.0005)) return;
+    if(mode !== 'idle' || introActive() || INTRO.on || evolutionMode || (IDLE && IDLE.on)) return;
+    if(camPulse || PIVOT_TW || PAN_RET || PEEK.active || focusPt || hoverNode || pinnedNode) return;
+    if(cam.dist < ENTER_DIST*0.75) return;
+    var b = formBoxAt(formCentre(), view.yaw, view.pitch, cam.dist);
+    if(!b) return;
+    var want = PIVOT_LIFT - b.cy / (Math.max(0.2, Math.cos(view.pitch)) * FOCAL/cam.dist);
+    PIVOT_LIFT += (want - PIVOT_LIFT) * Math.min(1, dt/2.5);
   }
 
   // smoothly re-frame the camera on newly created point(s), pulled in tight
@@ -3601,6 +3744,16 @@
            '<i><b>Z</b>' + fmtCoord(z) + '</i>';
   }
   function tooltipHTML(n){
+    if(isOrigin(n)){
+      var o = originStats();
+      return '<div class="tip-main">' +
+        '<span class="tip-icon">*</span>' +
+        '<span class="tip-id">' + ORIGIN_NAME + '</span>' +
+        '<span class="tip-sep">/</span>' +
+        '<span class="tip-liens">' + o.links + (o.links === 1 ? ' lien' : ' liens') + '</span>' +
+        '</div>' +
+        '<div class="tip-coord">' + coordHTML(o.centre.x, o.centre.y, o.centre.z) + '</div>';
+    }
     var sig = n.signature ? cleanSignature(n.signature) : '';
     return '<div class="tip-main">' +
       '<span class="tip-icon">*</span>' +
@@ -4275,6 +4428,7 @@
     updateCamPulse();
     updatePanReturn();
     updateAmbientRotation();
+    keepCentred(AMBIENT.dt || 0.016);
     updateFit();
     updateSway();
     updatePivot(false);
@@ -4285,6 +4439,7 @@
     updateHover();
     draw();
     updatePinnedTooltip();
+    syncTipClass();
     updateEvolutionAutoplay();
     updateIdleScreen();
     updateGlitch();
@@ -4292,21 +4447,26 @@
     requestAnimationFrame(tick);
   }
 
-  // The card follows its point every frame: the pinned one, else the one
-  // under the cursor, else the focused one.
+  // The card speaks for the pinned point, else the one under the cursor,
+  // else the focused one. It stays put at the foot of the screen, so it
+  // holds even while the camera carries its point out of view.
   var tipShownFor = null;
   function updatePinnedTooltip(){
     var n = pinnedNode ||
             ((mode === 'idle' && !introActive() && !evolutionMode) ? (hoverNode || focusPt) : null);
-    var p = n ? lastProjected[n.id] : null;
-    if(!n || !p){
+    if(n && !nodeById[n.id] && !pinnedNode) n = null;
+    if(!n){
       if(tipShownFor){ tooltipEl.classList.remove('show'); tipShownFor = null; }
       return;
     }
     if(tipShownFor !== n || pinnedNode){ tooltipEl.innerHTML = tooltipHTML(n); tipShownFor = n; }
     tooltipEl.classList.add('show');
-    tooltipEl.style.left = p.x+'px';
-    tooltipEl.style.top = p.y+'px';
+  }
+  // the page knows when the card is up, so the help line can make room
+  var tipOn = false;
+  function syncTipClass(){
+    var on = tooltipEl.classList.contains('show');
+    if(on !== tipOn){ tipOn = on; document.documentElement.classList.toggle('tip-on', on); }
   }
 
   var settling = [];
@@ -4331,7 +4491,7 @@
   function updateAmbientRotation(){
     var now = performance.now();
     var dt = AMBIENT.last ? Math.min(0.1, (now - AMBIENT.last)/1000) : 0;
-    AMBIENT.last = now;
+    AMBIENT.last = now; AMBIENT.dt = dt;
     var free = !reduceMotion && !evolutionMode && !camPulse && !Object.keys(pointers).length;
     var still = introActive() || (mode === 'idle' && now - lastInteraction > 4000);
     if(!free || !still){ AMBIENT.v = 0; return; }
@@ -4503,10 +4663,6 @@
           tooltipEl.classList.remove('show');
         }
       }
-      if(hn){
-        var sp = lastProjected[hn.id];
-        if(sp){ tooltipEl.style.left = sp.x+'px'; tooltipEl.style.top = sp.y+'px'; }
-      }
     }
   });
 
@@ -4581,7 +4737,66 @@
     return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
   }
   function smoothT(t){ return t*t*(3-2*t); }
+  /* ------------------------------------------------------------------
+     ORIGIN. The inherited drawing answers as one piece: any of its points,
+     or a tap on any of its lines, lights the whole of it, frames it and
+     gives it a single card. Its lines stay lit at full strength; the
+     visitors' lines tied into it are lit at half, as for a trace.
+  ------------------------------------------------------------------- */
+  var ORIGIN_NAME = 'ORIGIN';
+  function isOrigin(n){ return !!(n && n.traceId === 'GENESIS'); }
+  function sameTarget(a, b){ return a === b || (isOrigin(a) && isOrigin(b)); }
+  function originLit(n){
+    var lit = { node:n, trace:'GENESIS', origin:true, nodes:{}, edges:{}, t0:performance.now() };
+    for(var i=0;i<nodes.length;i++){ if(isOrigin(nodes[i])) lit.nodes[nodes[i].id] = true; }
+    edges.forEach(function(e){
+      var ai = !!lit.nodes[e.a], bi = !!lit.nodes[e.b];
+      if(ai && bi) lit.edges[e.id] = 2; else if(ai || bi) lit.edges[e.id] = 1;
+    });
+    return lit;
+  }
+  // the links visitors have tied into the origin, and the heart of the origin
+  function originStats(){
+    var inside = {}, cnt = 0, c = { x:0, y:0, z:0 }, links = 0;
+    for(var i=0;i<nodes.length;i++){
+      var m = nodes[i];
+      if(!isOrigin(m)) continue;
+      inside[m.id] = true; cnt++;
+      c.x += m.x; c.y += m.y; c.z += nodeZ(m);
+    }
+    edges.forEach(function(e){ if(!!inside[e.a] !== !!inside[e.b]) links++; });
+    if(cnt){ c.x /= cnt; c.y /= cnt; c.z /= cnt; }
+    return { points:cnt, links:links, centre:c };
+  }
+  // A tap that finds no point may still land on one of the origin's lines.
+  // The lines are measured as they are drawn, wobble and wave included.
+  var _pickPath = [];
+  function segDist(px, py, a, b){
+    var dx = b.x - a.x, dy = b.y - a.y, L2 = dx*dx + dy*dy;
+    var t = L2 > 0 ? Math.max(0, Math.min(1, ((px - a.x)*dx + (py - a.y)*dy)/L2)) : 0;
+    return Math.hypot(a.x + dx*t - px, a.y + dy*t - py);
+  }
+  function pickOriginLine(sx, sy, tol){
+    var best = null, bestD = tol;
+    var steps = Math.max(2, Math.round(LINES.grain));
+    for(var i=0;i<edges.length;i++){
+      var e = edges[i], A = nodeById[e.a], B = nodeById[e.b];
+      if(!isOrigin(A) || !isOrigin(B)) continue;
+      var pa = project(A), pb = project(B);
+      if(!pa || !pb) continue;
+      var pts = jitterPath(pa, pb, e.seed, 0, LINES.jitter*1.7, steps, _pickPath);
+      for(var k=0;k<pts.length-1;k++){
+        var d = segDist(sx, sy, pts[k], pts[k+1]);
+        if(d < bestD){
+          bestD = d;
+          best = Math.hypot(pa.x-sx, pa.y-sy) <= Math.hypot(pb.x-sx, pb.y-sy) ? A : B;
+        }
+      }
+    }
+    return best;
+  }
   function hoverLitFor(n){
+    if(isOrigin(n)) return originLit(n);
     var tid = n.traceId && n.traceId !== 'GENESIS' ? n.traceId : null;
     var lit = { node:n, trace:tid, nodes:{}, edges:{}, t0:performance.now() };
     lit.nodes[n.id] = true;
@@ -4604,8 +4819,10 @@
     if(focusPt && (mode !== 'idle' || evolutionMode || introActive() || nodeById[focusPt.id] !== focusPt)) focusPt = null;
     var t = (mode === 'idle' && !introActive()) ? (hoverNode || focusPt) : null;
     if(t && nodeById[t.id] === t){
-      if(!HOVER.lit || HOVER.lit.node !== t) HOVER.lit = hoverLitFor(t);
-      HOVER.lit.focus = (t === focusPt);      // kept as it was while it fades out
+      // moving from one of the origin's points to another is staying on it
+      if(HOVER.lit && HOVER.lit.origin && isOrigin(t)) HOVER.lit.node = t;
+      else if(!HOVER.lit || HOVER.lit.node !== t) HOVER.lit = hoverLitFor(t);
+      HOVER.lit.focus = sameTarget(t, focusPt);   // kept as it was while it fades out
       HOVER.k += (1 - HOVER.k) * (reduceMotion ? 1 : 1 - Math.exp(-dt/0.09));
     } else if(HOVER.lit){
       HOVER.k += (0 - HOVER.k) * (reduceMotion ? 1 : 1 - Math.exp(-dt/0.22));
@@ -4633,6 +4850,7 @@
   function drawHoverMark(){
     var L = HOVER.lit, m = SETTINGS.hoverMark;
     if(!L || HOVER.k < 0.01 || !(m > 0.01)) return;
+    if(L.origin){ drawOriginFrame(L, m); return; }
     var n = L.node, p = project(n);
     if(!p) return;
     var K = HOVER.k, col = hoverRgb();
@@ -4664,6 +4882,36 @@
     [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(function(sg){
       var cx = x + sg[0]*R, cy = y + sg[1]*R;
       ctx.moveTo(cx - sg[0]*arm, cy); ctx.lineTo(cx, cy); ctx.lineTo(cx, cy - sg[1]*arm);
+    });
+    ctx.stroke();
+  }
+
+  // The origin is one piece, so it is framed as one: the same four
+  // registration corners, closing in around everything it covers on screen.
+  function drawOriginFrame(L, m){
+    var lx = Infinity, ly = Infinity, hx = -Infinity, hy = -Infinity;
+    for(var id in L.nodes){
+      var n = nodeById[id];
+      if(!n) continue;
+      var p = project(n);
+      if(!p) continue;
+      if(p.x < lx) lx = p.x; if(p.x > hx) hx = p.x;
+      if(p.y < ly) ly = p.y; if(p.y > hy) hy = p.y;
+    }
+    if(!(hx >= lx)) return;
+    var K = HOVER.k, col = hoverRgb();
+    var pop = reduceMotion ? 1 : Math.min(1, (performance.now() - L.t0)/320);
+    var e = 1 - Math.pow(1 - pop, 3);
+    var pad = (16 + 10*Math.max(0.6, Math.min(1.6, m))) * (1.8 - 0.8*e);
+    lx = Math.max(6, lx - pad); ly = Math.max(6, ly - pad);
+    hx = Math.min(W - 6, hx + pad); hy = Math.min(H - 6, hy + pad);
+    var arm = Math.max(8, Math.min(22, Math.min(hx - lx, hy - ly) * 0.08));
+    ctx.strokeStyle = rgba(col, 0.9*K*e); ctx.lineWidth = 1.2;
+    ctx.lineCap = 'butt'; ctx.lineJoin = 'miter';
+    ctx.beginPath();
+    [[lx, ly, 1, 1], [hx, ly, -1, 1], [hx, hy, -1, -1], [lx, hy, 1, -1]].forEach(function(c){
+      var x = Math.round(c[0]) + 0.5, y = Math.round(c[1]) + 0.5;
+      ctx.moveTo(x + c[2]*arm, y); ctx.lineTo(x, y); ctx.lineTo(x, y + c[3]*arm);
     });
     ctx.stroke();
   }
@@ -4763,6 +5011,8 @@
   function handleCanvasTap(sx, sy){
     if(mode==='idle' && !evolutionMode){
       var hit = tapNode || pickNear(sx, sy, lastTapTouch ? (INSTALL ? SETTINGS.iPick : 24) : 13);
+      // no point under the tap: one of the origin's lines will do
+      if(!hit) hit = pickOriginLine(sx, sy, lastTapTouch ? (INSTALL ? Math.max(12, SETTINGS.iPick*0.6) : 16) : 8);
       tapNode = null;
       if(hit && nodeById[hit.id] === hit) focusNode(hit);
       else focusPt = null;                          // empty space lets the focus go
@@ -4811,6 +5061,8 @@
     { key:'dofZoom',      input:'setDofZoom',  out:'valDofZoom',  fmt:x2 },
     { key:'reach',        input:'setReach',    out:'valReach',    fmt:x2 },
     { key:'rotSpeed',     input:'setRot',      out:'valRot',      fmt:function(v){ return v.toFixed(1)+'x'; } },
+    { key:'enterZoom',    input:'setEnterZoom', out:'valEnterZoom', fmt:x2,
+      onChange:function(){ if(mode === 'idle' && !introActive() && !(IDLE && IDLE.on)) enterFrame(500); } },
     { key:'idleAfter',    input:'setIdleAfter', out:'valIdleAfter', fmt:function(v){ return v < 5 ? 'Off' : Math.round(v) + ' s'; }, onChange:function(){ syncKey('idleAfter'); } },
     { key:'idleAfter',    input:'welIdleAfter', out:'valWelIdleAfter', fmt:function(v){ return v < 5 ? 'Off' : Math.round(v) + ' s'; }, onChange:function(){ syncKey('idleAfter'); } },
     { key:'welcomeZoom',  input:'welZoom',     out:'valWelZoom',     fmt:x2, onChange:welcomeRetune },
@@ -6304,8 +6556,9 @@
     lastInteraction = INTRO.enteredAt;
     // whatever is still on its way in arrives quickly
     introBuildTo(1, 1100);
-    var open = INTRO.path ? INTRO.path.end : introOpenDist();
-    if(!(INTRO.cam && INTRO.cam.to === open) && cam.dist > open + 1) introCamTo(open, 1700);
+    // the camera stands back and centres the whole form (enterFrame)
+    INTRO.cam = null;
+    enterFrame(ENTER_MOVE_MS);
     if(introSpot && !introSpot.out) introSpot.out = performance.now();
     introEl.classList.add('hidden');
     introSetHud(false);
@@ -6974,7 +7227,10 @@
     document.documentElement.classList.remove('idle-on');
     introBuildTo(1, 700);                 // whatever was still to come arrives at once
     IDLE.pan = null;
-    if(PAN.x || PAN.y) panGlideTo(0, 0, 900);
+    // going in through this door frames the whole form, centred, as the
+    // intro's does (unless the intro itself is what is starting)
+    if(mode === 'idle' && !introActive() && !INTRO.on) enterFrame(ENTER_MOVE_MS);
+    else if(PAN.x || PAN.y) panGlideTo(0, 0, 900);
     clearTimeout(IDLE.hideT);
     IDLE.hideT = setTimeout(function(){ if(!IDLE.on) idleEl.hidden = true; }, 950);
     lastInteraction = performance.now();
@@ -7063,10 +7319,6 @@
 
   function installTouched(){ INST.last = performance.now(); INST.resetDone = false; }
 
-  // the resting view: where the intro lands, at the chosen closeness
-  function installRestDist(){
-    return Math.min(introOpenDist(), fitAllDistance()*0.9) * iClamp(SETTINGS.iRestZoom, 0.3, 3);
-  }
   function installReset(){
     if(mode !== 'idle') exitContribution(true);
     if(evolutionMode) closeEvolution();
@@ -7075,11 +7327,7 @@
     tooltipEl.classList.remove('show');
     if(IDLE.on) return;                   // the idle screen is already calling people in
     if(Math.round(SETTINGS.iAttract) === 2){ introStart(true); return; }
-    camPulse = {
-      fromYaw: cam.yaw, toYaw: cam.yaw, fromPitch: cam.pitch, toPitch: CAM_HOME_PITCH,
-      fromDist: cam.dist, toDist: installRestDist(),
-      start: performance.now(), duration: reduceMotion ? 1 : 2600
-    };
+    enterFrame(2600, iClamp(SETTINGS.iRestZoom, 0.3, 3));
   }
 
   function updateInstall(){
@@ -7272,6 +7520,20 @@
     window.addEventListener('keydown', function(ev){
       if(ev.altKey && (ev.code === 'KeyI')){ ev.preventDefault(); setAdmin(!INST.admin); }
     });
+    // Three fingers on the screen at once: every editing panel opens
+    // (Installation on the left, Lines and Settings on the right, Welcome
+    // from its button); three fingers again put them all away and lock.
+    var threeAt = 0;
+    window.addEventListener('touchstart', function(ev){
+      if(!ev.touches || ev.touches.length !== 3) return;
+      var now = performance.now();
+      if(now - threeAt < 900) return;           // one gesture, one switch
+      threeAt = now;
+      if(INST.admin){ setAdmin(false); return; }
+      setAdmin(true);
+      setSettingsOpen(true);
+      setLinesOpen(true);
+    }, { capture:true, passive:true });
   }
 
   // whatever was dialled in last time, brought back before the first frame
