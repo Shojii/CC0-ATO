@@ -2129,9 +2129,27 @@
     }
     return { x:(lx+hx)/2, y:(ly+hy)/2, z:(lz+hz)/2 };
   }
-  // eased, so a new trace that widens the drawing moves the centre gently
+  // eased, so a new trace that widens the drawing moves the centre gently.
+  // When the camera is set moving at the same time (after a trace is
+  // added) the centre travels with it, on the camera's own curve and clock,
+  // so the two never pull against each other.
+  var PIVOT_TW = null;
+  function pivotGlideTo(c, dur){
+    if(reduceMotion || !(dur > 0)){ PIVOT.x = c.x; PIVOT.y = c.y; PIVOT.z = c.z; PIVOT_TW = null; return; }
+    PIVOT_TW = { from:{ x:PIVOT.x, y:PIVOT.y, z:PIVOT.z }, to:{ x:c.x, y:c.y, z:c.z }, t0:performance.now(), dur:dur };
+  }
   function updatePivot(snap){
     var c = formCentre();
+    if(PIVOT_TW && !snap){
+      var u = Math.min(1, (performance.now() - PIVOT_TW.t0)/PIVOT_TW.dur);
+      var e = 1 - Math.pow(1 - u, 3);
+      PIVOT.x = lerp(PIVOT_TW.from.x, PIVOT_TW.to.x, e);
+      PIVOT.y = lerp(PIVOT_TW.from.y, PIVOT_TW.to.y, e);
+      PIVOT.z = lerp(PIVOT_TW.from.z, PIVOT_TW.to.z, e);
+      if(u >= 1) PIVOT_TW = null;
+      return;
+    }
+    PIVOT_TW = null;
     var k = (snap || reduceMotion) ? 1 : 0.06;
     PIVOT.x += (c.x - PIVOT.x)*k; PIVOT.y += (c.y - PIVOT.y)*k; PIVOT.z += (c.z - PIVOT.z)*k;
   }
@@ -2794,7 +2812,7 @@
   // bisection finds it exactly.
   function fitDistanceFor(list){
     var hx = W/2 * 0.62, hy = H/2 * 0.54;
-    var lo = 1, hi = Math.max(DIST_MAX, cam.dist) * 2;
+    var lo = 1, hi = Math.max(distMax(), cam.dist) * 2;
     for(var g=0; g<8 && frameErr(list, hi, hx, hy) > 1; g++) hi *= 2;
     for(var it=0; it<40; it++){
       var mid = (lo + hi)/2;
@@ -2828,7 +2846,7 @@
     view.pitch = Math.max(-1.45, Math.min(1.45, toPitch + (keepPitch - cam.pitch)));
     var to = fitDistanceFor(list);
     view.yaw = keepYaw; view.pitch = keepPitch;
-    to = Math.max(DIST_MIN, Math.min(DIST_MAX, to));
+    to = Math.max(DIST_MIN, Math.min(distMax(), to));
     camPulse = {
       fromYaw: cam.yaw, toYaw: toYaw, fromPitch: cam.pitch, toPitch: toPitch,
       fromDist: cam.dist, toDist: to,
@@ -2880,8 +2898,21 @@
   function markViewMove(){ viewMoveAt = performance.now(); }
   function viewIsMoving(){ return performance.now() - viewMoveAt < 150; }
 
+  // However far the archive grows, zooming out can always take in the whole
+  // of it: the limit is never closer than the distance at which the form's
+  // bounding sphere, seen from any side, fits the frame with room around it.
+  function distMax(){
+    var r2 = 0;
+    for(var i=0;i<nodes.length;i++){
+      var n = nodes[i], dx = n.x - PIVOT.x, dy = n.y - PIVOT.y, dz = n.z - PIVOT.z;
+      var d2 = dx*dx + dy*dy + dz*dz;
+      if(d2 > r2) r2 = d2;
+    }
+    var r = Math.sqrt(r2), half = Math.min(W, H)/2 * 0.8;
+    return Math.max(DIST_MAX, r * (FOCAL/Math.max(1, half) + 1) * 1.08);
+  }
   function setDist(d){
-    cam.dist = Math.max(DIST_MIN, Math.min(DIST_MAX, d));
+    cam.dist = Math.max(DIST_MIN, Math.min(distMax(), d));
     markViewMove();
     updateZoomLabel();
   }
@@ -2919,6 +2950,40 @@
       fromPitch: cam.pitch, toPitch: ang.pitch,
       fromDist: cam.dist, toDist: targetDist,
       start: performance.now(), duration: reduceMotion ? 1 : 1500
+    };
+  }
+  // After a trace is added the camera turns toward the form's centre, as it
+  // stands now with the new points in it, so the new trace faces the lens,
+  // and settles halfway into the form: twice the size of the view that
+  // takes in all of it, never so close that the new trace leaves the frame.
+  var ADD_ZOOM = 0.5;                       // share of the whole-form distance
+  var ADD_MOVE_MS = 2000;
+  function frameAfterAdd(list){
+    if(!list || !list.length) return;
+    var c = list.reduce(function(a, m){ return add3(a, m); }, { x:0, y:0, z:0 });
+    c = scale3(c, 1/list.length);
+    // everything is measured around the centre the form now has
+    var centre = formCentre();
+    var keepPivot = { x:PIVOT.x, y:PIVOT.y, z:PIVOT.z };
+    PIVOT.x = centre.x; PIVOT.y = centre.y; PIVOT.z = centre.z;
+    var ang = centeringAngles(scale3(sub3(c, centre), -1));
+    var dYaw = ang.yaw - cam.yaw; dYaw = Math.atan2(Math.sin(dYaw), Math.cos(dYaw));
+    var toYaw = cam.yaw + dYaw;
+    var toPitch = Math.max(-0.9, Math.min(0.9, ang.pitch));   // never straight from above or below
+    var keepYaw = view.yaw, keepPitch = view.pitch;
+    view.yaw = toYaw; view.pitch = toPitch;
+    var whole = fitAllDistance();
+    var traceFit = fitDistanceFor(list);
+    view.yaw = keepYaw; view.pitch = keepPitch;
+    PIVOT.x = keepPivot.x; PIVOT.y = keepPivot.y; PIVOT.z = keepPivot.z;
+    var to = Math.max(whole * ADD_ZOOM, traceFit);
+    to = Math.max(DIST_MIN, Math.min(distMax(), to));
+    // the centre and the camera set off together and arrive together
+    pivotGlideTo(centre, ADD_MOVE_MS);
+    camPulse = {
+      fromYaw: cam.yaw, toYaw: toYaw, fromPitch: cam.pitch, toPitch: toPitch,
+      fromDist: cam.dist, toDist: to,
+      start: performance.now(), duration: reduceMotion ? 1 : ADD_MOVE_MS
     };
   }
   function updateCamPulse(){
@@ -3035,6 +3100,9 @@
     if(HOVER.lit && HOVER.lit.focus) return THEME.place;
     return Math.round(SETTINGS.hoverCol) === 1 ? THEME.deep : THEME.place;
   }
+  // the lit colour eases in from the ink and back to it with the light,
+  // so a trace never snaps from orange to grey as it lets go
+  function litRgb(){ return mixRgb(THEME.ink, hoverRgb(), Math.max(0, Math.min(1, HOVER.k))); }
   function mixRgb(c1,c2,t){ return { r:lerp(c1.r,c2.r,t), g:lerp(c1.g,c2.g,t), b:lerp(c1.b,c2.b,t) }; }
   function rgba(c,a){ return 'rgba('+Math.round(c.r)+','+Math.round(c.g)+','+Math.round(c.b)+','+Math.max(0,a)+')'; }
 
@@ -3653,7 +3721,7 @@
         ctx.stroke();
         ctx.restore();
       }
-      var hc = hl ? hoverRgb() : null;
+      var hc = hl ? litRgb() : null;
       var eStyle = hlBoth ? rgba(hc, lerp(0.5*fog, 0.96, HK)) : hlOne ? rgba(hc, lerp(0.5*fog, 0.6, HK))
                  : edgeColor(d.e, dimming ? fog*dimV(1,0.22) : fog);
       var eWidth = isBeam ? 1.1 : (d.e.origin==='visitor' ? 1 : (d.e.generation===0?0.9:0.6));
@@ -3705,7 +3773,7 @@
       var fog = depthFade(p.viewZ);
       var rr = Math.max(0.8, n.r*p.scale);
       var isHoverGroup = d.lit;
-      var hcN = isHoverGroup ? hoverRgb() : null;
+      var hcN = isHoverGroup ? litRgb() : null;
       var nc = isHoverGroup ? rgba(hcN, lerp(0.9*fog, 1, HK)) : nodeColor(n, dimming ? fog*dimV(1,0.22) : fog);
       var halfSize = n.r * (n.big ? 0.95 : 0.8) * (d.grow < 1 ? 0.25 + 0.75*d.grow : 1);
       var corners = projectCube(n, halfSize);
@@ -4977,11 +5045,13 @@
     var dur = reduceMotion ? 1 : 1800;
     realNodes.forEach(function(n){ settling.push({ node:n, start:performance.now(), duration:dur }); });
 
+    // the whole archive comes into view with the new trace facing the lens,
+    // and the trace stays lit in the orange of adding, its card open, until
+    // the visitor looks elsewhere (a click in the void, or on another point)
+    var anchorNode = null;
     if(realNodes.length){
-      // pin the tooltip on whichever new point ended up best-connected
-      var anchorNode = realNodes.slice().sort(function(a,b){ return degree(b.id)-degree(a.id); })[0];
-      pulseCameraTo(realNodes, neighborIds);
-      pinTooltip(anchorNode, 3600);
+      anchorNode = realNodes.slice().sort(function(a,b){ return degree(b.id)-degree(a.id); })[0];
+      frameAfterAdd(realNodes);
     }
 
     storeState.contributions.push({
@@ -4998,7 +5068,13 @@
     pending = { nodes:[], edges:[] };
 
     showToast();
-    setTimeout(function(){ mode = 'idle'; }, 700);
+    setTimeout(function(){
+      mode = 'idle';
+      if(anchorNode && nodeById[anchorNode.id] === anchorNode){
+        focusPt = anchorNode; hoverNode = null; hoverTraceId = null;
+        lastInteraction = performance.now();
+      }
+    }, 700);
     setTimeout(showNudge, 3800);
   }
 
