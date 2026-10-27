@@ -237,6 +237,36 @@
     text-shadow: 0 0 0.08em var(--bg-core, var(--paper)), 0 0 0.22em var(--bg-core, var(--paper));
   }
   .intro-mark i{ font-style:normal; opacity:0; transition: opacity .2s ease; }
+  /* the name glitches now and then, on the font's own pixel grid: one
+     module is 0.0875em and the letters stand 8 modules tall from 0.075em,
+     so every slice cuts between rows of pixels and every jump is a whole
+     number of them. A white-backed slice shifts in ink; an orange split,
+     multiplied, runs off at the edges. The script plays it (Glitch panel),
+     through these variables. */
+  .intro-mark b, .glitch-preview b{ position:relative; display:inline-block; }
+  .intro-mark b::before, .intro-mark b::after, .glitch-preview b::before, .glitch-preview b::after{
+    content:attr(data-text); position:absolute; left:0; top:0;
+    white-space:nowrap; letter-spacing:inherit; line-height:1; pointer-events:none;
+    text-shadow:none;
+  }
+  .intro-mark b::before, .glitch-preview b::before{
+    color:var(--ink); background:var(--bg-core, var(--paper));
+    opacity:var(--g1-o, 0);
+    clip-path:inset(var(--g1-t, 0em) 0 var(--g1-b, 1em) 0);
+    transform:translateX(var(--g1-x, 0em));
+  }
+  .intro-mark b::after, .glitch-preview b::after{
+    color:var(--place); mix-blend-mode:multiply;
+    opacity:var(--g2-o, 0);
+    clip-path:inset(var(--g2-t, 0em) 0 var(--g2-b, 1em) 0);
+    transform:translateX(var(--g2-x, 0em));
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) .intro-mark b::after,
+    :root:not([data-theme="light"]) .glitch-preview b::after{ mix-blend-mode:screen; }
+  }
+  :root[data-theme="dark"] .intro-mark b::after, :root[data-theme="dark"] .glitch-preview b::after{ mix-blend-mode:screen; }
+
   /* typed in like the title at the start, a letter at a time */
   .intro.is-final .intro-mark i{ opacity:1; transition-duration:.45s; }
   .intro.is-final .intro-mark i:nth-child(1){ transition-delay:.5s; }
@@ -573,6 +603,18 @@
   .settings-keys dd{ opacity:0.34; }
 
   .lines-panel{ right:274px; }
+  .glitch-panel{ right:auto; left:26px; }
+  .glitch-stage-btn{ align-self:flex-start; }
+  /* while the welcome screen is shown for tuning, the panel stays above it */
+  html.glitch-stage .glitch-panel{ z-index:140; }
+  .glitch-preview{
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+    flex:none; height:92px; margin:0 0 2px; background:var(--surface); border:1px solid var(--line);
+  }
+  .glitch-preview b{
+    font-weight:400; color:var(--ink); line-height:1; white-space:nowrap; font-size:46px;
+    letter-spacing:0.24em; margin-right:-0.24em;
+  }
   .setting-cycle{
     font-family:var(--font); font-size:10px;
     letter-spacing:0.06em; text-transform:uppercase;
@@ -598,6 +640,7 @@
   .install-panel{ right:auto; left:26px; }
   /* opened from the secret corner, the panels sit above everything, the intro included */
   html.install.install-admin .settings-panel{ z-index:140; }
+  @media (max-width:640px){ .glitch-panel{ left:14px; } }
   .install-actions{ flex-wrap:wrap; justify-content:flex-start; row-gap:8px; }
   html.install .hud-top, html.install .hud-bottom, html.install .contrib-bar, html.install .toast,
   html.install .nudge, html.install .intro-foot, html.install #nodeTip, html.install .trace-card{ zoom: var(--ui-scale, 1); }
@@ -659,7 +702,7 @@
     <div class="intro-curtain" id="introCurtain"></div>
     <div class="intro-scrim" id="introScrim"></div>
     <div class="intro-scrim intro-scrim--low" id="introScrimLow"></div>
-    <div class="intro-mark" aria-hidden="true"><b><i>A</i><i>T</i><i>O</i></b></div>
+    <div class="intro-mark" aria-hidden="true"><b data-text="ATO"><i>A</i><i>T</i><i>O</i></b></div>
     <div class="intro-stage">
       <div class="intro-block" id="introBlock" aria-hidden="true"></div>
     </div>
@@ -673,7 +716,7 @@
 
   <section class="idle" id="idleScreen" aria-label="ATO" hidden>
     <div class="idle-veil" id="idleVeil"></div>
-    <div class="intro-mark" aria-hidden="true"><b><i>A</i><i>T</i><i>O</i></b></div>
+    <div class="intro-mark" aria-hidden="true"><b data-text="ATO"><i>A</i><i>T</i><i>O</i></b></div>
     <div class="idle-foot"><button class="enter-btn" id="idleEnter" tabindex="-1">Enter the archive</button></div>
   </section>
 
@@ -686,6 +729,7 @@
     <div class="hud-corner hud-corner--right">
       <button class="settings-toggle admin-only" id="settingsToggle" aria-expanded="false" aria-controls="settingsPanel">Settings</button>
       <button class="settings-toggle admin-only" id="linesToggle" aria-expanded="false" aria-controls="linesPanel">Lines</button>
+      <button class="settings-toggle admin-only" id="glitchToggle" aria-expanded="false" aria-controls="glitchPanel">Glitch</button>
       <button class="settings-toggle admin-only install-only" id="installToggle" aria-expanded="false" aria-controls="installPanel">Install</button>
       <button class="settings-toggle sound-only" id="soundToggle" aria-pressed="false">Sound</button>
     </div>
@@ -939,6 +983,132 @@
     <div class="settings-actions">
       <button class="settings-reset" id="linesReset">Reset lines</button>
       <button class="settings-reset" id="linesCopy">Copy all</button>
+    </div>
+  </aside>
+
+  <aside class="settings-panel glitch-panel" id="glitchPanel" hidden>
+    <div class="settings-head">
+      <span class="settings-title mono">Glitch</span>
+      <button class="settings-close" id="glitchClose" aria-label="Close glitch">x</button>
+    </div>
+
+    <div class="glitch-preview" aria-hidden="true"><b data-text="ATO">ATO</b></div>
+    <button class="settings-reset glitch-stage-btn" id="glStage" aria-pressed="false">Show on the welcome screen</button>
+
+    <div class="settings-group">
+      <span class="settings-group-name">Rhythm</span>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Glitch</span>
+          <button class="setting-cycle" id="glOn">On</button>
+        </div>
+        <span class="setting-note">The large ATO of the intro's last beat and of the idle screen. The preview above plays the same glitch.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Every</span>
+          <span class="setting-val" id="valGlEvery">2.6 s</span>
+        </div>
+        <input type="range" id="glEvery" min="0.4" max="15" step="0.1" value="2.6" aria-label="Every">
+        <span class="setting-note">The usual pause between two bursts.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Irregularity</span>
+          <span class="setting-val" id="valGlJitter">60%</span>
+        </div>
+        <input type="range" id="glJitter" min="0" max="1" step="0.05" value="0.6" aria-label="Irregularity">
+        <span class="setting-note">How much the pause varies. At 0 the bursts keep time like a metronome.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Frames per burst</span>
+          <span class="setting-val" id="valGlFrames">4</span>
+        </div>
+        <input type="range" id="glFrames" min="1" max="14" step="1" value="4" aria-label="Frames per burst">
+        <span class="setting-note">How many jumps a burst is made of.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Frame length</span>
+          <span class="setting-val" id="valGlFrameMs">70 ms</span>
+        </div>
+        <input type="range" id="glFrameMs" min="30" max="300" step="5" value="70" aria-label="Frame length">
+        <span class="setting-note">How long each jump holds. Short is a flicker, long is a stutter.</span>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <span class="settings-group-name">Slices</span>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Jump</span>
+          <span class="setting-val" id="valGlShift">2 px</span>
+        </div>
+        <input type="range" id="glShift" min="0" max="6" step="1" value="2" aria-label="Jump">
+        <span class="setting-note">How far a slice can jump sideways, in pixels of the font.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Slice height</span>
+          <span class="setting-val" id="valGlRows">3 rows</span>
+        </div>
+        <input type="range" id="glRows" min="1" max="8" step="1" value="3" aria-label="Slice height">
+        <span class="setting-note">How many rows of pixels a slice can take, out of the 8 the letters stand on.</span>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <span class="settings-group-name">Orange split</span>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Split chance</span>
+          <span class="setting-val" id="valGlSplit">50%</span>
+        </div>
+        <input type="range" id="glSplit" min="0" max="1" step="0.05" value="0.5" aria-label="Split chance">
+        <span class="setting-note">How often a burst carries an orange copy that slips off the letters.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Split offset</span>
+          <span class="setting-val" id="valGlSplitShift">1 px</span>
+        </div>
+        <input type="range" id="glSplitShift" min="1" max="6" step="1" value="1" aria-label="Split offset">
+        <span class="setting-note">How far the orange copy slips, in pixels of the font.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Split opacity</span>
+          <span class="setting-val" id="valGlSplitAlpha">100%</span>
+        </div>
+        <input type="range" id="glSplitAlpha" min="0" max="1" step="0.05" value="1" aria-label="Split opacity">
+        <span class="setting-note">How strong the orange is.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Whole word</span>
+          <span class="setting-val" id="valGlWhole">25%</span>
+        </div>
+        <input type="range" id="glWhole" min="0" max="1" step="0.05" value="0.25" aria-label="Whole word">
+        <span class="setting-note">How often the split takes the whole word at once rather than a slice.</span>
+      </div>
+    </div>
+
+    <div class="settings-actions">
+      <button class="settings-reset" id="glNow">Glitch now</button>
+      <button class="settings-reset" id="glReset">Reset glitch</button>
+      <button class="settings-reset" id="glCopy">Copy all</button>
     </div>
   </aside>
 
@@ -1777,7 +1947,9 @@
   /* ------------------------------------------------------------------
      Live parameters — exposed through the on-screen settings panel.
   ------------------------------------------------------------------- */
-  var SETTINGS_DEFAULTS = { idleAfter:60, rotSpeed:0.7, fov:0.58, depth:0.7, depthFalloff:1.25, inertia:0.95, reach:1.4,
+  var SETTINGS_DEFAULTS = { glitchOn:1, glitchEvery:3, glitchJitter:0.85, glitchFrames:10, glitchFrameMs:115,
+    glitchShift:3, glitchRows:3, glitchSplit:0.7, glitchSplitShift:2, glitchSplitAlpha:1, glitchWhole:0.3,
+    idleAfter:60, rotSpeed:0.7, fov:0.58, depth:0.7, depthFalloff:1.25, inertia:0.95, reach:1.4,
     erode:1.05, grainSpread:5.85, grainSize:1.2, grainDrift:0.3,
     dust:2.65, dustCount:640, dustSize:0.5, dustZoom:0, dof:1.8, focusRange:1.3, dofZoom:1.45, fadeSpan:45,
     springback:0.8, follow:0.45, grainNoise:0.25, dustForm:1, dustSpin:0.8,
@@ -3977,6 +4149,7 @@
     updatePinnedTooltip();
     updateEvolutionAutoplay();
     updateIdleScreen();
+    updateGlitch();
     audioUpdate();
     requestAnimationFrame(tick);
   }
@@ -4493,6 +4666,16 @@
     { key:'reach',        input:'setReach',    out:'valReach',    fmt:x2 },
     { key:'rotSpeed',     input:'setRot',      out:'valRot',      fmt:function(v){ return v.toFixed(1)+'x'; } },
     { key:'idleAfter',    input:'setIdleAfter', out:'valIdleAfter', fmt:function(v){ return v < 5 ? 'Off' : Math.round(v) + ' s'; } },
+    { key:'glitchEvery',  input:'glEvery',     out:'valGlEvery',     fmt:function(v){ return v.toFixed(1) + ' s'; } },
+    { key:'glitchJitter', input:'glJitter',    out:'valGlJitter',    fmt:function(v){ return Math.round(v*100) + '%'; } },
+    { key:'glitchFrames', input:'glFrames',    out:'valGlFrames',    fmt:function(v){ return String(Math.round(v)); } },
+    { key:'glitchFrameMs',input:'glFrameMs',   out:'valGlFrameMs',   fmt:function(v){ return Math.round(v) + ' ms'; } },
+    { key:'glitchShift',  input:'glShift',     out:'valGlShift',     fmt:function(v){ return Math.round(v) + ' px'; } },
+    { key:'glitchRows',   input:'glRows',      out:'valGlRows',      fmt:function(v){ return Math.round(v) + (Math.round(v) === 1 ? ' row' : ' rows'); } },
+    { key:'glitchSplit',  input:'glSplit',     out:'valGlSplit',     fmt:function(v){ return Math.round(v*100) + '%'; } },
+    { key:'glitchSplitShift', input:'glSplitShift', out:'valGlSplitShift', fmt:function(v){ return Math.round(v) + ' px'; } },
+    { key:'glitchSplitAlpha', input:'glSplitAlpha', out:'valGlSplitAlpha', fmt:function(v){ return Math.round(v*100) + '%'; } },
+    { key:'glitchWhole',  input:'glWhole',     out:'valGlWhole',     fmt:function(v){ return Math.round(v*100) + '%'; } },
     { key:'inertia',      input:'setInertia',  out:'valInertia',  fmt:function(v){ return v.toFixed(2); } },
     { key:'erode',        input:'setErode',    out:'valErode',    fmt:x2 },
     { key:'springback',   input:'setSpring',   out:'valSpring',   fmt:x2 },
@@ -4549,6 +4732,7 @@
     { key:'dustForm', btn:'setShape', labels:['Dot','Square','Wireframe','Solid'] },
     { key:'reticle',     btn:'setReticle',    labels:['Square','Circle','Cross','Hidden'] },
     { key:'hoverCol',    btn:'setHoverCol',   labels:['Orange','Black'] },
+    { key:'glitchOn',    btn:'glOn',          labels:['Off','On'] },
     { key:'grainColour', btn:'setGrainCol',   labels:['Ink','Accent','Mixed'] },
     { key:'grainForm',   btn:'setGrainShape', labels:['Square','Dot','Cross'] },
     { key:'bgMode',      btn:'setBgMode',     labels:['Theme','Solid','Gradient'], onChange:applyBackground },
@@ -4653,6 +4837,8 @@
     focusPt = null;
     if(!settingsPanel.hidden) setSettingsOpen(false);
     if(!linesPanel.hidden) setLinesOpen(false);
+    var gp = document.getElementById('glitchPanel');
+    if(gp && !gp.hidden) setGlitchOpen(false);
   });
   syncSettingsUI();
 
@@ -4748,8 +4934,9 @@
   // Bumped whenever a default is changed on purpose. A browser holding a
   // tuning saved before that change gets the new default for those values,
   // rather than keeping the old one alive for ever because it was saved.
-  var TUNING_REV = 7;
+  var TUNING_REV = 8;
   var TUNING_REDEFAULTS = {
+    8: { settings: ["glitchEvery", "glitchJitter", "glitchFrames", "glitchFrameMs", "glitchShift", "glitchSplit", "glitchSplitShift", "glitchWhole"], lines: [] },
     7: { settings: ["bgB"], lines: [] },
     6: { settings: ["bgA", "iShowZoom"], lines: [] },
     5: { settings: ["fov", "depth", "depthFalloff", "reach", "dof", "focusRange", "dofZoom", "spaceAmt"], lines: [] },
@@ -4813,6 +5000,138 @@
   }
   document.getElementById('settingsCopy').addEventListener('click', function(){ copyTuning(this); });
   document.getElementById('linesCopy').addEventListener('click', function(){ copyTuning(this); });
+
+  /* ========================================================================
+     Glitch — the large ATO stutters on the font's own pixel grid.
+
+     Bursts come every so often (Every, give or take Irregularity); a burst
+     is a few frames, each holding Frame length. On every frame one slice of
+     the letters, a few pixel-rows tall, jumps sideways by whole pixels, in
+     ink on a white band; some bursts also carry an orange copy that slips
+     off the letters, a slice of it or the whole word. Everything is set on
+     each mark as CSS variables that its ::before and ::after read.
+  ========================================================================= */
+  var GL_MOD = 0.0875, GL_TOP = 0.075, GL_ROWS = 8;     // the font's pixel, its first row, its height
+  var glitchPanel = document.getElementById('glitchPanel');
+  var glitchToggle = document.getElementById('glitchToggle');
+  var GLITCH = { next:0, burst:null, wasShown:false };
+  function setGlitchOpen(open){
+    if(!open) setGlitchStage(false);
+    glitchPanel.hidden = !open;
+    glitchToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if(open && typeof setInstallOpen === 'function' && INSTALL) setInstallOpen(false);
+    if(open) glitchBurst();                   // something to look at straight away
+  }
+  glitchToggle.addEventListener('click', function(){ setGlitchOpen(glitchPanel.hidden); });
+  // the real thing, full size: the welcome screen comes up behind the panel
+  // and stays there, whatever the mouse does, until it is sent away
+  var glStageBtn = document.getElementById('glStage');
+  function setGlitchStage(on){
+    on = !!on;
+    if(on === !!IDLE.preview) return;
+    if(on){
+      if(mode !== 'idle') exitContribution(true);
+      IDLE.preview = true;
+      if(!IDLE.on) idleShow();
+      GLITCH.wasShown = false;
+    } else {
+      IDLE.preview = false;
+      if(IDLE.on) idleWake();
+    }
+    document.documentElement.classList.toggle('glitch-stage', on);
+    glStageBtn.textContent = on ? 'Back to the piece' : 'Show on the welcome screen';
+    glStageBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
+  glStageBtn.addEventListener('click', function(){ setGlitchStage(!IDLE.preview); });
+  document.getElementById('glitchClose').addEventListener('click', function(){ setGlitchOpen(false); });
+  document.getElementById('glNow').addEventListener('click', function(){ glitchBurst(); });
+  document.getElementById('glCopy').addEventListener('click', function(){ copyTuning(this); });
+  document.getElementById('glReset').addEventListener('click', function(){
+    for(var k in SETTINGS_DEFAULTS) if(k.indexOf('glitch') === 0) SETTINGS[k] = SETTINGS_DEFAULTS[k];
+    syncSettingsUI(); saveTuning(); glitchBurst();
+  });
+
+  function glitchMarks(){
+    var list = [];
+    var introMark = introEl.classList.contains('is-final') && !introEl.classList.contains('hidden');
+    if(introMark) list.push(introEl.querySelector('.intro-mark b'));
+    if(IDLE.on) list.push(idleEl.querySelector('.intro-mark b'));
+    if(!glitchPanel.hidden) list.push(glitchPanel.querySelector('.glitch-preview b'));
+    return list;
+  }
+  function glRand(a, b){ return a + Math.random()*(b - a); }
+  function glInt(a, b){ return Math.floor(glRand(a, b + 1)); }
+  function glSlice(maxRows){
+    var h = glInt(1, Math.max(1, Math.min(GL_ROWS, Math.round(maxRows))));
+    var a = glInt(0, GL_ROWS - h);
+    return { t: GL_TOP + a*GL_MOD, b: 1 - (GL_TOP + (a + h)*GL_MOD) };
+  }
+  function glWhole(){ return { t: GL_TOP, b: 1 - (GL_TOP + GL_ROWS*GL_MOD) }; }
+  function glShiftBy(maxPx){
+    var n = Math.round(maxPx);
+    if(n < 1) return 0;
+    return (Math.random() < 0.5 ? -1 : 1) * glInt(1, n) * GL_MOD;
+  }
+  function glitchScheduleNext(now){
+    var every = Math.max(0.4, SETTINGS.glitchEvery), j = Math.max(0, Math.min(1, SETTINGS.glitchJitter));
+    GLITCH.next = now + every*1000 * (1 + j*glRand(-0.8, 0.8));
+  }
+  function glitchBurst(){
+    var split = Math.random() < SETTINGS.glitchSplit;
+    GLITCH.burst = { frame:-1, frames: Math.max(1, Math.round(SETTINGS.glitchFrames)), t0:performance.now(),
+                     split: split, whole: split && Math.random() < SETTINGS.glitchWhole };
+  }
+  function glitchApply(list, f){
+    for(var i=0;i<list.length;i++){
+      var st = list[i] && list[i].style; if(!st) continue;
+      st.setProperty('--g1-o', f.o1); st.setProperty('--g1-t', f.t1 + 'em'); st.setProperty('--g1-b', f.b1 + 'em'); st.setProperty('--g1-x', f.x1 + 'em');
+      st.setProperty('--g2-o', f.o2); st.setProperty('--g2-t', f.t2 + 'em'); st.setProperty('--g2-b', f.b2 + 'em'); st.setProperty('--g2-x', f.x2 + 'em');
+    }
+  }
+  var GL_REST = { o1:0, t1:0, b1:1, x1:0, o2:0, t2:0, b2:1, x2:0 };
+  var glLastMarks = [];
+  function updateGlitch(){
+    var now = performance.now();
+    var list = glitchMarks();
+    // marks that just went out of view are put back at rest
+    glLastMarks.forEach(function(m){ if(list.indexOf(m) < 0) glitchApply([m], GL_REST); });
+    glLastMarks = list;
+    var on = Math.round(SETTINGS.glitchOn) === 1 && !reduceMotion && list.length > 0;
+    if(!on){
+      if(GLITCH.burst){ GLITCH.burst = null; }
+      glitchApply(list, GL_REST);
+      GLITCH.wasShown = false;
+      return;
+    }
+    // a mark coming into view gets its first burst once its letters are in
+    if(!GLITCH.wasShown){ GLITCH.wasShown = true; GLITCH.next = now + 1200; }
+    if(!GLITCH.burst){
+      if(now < GLITCH.next) return;
+      glitchBurst();
+    }
+    var B = GLITCH.burst;
+    var fms = Math.max(16, SETTINGS.glitchFrameMs);
+    var f = Math.floor((now - B.t0) / fms);
+    if(f === B.frame) return;
+    B.frame = f;
+    if(f >= B.frames){
+      glitchApply(list, GL_REST);
+      GLITCH.burst = null;
+      glitchScheduleNext(now);
+      return;
+    }
+    var sl = glSlice(SETTINGS.glitchRows);
+    var x1 = glShiftBy(SETTINGS.glitchShift);
+    var frame = { o1: x1 ? 1 : 0, t1: sl.t, b1: sl.b, x1: x1, o2:0, t2:0, b2:1, x2:0 };
+    // the orange copy turns up on some of the burst's frames, not all
+    if(B.split && (B.whole || Math.random() < 0.7)){
+      var s2 = B.whole ? glWhole() : glSlice(SETTINGS.glitchRows + 1);
+      var x2 = glShiftBy(SETTINGS.glitchSplitShift) || GL_MOD;
+      frame.o2 = Math.max(0, Math.min(1, SETTINGS.glitchSplitAlpha));
+      frame.t2 = s2.t; frame.b2 = s2.b; frame.x2 = x2;
+    }
+    glitchApply(list, frame);
+  }
 
   /* ========================================================================
      Zoom buttons
@@ -6262,12 +6581,12 @@
   ========================================================================= */
   var idleEl = document.getElementById('idleScreen');
   var idleVeil = document.getElementById('idleVeil');
-  var IDLE = { on:false, last:performance.now(), phase:'', t0:0, hideT:0 };
+  var IDLE = { on:false, preview:false, last:performance.now(), phase:'', t0:0, hideT:0 };
   var IDLE_RETRACE_MS = 15000, IDLE_HOLD_MS = 6000, IDLE_VEIL_MS = 950;
 
   function idleActivity(){
     IDLE.last = performance.now();
-    if(IDLE.on) idleWake();
+    if(IDLE.on && !IDLE.preview) idleWake();
   }
   ['pointerdown', 'pointermove', 'keydown', 'wheel', 'touchstart'].forEach(function(t){
     window.addEventListener(t, idleActivity, { capture:true, passive:true });
@@ -6281,7 +6600,7 @@
     var after = SETTINGS.idleAfter;
     if(!(after >= 5)) return false;
     if(mode !== 'idle' || evolutionMode || introActive() || INTRO.on) return false;
-    if(!settingsPanel.hidden || !linesPanel.hidden) return false;
+    if(!settingsPanel.hidden || !linesPanel.hidden || !glitchPanel.hidden) return false;
     var ip = document.getElementById('installPanel');
     if(ip && !ip.hidden) return false;
     if(INSTALL && typeof INST !== 'undefined' && INST && INST.admin) return false;
@@ -6327,7 +6646,7 @@
       if(idleAllowed() && now - Math.max(IDLE.last, lastInteraction) > SETTINGS.idleAfter*1000) idleShow();
       return;
     }
-    if(mode !== 'idle' || introActive()){ idleWake(); return; }
+    if(!IDLE.preview && (mode !== 'idle' || introActive())){ idleWake(); return; }
     if(IDLE.phase === 'veil' && now - IDLE.t0 > IDLE_VEIL_MS){
       // behind the ground: the paper is wiped, then the drawing begins again
       introBuild = 0; INTRO.build = null;
@@ -6391,13 +6710,15 @@
   function setInstallOpen(open){
     if(!installPanel) return;
     installPanel.hidden = !open;
+    // the two share the left side of the screen
+    if(open && glitchPanel && !glitchPanel.hidden){ glitchPanel.hidden = true; glitchToggle.setAttribute('aria-expanded', 'false'); }
     if(installToggle) installToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
   }
   function setAdmin(on){
     INST.admin = !!on;
     document.documentElement.classList.toggle('install-admin', INST.admin);
     if(INST.admin) setInstallOpen(true);
-    else { setInstallOpen(false); setSettingsOpen(false); setLinesOpen(false); }
+    else { setInstallOpen(false); setSettingsOpen(false); setLinesOpen(false); setGlitchOpen(false); }
   }
 
   function installTouched(){ INST.last = performance.now(); INST.resetDone = false; }
@@ -6424,7 +6745,7 @@
   function updateInstall(){
     if(!INSTALL) return;
     var now = performance.now(), idle = now - INST.last;
-    var panelsOpen = !settingsPanel.hidden || !linesPanel.hidden || (installPanel && !installPanel.hidden);
+    var panelsOpen = !settingsPanel.hidden || !linesPanel.hidden || !glitchPanel.hidden || (installPanel && !installPanel.hidden);
     // the interface steps back when nobody is touching
     var hideAfter = SETTINGS.iHideAfter;
     var asleep = hideAfter >= 0.5 && idle > hideAfter*1000 && mode === 'idle' && !evolutionMode
