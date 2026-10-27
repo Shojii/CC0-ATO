@@ -1960,7 +1960,7 @@
       <button class="settings-reset" id="iNormal">Normal mode</button>
     </div>
     <input type="file" id="iImportFile" accept=".json,application/json" hidden>
-    <p class="settings-credit">Traces live on this device. Export them now and then: clearing the browser's data clears them too.</p>
+    <p class="settings-credit" id="iTracesNote">Traces live on this device. Export them now and then: clearing the browser's data clears them too.</p>
   </aside>
 
   <div id="adminCorner" class="install-only corner-tl" aria-hidden="true"></div>
@@ -2014,6 +2014,16 @@
   // iPad in front of it — sets this true; ?installation in the address does
   // the same on the web.
   var INSTALL = false;
+  // The shared archive: a Supabase table (public.traces) that every screen
+  // reads and adds to. The key is the project's publishable key, meant to be
+  // public; the table's own rules only allow reading and adding. Leave the
+  // url empty to keep the archive in each browser only.
+  var ARCHIVE_DB = {
+    url: 'https://vslyhklfvvooxnlhhwdc.supabase.co',
+    key: 'sb_publishable_YWfLecdVMkmF1WaeILcuMQ_KbrNt4NQ',
+    pullEvery: 20000,                       // look for other screens' traces
+    fullEvery: 300000                       // and, less often, for any taken out
+  };
   // the mode last chosen with the Installation mode button wins, so one page
   // can be tried both ways on the iPad
   var MODE_KEY = 'livingArchive.mode';
@@ -2307,37 +2317,77 @@
   }
 
   // A small number of points retired by request — they keep their place in
-  // the numbering (nothing else shifts), they simply no longer appear.
+  // the numbering (nothing else shifts), they simply no longer appear. This
+  // concerns the old archive kept in one browser; once the archive is shared
+  // (ARCHIVE_DB, below) every trace counts and none is retired this way.
   var REMOVED_NODE_INDICES = { 23:true, 31:true };
 
-  var liveGen = MAX_GENERATION;
-  (storeState.contributions || []).forEach(function(trace){
-    liveGen++;
-    var idMap = {};
-    var removedIds = {};
+  // Every visitor trace keeps the list of its own points, in the order they
+  // were set down, so another trace can tie itself to "the second point of
+  // trace T" (T#1) whatever number that point gets on any given screen.
+  var TRACE_NODES = {};
+  function resolveTraceEnd(end, idMap){
+    if(typeof end !== 'string') return undefined;
+    var k = end.lastIndexOf('#');
+    if(k > 0){
+      var list = TRACE_NODES[end.slice(0, k)];
+      return list ? list[parseInt(end.slice(k + 1), 10)] || undefined : undefined;
+    }
+    return idMap[end] || end;
+  }
+  function placeTrace(trace, gen, retireOld){
     var tid = trace.traceId || ('T-live-' + trace.createdAt);
+    if(TRACE_NODES[tid]) return null;                 // already in the archive
+    var idMap = {}, removedIds = {}, own = [], made = [];
     trace.nodes.forEach(function(pn){
       var nn = addNode({
         x:pn.x, y:pn.y, z:pn.z||0, r:pn.r, label:null, big:false,
-        generation: liveGen, createdAt: trace.createdAt, contributor: trace.contributor,
+        generation: gen, createdAt: trace.createdAt, contributor: trace.contributor,
         origin:'visitor', traceId: tid, dist:9999,
         signature: cleanSignature(trace.signature)
       });
       var idx = parseInt(nn.id.slice(1), 10);
-      if(REMOVED_NODE_INDICES[idx]){
+      if(retireOld && REMOVED_NODE_INDICES[idx]){
         nodes.pop();
         delete nodeById[nn.id];
         delete degreeMap[nn.id];
         removedIds[nn.id] = true;
+        own.push(null);
       } else {
         idMap[pn.id] = nn.id;
+        own.push(nn.id);
+        made.push(nn);
       }
     });
+    TRACE_NODES[tid] = own;
     trace.edges.forEach(function(pe){
-      var a = idMap[pe.a] || pe.a, b = idMap[pe.b] || pe.b;
-      if(removedIds[a] || removedIds[b] || !nodeById[a] || !nodeById[b]) return;
-      addEdge(a,b,{ generation: liveGen, createdAt: trace.createdAt, origin:'visitor' });
+      var a = resolveTraceEnd(pe.a, idMap), b = resolveTraceEnd(pe.b, idMap);
+      if(!a || !b || removedIds[a] || removedIds[b] || !nodeById[a] || !nodeById[b]) return;
+      addEdge(a,b,{ generation: gen, createdAt: trace.createdAt, origin:'visitor' });
     });
+    return made;
+  }
+  // a trace taken back out (hidden or cleared in the shared archive)
+  function unplaceTrace(tid){
+    if(!TRACE_NODES[tid]) return false;
+    var gone = {};
+    nodes.forEach(function(n){ if(n.traceId === tid) gone[n.id] = true; });
+    for(var i = nodes.length - 1; i >= 0; i--) if(gone[nodes[i].id]){ delete nodeById[nodes[i].id]; nodes.splice(i, 1); }
+    for(var j = edges.length - 1; j >= 0; j--) if(gone[edges[j].a] || gone[edges[j].b]) edges.splice(j, 1);
+    degreeMap = {};
+    nodes.forEach(function(n){ degreeMap[n.id] = 0; });
+    edges.forEach(function(e){ degreeMap[e.a] = (degreeMap[e.a]||0) + 1; degreeMap[e.b] = (degreeMap[e.b]||0) + 1; });
+    delete TRACE_NODES[tid];
+    if(focusPt && gone[focusPt.id]) focusPt = null;
+    if(hoverNode && gone[hoverNode.id]){ hoverNode = null; hoverTraceId = null; }
+    return true;
+  }
+
+  var liveGen = MAX_GENERATION;
+  var SHARED_ARCHIVE = archiveDbOn();
+  (storeState.contributions || []).forEach(function(trace){
+    liveGen++;
+    placeTrace(trace, liveGen, !SHARED_ARCHIVE);
   });
   var CURRENT_MAX_GEN = liveGen;
   // A trace is three points set down. The plate the piece opens with is
@@ -5452,7 +5502,8 @@
     CURRENT_MAX_GEN++;
     var genNow = CURRENT_MAX_GEN;
     var createdAt = Date.now();
-    var tid = 'T-live-' + createdAt;
+    // unique across every screen that shares the archive
+    var tid = 'T-' + createdAt.toString(36) + '-' + Math.random().toString(36).slice(2, 8);
     var signature = cleanSignature(signInput.value);
     storeState.signature = signature;
     var realNodes = pending.nodes.map(function(pn){
@@ -5464,6 +5515,7 @@
     });
     var idMap = {};
     pending.nodes.forEach(function(pn,i){ idMap[pn.id] = realNodes[i].id; });
+    TRACE_NODES[tid] = realNodes.map(function(n){ return n.id; });
     var newNodeIds = {};
     realNodes.forEach(function(n){ newNodeIds[n.id] = true; });
     var neighborIds = [];
@@ -5486,13 +5538,28 @@
       frameAfterAdd(realNodes);
     }
 
-    storeState.contributions.push({
+    // a line to another visitor's point is kept as "that trace, that point"
+    // (T#i), so it lands on the same point on every screen
+    var ownIds = {};
+    pending.nodes.forEach(function(pn){ ownIds[pn.id] = true; });
+    function storedEnd(id){
+      if(ownIds[id]) return id;
+      var n = nodeById[id];
+      if(n && n.origin === 'visitor' && TRACE_NODES[n.traceId]){
+        var i = TRACE_NODES[n.traceId].indexOf(id);
+        if(i >= 0) return n.traceId + '#' + i;
+      }
+      return id;
+    }
+    var entry = {
       createdAt: createdAt, contributor: storeState.contributorId, traceId: tid,
       signature: signature,
       nodes: pending.nodes.map(function(pn){ return { id:pn.id, x:pn.x, y:pn.y, z:pn.z0, r:pn.r }; }),
-      edges: pending.edges.map(function(pe){ return { a:pe.a, b:pe.b }; })
-    });
+      edges: pending.edges.map(function(pe){ return { a:storedEnd(pe.a), b:storedEnd(pe.b) }; })
+    };
+    storeState.contributions.push(entry);
     traceCountTotal++;
+    archiveQueue(entry);                  // into the shared archive, now or when the network is back
     persist();
     animateTraceCount();
     audioTrace(pending.nodes);      // the trace's own chord
@@ -5514,6 +5581,148 @@
     document.getElementById('traceCount').textContent = traceCountTotal.toLocaleString() + (traceCountTotal === 1 ? ' trace' : ' traces');
   }
   animateTraceCount();
+
+  /* ========================================================================
+     The shared archive — every screen reads and adds to the same traces.
+
+     The table online is the reference. Each browser keeps a copy so the
+     piece opens at once and goes on working without a network; a trace
+     added here is queued and sent, now or when the network comes back.
+     Every 20 s the page asks for traces added elsewhere and draws them in,
+     in the orange of adding; every 5 min it reads the whole list, so a
+     trace taken out online (hidden, or the table emptied for the opening)
+     leaves every screen too. Inside claude.ai, where a page cannot reach
+     other servers, the archive stays in the browser as before.
+  ========================================================================= */
+  function archiveDbOn(){
+    if(!ARCHIVE_DB.url || !ARCHIVE_DB.key) return false;
+    if(!/^https?:$/.test(location.protocol)) return false;
+    if(/(^|\.)claude\.(ai|site)$|claudeusercontent|anthropic/i.test(location.hostname)) return false;
+    return true;
+  }
+  var ARC = { pulling:false, flushing:false, lastFull:0, maxId:0, online:null };
+  function arcHeaders(extra){
+    var h = { 'apikey': ARCHIVE_DB.key, 'Accept': 'application/json' };
+    for(var k in (extra || {})) h[k] = extra[k];
+    return h;
+  }
+  function arcRow(e){
+    return { trace_id: e.traceId, created_at: new Date(e.createdAt || Date.now()).toISOString(),
+             contributor: String(e.contributor || '').slice(0, 40), signature: String(e.signature || '').slice(0, 24),
+             nodes: e.nodes, edges: e.edges };
+  }
+  function arcTrace(r){
+    return cleanTrace({ traceId: r.trace_id, createdAt: Date.parse(r.created_at) || Date.now(),
+                        contributor: r.contributor, signature: r.signature, nodes: r.nodes, edges: r.edges });
+  }
+  function archiveQueue(entry){
+    if(!SHARED_ARCHIVE || !entry) return;
+    storeState.pending = (storeState.pending || []).filter(function(t){ return t !== entry.traceId; });
+    storeState.pending.push(entry.traceId);
+    setTimeout(archiveFlush, 0);
+  }
+  // send what is waiting, oldest first, one at a time
+  async function archiveFlush(){
+    if(!SHARED_ARCHIVE || ARC.flushing) return;
+    var waiting = storeState.pending || [];
+    if(!waiting.length) return;
+    ARC.flushing = true;
+    try{
+      while((storeState.pending || []).length){
+        var tid = storeState.pending[0];
+        var entry = (storeState.contributions || []).filter(function(c){ return c.traceId === tid; })[0];
+        if(!entry){ storeState.pending.shift(); persist(); continue; }
+        var res;
+        try{
+          res = await fetch(ARCHIVE_DB.url + '/rest/v1/traces', {
+            method:'POST', headers: arcHeaders({ 'Content-Type':'application/json', 'Prefer':'return=minimal' }),
+            body: JSON.stringify(arcRow(entry))
+          });
+        }catch(e){ ARC.online = false; break; }      // no network: it waits
+        if(res.ok || res.status === 409){            // in (409: it already was)
+          ARC.online = true;
+          storeState.pending.shift(); persist();
+        } else if(res.status === 400 || res.status === 413 || res.status === 422){
+          // refused for good (too many points, a name too long…): it stays on this screen only
+          // (a missing table or key, 401/403/404, is not that: the trace waits for it)
+          console.warn('ATO: the shared archive refused a trace', res.status);
+          storeState.pending.shift(); persist();
+        } else { break; }                            // the server is busy: next time
+      }
+    } finally { ARC.flushing = false; }
+  }
+  async function arcFetchAll(afterId){
+    var rows = [], page = 1000, offset = 0;
+    for(;;){
+      var q = ARCHIVE_DB.url + '/rest/v1/traces?select=id,trace_id,created_at,contributor,signature,nodes,edges&order=id.asc'
+            + (afterId ? '&id=gt.' + afterId : '') + '&limit=' + page + '&offset=' + offset;
+      var res = await fetch(q, { headers: arcHeaders() });
+      if(!res.ok) throw new Error('pull ' + res.status);
+      var got = await res.json();
+      rows = rows.concat(got);
+      if(got.length < page) return rows;
+      offset += page;
+    }
+  }
+  function arcAdd(trace){
+    if(!trace || TRACE_NODES[trace.traceId]) return false;
+    CURRENT_MAX_GEN++;
+    var made = placeTrace(trace, CURRENT_MAX_GEN, false);
+    if(!made) return false;
+    var dur = reduceMotion ? 1 : 2400;
+    made.forEach(function(n){ settling.push({ node:n, start:performance.now(), duration:dur }); });
+    if(!(storeState.contributions || []).some(function(c){ return c.traceId === trace.traceId; }))
+      storeState.contributions.push(trace);
+    traceCountTotal++;
+    return true;
+  }
+  async function archivePull(forceFull){
+    if(!SHARED_ARCHIVE || ARC.pulling || document.hidden) return;
+    ARC.pulling = true;
+    try{
+      await archiveFlush();
+      var now = Date.now();
+      var full = forceFull || !ARC.lastFull || now - ARC.lastFull > ARCHIVE_DB.fullEvery;
+      var rows;
+      try{ rows = await arcFetchAll(full ? 0 : ARC.maxId); }
+      catch(e){ ARC.online = false; return; }
+      ARC.online = true;
+      var changed = false, remote = {};
+      rows.forEach(function(r){
+        if(r.id > ARC.maxId) ARC.maxId = r.id;
+        var t = arcTrace(r);
+        if(!t) return;
+        remote[t.traceId] = t;
+        if(arcAdd(t)) changed = true;
+      });
+      if(full){
+        ARC.lastFull = now;
+        var waiting = {};
+        (storeState.pending || []).forEach(function(t){ waiting[t] = true; });
+        // taken out online: it leaves this screen too (never in the middle of a trace)
+        if(mode === 'idle'){
+          (storeState.contributions || []).slice().forEach(function(c){
+            if(remote[c.traceId] || waiting[c.traceId]) return;
+            if(unplaceTrace(c.traceId)) traceCountTotal = Math.max(BASELINE_TRACES, traceCountTotal - 1);
+            changed = true;
+          });
+          // the copy follows the table's order, with what is still waiting at the end
+          var order = rows.map(function(r){ return remote[r.trace_id]; }).filter(Boolean);
+          (storeState.contributions || []).forEach(function(c){ if(waiting[c.traceId] && !remote[c.traceId]) order.push(c); });
+          storeState.contributions = order;
+          traceCountTotal = BASELINE_TRACES + order.length;
+          changed = true;
+        }
+      }
+      if(changed){ persist(); animateTraceCount(); }
+    } finally { ARC.pulling = false; }
+  }
+  if(SHARED_ARCHIVE){
+    setTimeout(function(){ archivePull(true); }, 600);
+    setInterval(function(){ archivePull(false); }, ARCHIVE_DB.pullEvery);
+    window.addEventListener('online', function(){ archivePull(false); });
+    document.addEventListener('visibilitychange', function(){ if(!document.hidden) archivePull(false); });
+  }
 
   var toastEl = document.getElementById('toast');
   var toastTimer = null;
@@ -6989,6 +7198,7 @@
         var t = cleanTrace(c);
         if(!t || have[t.traceId]) return;
         have[t.traceId] = true; storeState.contributions.push(t); added++;
+        if(SHARED_ARCHIVE){ storeState.pending = storeState.pending || []; storeState.pending.push(t.traceId); }
       });
       storeState.contributions.sort(function(a, b){ return (a.createdAt || 0) - (b.createdAt || 0); });
       if(!added){ iNote(iImportBtn, 'Nothing new'); return; }
@@ -6999,6 +7209,10 @@
     rd.readAsText(f);
   });
 
+  if(SHARED_ARCHIVE){
+    var iTracesNote = document.getElementById('iTracesNote');
+    if(iTracesNote) iTracesNote.textContent = 'Traces are kept in the shared archive online, and every screen shows them. This iPad keeps a copy and sends what was added without a network as soon as it is back. Clear traces only clears this copy; Import sends a file of traces to the shared archive.';
+  }
   if(INSTALL){
     ['pointerdown', 'pointermove', 'keydown', 'wheel'].forEach(function(t){
       window.addEventListener(t, installTouched, { capture:true, passive:true });
@@ -7013,7 +7227,7 @@
     document.getElementById('iClear').addEventListener('click', function(){
       var now = performance.now();
       if(now - INST.clearArmed < 3000){
-        storeState.contributions = []; persist();
+        storeState.contributions = []; storeState.pending = []; persist();
         iNote(this, 'Cleared');
         setTimeout(function(){ location.reload(); }, 700);
         return;
