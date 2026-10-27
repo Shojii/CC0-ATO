@@ -729,7 +729,7 @@
     <div class="hud-corner hud-corner--right">
       <button class="settings-toggle admin-only" id="settingsToggle" aria-expanded="false" aria-controls="settingsPanel">Settings</button>
       <button class="settings-toggle admin-only" id="linesToggle" aria-expanded="false" aria-controls="linesPanel">Lines</button>
-      <button class="settings-toggle admin-only" id="glitchToggle" aria-expanded="false" aria-controls="glitchPanel">Glitch</button>
+      <button class="settings-toggle admin-only" id="glitchToggle" aria-expanded="false" aria-controls="glitchPanel">Welcome</button>
       <button class="settings-toggle admin-only install-only" id="installToggle" aria-expanded="false" aria-controls="installPanel">Install</button>
       <button class="settings-toggle sound-only" id="soundToggle" aria-pressed="false">Sound</button>
     </div>
@@ -988,15 +988,95 @@
 
   <aside class="settings-panel glitch-panel" id="glitchPanel" hidden>
     <div class="settings-head">
-      <span class="settings-title mono">Glitch</span>
-      <button class="settings-close" id="glitchClose" aria-label="Close glitch">x</button>
+      <span class="settings-title mono">Welcome screen</span>
+      <button class="settings-close" id="glitchClose" aria-label="Close welcome screen">x</button>
     </div>
 
     <div class="glitch-preview" aria-hidden="true"><b data-text="ATO">ATO</b></div>
     <button class="settings-reset glitch-stage-btn" id="glStage" aria-pressed="false">Show on the welcome screen</button>
 
     <div class="settings-group">
-      <span class="settings-group-name">Rhythm</span>
+      <span class="settings-group-name">Framing</span>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Zoom</span>
+          <span class="setting-val" id="valWelZoom">1.60x</span>
+        </div>
+        <input type="range" id="welZoom" min="0.6" max="6" step="0.05" value="1.6" aria-label="Zoom">
+        <span class="setting-note">How close the camera sits. At 1x the whole form just fits the screen, at 2x it is twice that size, halfway in.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Tilt</span>
+          <span class="setting-val" id="valWelTilt">-16 deg</span>
+        </div>
+        <input type="range" id="welTilt" min="-60" max="60" step="1" value="-16" aria-label="Tilt">
+        <span class="setting-note">Looking down on the form (below 0) or up at it.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Horizontal position</span>
+          <span class="setting-val" id="valWelX">0%</span>
+        </div>
+        <input type="range" id="welX" min="-40" max="40" step="1" value="0" aria-label="Horizontal position">
+        <span class="setting-note">Moves the form left or right behind the name, in % of the screen.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Vertical position</span>
+          <span class="setting-val" id="valWelY">0%</span>
+        </div>
+        <input type="range" id="welY" min="-40" max="40" step="1" value="0" aria-label="Vertical position">
+        <span class="setting-note">Moves the form up or down behind the name, in % of the screen.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Turn speed</span>
+          <span class="setting-val" id="valWelSpin">1.0x</span>
+        </div>
+        <input type="range" id="welSpin" min="0" max="6" step="0.1" value="1" aria-label="Turn speed">
+        <span class="setting-note">How fast the form turns here, against the Rotation speed set in Settings.</span>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <span class="settings-group-name">Timing</span>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Idle screen after</span>
+          <span class="setting-val" id="valWelIdleAfter">60 s</span>
+        </div>
+        <input type="range" id="welIdleAfter" min="0" max="300" step="5" value="60" aria-label="Idle screen after">
+        <span class="setting-note">Without a touch for this long, the welcome screen comes up. 0 turns it off. The same control as in Settings.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Redraw time</span>
+          <span class="setting-val" id="valWelRetrace">15 s</span>
+        </div>
+        <input type="range" id="welRetrace" min="3" max="60" step="1" value="15" aria-label="Redraw time">
+        <span class="setting-note">How long the archive takes to draw itself again.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Hold</span>
+          <span class="setting-val" id="valWelHold">6 s</span>
+        </div>
+        <input type="range" id="welHold" min="0" max="30" step="1" value="6" aria-label="Hold">
+        <span class="setting-note">How long the finished drawing stays before it starts over.</span>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <span class="settings-group-name">Glitch</span>
 
       <div class="setting">
         <div class="setting-top">
@@ -1044,7 +1124,7 @@
     </div>
 
     <div class="settings-group">
-      <span class="settings-group-name">Slices</span>
+      <span class="settings-group-name">Glitch slices</span>
 
       <div class="setting">
         <div class="setting-top">
@@ -1107,7 +1187,7 @@
 
     <div class="settings-actions">
       <button class="settings-reset" id="glNow">Glitch now</button>
-      <button class="settings-reset" id="glReset">Reset glitch</button>
+      <button class="settings-reset" id="glReset">Reset this panel</button>
       <button class="settings-reset" id="glCopy">Copy all</button>
     </div>
   </aside>
@@ -1949,6 +2029,7 @@
   ------------------------------------------------------------------- */
   var SETTINGS_DEFAULTS = { glitchOn:1, glitchEvery:3, glitchJitter:0.85, glitchFrames:10, glitchFrameMs:115,
     glitchShift:3, glitchRows:3, glitchSplit:0.7, glitchSplitShift:2, glitchSplitAlpha:1, glitchWhole:0.3,
+    welcomeZoom:1.6, welcomeTilt:-16, welcomeX:0, welcomeY:0, welcomeSpin:1, welcomeRetrace:15, welcomeHold:6,
     idleAfter:60, rotSpeed:0.7, fov:0.58, depth:0.7, depthFalloff:1.25, inertia:0.95, reach:1.4,
     erode:1.05, grainSpread:5.85, grainSize:1.2, grainDrift:0.3,
     dust:2.65, dustCount:640, dustSize:0.5, dustZoom:0, dof:1.8, focusRange:1.3, dofZoom:1.45, fadeSpan:45,
@@ -4197,7 +4278,7 @@
     var free = !reduceMotion && !evolutionMode && !camPulse && !Object.keys(pointers).length;
     var still = introActive() || (mode === 'idle' && now - lastInteraction > 4000);
     if(!free || !still){ AMBIENT.v = 0; return; }
-    var want = 0.021 * Math.max(0, SETTINGS.rotSpeed);
+    var want = 0.021 * Math.max(0, SETTINGS.rotSpeed) * ((IDLE && IDLE.on) ? Math.max(0, SETTINGS.welcomeSpin) : 1);
     AMBIENT.v += (want - AMBIENT.v) * Math.min(1, dt * 0.6);
     cam.yaw += AMBIENT.v * dt;
   }
@@ -4228,16 +4309,24 @@
   function peekRelease(){
     if(!PEEK.active) return;
     PEEK.active = false; PEEK.mouse = false; PEEK.mid = null;
-    if(Math.abs(PAN.x) < 0.01 && Math.abs(PAN.y) < 0.01){ PAN.x = PAN.y = 0; return; }
-    PAN_RET = { x:PAN.x, y:PAN.y, t0:performance.now(), dur: reduceMotion ? 1 : PEEK_RETURN_MS };
+    var home = panHome();
+    if(Math.abs(PAN.x - home.x) < 0.01 && Math.abs(PAN.y - home.y) < 0.01){ PAN.x = home.x; PAN.y = home.y; return; }
+    panGlideTo(home.x, home.y, PEEK_RETURN_MS);
+  }
+  // where the view rests: centred, except on the welcome screen, which can
+  // set the form off to one side
+  function panHome(){ return (IDLE && IDLE.on && IDLE.pan) ? IDLE.pan : { x:0, y:0 }; }
+  function panGlideTo(x, y, dur){
+    if(reduceMotion || !(dur > 0)){ PAN.x = x; PAN.y = y; PAN_RET = null; return; }
+    PAN_RET = { fx:PAN.x, fy:PAN.y, tx:x, ty:y, t0:performance.now(), dur:dur };
   }
   function updatePanReturn(){
     if(!PAN_RET) return;
     var u = Math.min(1, (performance.now() - PAN_RET.t0) / PAN_RET.dur);
     var e = 1 - Math.pow(1 - u, 3);
-    PAN.x = PAN_RET.x * (1 - e); PAN.y = PAN_RET.y * (1 - e);
+    PAN.x = lerp(PAN_RET.fx, PAN_RET.tx, e); PAN.y = lerp(PAN_RET.fy, PAN_RET.ty, e);
     markViewMove();
-    if(u >= 1){ PAN.x = PAN.y = 0; PAN_RET = null; }
+    if(u >= 1){ PAN.x = PAN_RET.tx; PAN.y = PAN_RET.ty; PAN_RET = null; }
   }
   function setHoverNode(n){
     if(n === hoverNode) return;
@@ -4665,7 +4754,15 @@
     { key:'dofZoom',      input:'setDofZoom',  out:'valDofZoom',  fmt:x2 },
     { key:'reach',        input:'setReach',    out:'valReach',    fmt:x2 },
     { key:'rotSpeed',     input:'setRot',      out:'valRot',      fmt:function(v){ return v.toFixed(1)+'x'; } },
-    { key:'idleAfter',    input:'setIdleAfter', out:'valIdleAfter', fmt:function(v){ return v < 5 ? 'Off' : Math.round(v) + ' s'; } },
+    { key:'idleAfter',    input:'setIdleAfter', out:'valIdleAfter', fmt:function(v){ return v < 5 ? 'Off' : Math.round(v) + ' s'; }, onChange:function(){ syncKey('idleAfter'); } },
+    { key:'idleAfter',    input:'welIdleAfter', out:'valWelIdleAfter', fmt:function(v){ return v < 5 ? 'Off' : Math.round(v) + ' s'; }, onChange:function(){ syncKey('idleAfter'); } },
+    { key:'welcomeZoom',  input:'welZoom',     out:'valWelZoom',     fmt:x2, onChange:welcomeRetune },
+    { key:'welcomeTilt',  input:'welTilt',     out:'valWelTilt',     fmt:function(v){ return Math.round(v) + ' deg'; }, onChange:welcomeRetune },
+    { key:'welcomeX',     input:'welX',        out:'valWelX',        fmt:function(v){ return Math.round(v) + '%'; }, onChange:welcomeRetune },
+    { key:'welcomeY',     input:'welY',        out:'valWelY',        fmt:function(v){ return Math.round(v) + '%'; }, onChange:welcomeRetune },
+    { key:'welcomeSpin',  input:'welSpin',     out:'valWelSpin',     fmt:function(v){ return v.toFixed(1) + 'x'; } },
+    { key:'welcomeRetrace', input:'welRetrace', out:'valWelRetrace', fmt:function(v){ return Math.round(v) + ' s'; } },
+    { key:'welcomeHold',  input:'welHold',     out:'valWelHold',     fmt:function(v){ return Math.round(v) + ' s'; } },
     { key:'glitchEvery',  input:'glEvery',     out:'valGlEvery',     fmt:function(v){ return v.toFixed(1) + ' s'; } },
     { key:'glitchJitter', input:'glJitter',    out:'valGlJitter',    fmt:function(v){ return Math.round(v*100) + '%'; } },
     { key:'glitchFrames', input:'glFrames',    out:'valGlFrames',    fmt:function(v){ return String(Math.round(v)); } },
@@ -4786,6 +4883,15 @@
     applyInstall();
   }
 
+  // twin controls (one key, two sliders) follow each other
+  function syncKey(key){
+    SETTING_CONTROLS.forEach(function(c){
+      if(c.key !== key) return;
+      var el = document.getElementById(c.input), out = document.getElementById(c.out);
+      if(el && document.activeElement !== el) el.value = SETTINGS[key];
+      if(out) out.textContent = c.fmt(SETTINGS[key]);
+    });
+  }
   SETTING_CONTROLS.forEach(function(c){
     var el = document.getElementById(c.input);
     if(!el) return;
@@ -5047,8 +5153,8 @@
   document.getElementById('glNow').addEventListener('click', function(){ glitchBurst(); });
   document.getElementById('glCopy').addEventListener('click', function(){ copyTuning(this); });
   document.getElementById('glReset').addEventListener('click', function(){
-    for(var k in SETTINGS_DEFAULTS) if(k.indexOf('glitch') === 0) SETTINGS[k] = SETTINGS_DEFAULTS[k];
-    syncSettingsUI(); saveTuning(); glitchBurst();
+    for(var k in SETTINGS_DEFAULTS) if(k.indexOf('glitch') === 0 || k.indexOf('welcome') === 0) SETTINGS[k] = SETTINGS_DEFAULTS[k];
+    syncSettingsUI(); saveTuning(); glitchBurst(); welcomeRetune();
   });
 
   function glitchMarks(){
@@ -6581,7 +6687,7 @@
   ========================================================================= */
   var idleEl = document.getElementById('idleScreen');
   var idleVeil = document.getElementById('idleVeil');
-  var IDLE = { on:false, preview:false, last:performance.now(), phase:'', t0:0, hideT:0 };
+  var IDLE = { on:false, preview:false, pan:null, last:performance.now(), phase:'', t0:0, hideT:0 };
   var IDLE_RETRACE_MS = 15000, IDLE_HOLD_MS = 6000, IDLE_VEIL_MS = 950;
 
   function idleActivity(){
@@ -6618,13 +6724,29 @@
     // a clean stage: nothing lit, nothing slid, the whole form in view
     focusPt = null; pinnedNode = null; setHoverNode(null);
     if(PEEK.active) peekRelease();
-    var home = (typeof CAM_HOME_PITCH === 'number') ? CAM_HOME_PITCH : cam.pitch;
-    var rest = INTRO.path ? INTRO.path.end : introOpenDist();
-    camPulse = { fromYaw:cam.yaw, toYaw:cam.yaw, fromPitch:cam.pitch, toPitch:home,
-                 fromDist:cam.dist, toDist:rest, start:performance.now(), duration: reduceMotion ? 1 : 2600 };
+    welcomeFrame(2600);
     introComputeKeys();
     idleVeilUp();
   }
+  // The welcome screen's framing (Welcome panel): the camera looks at the
+  // form's centre from the chosen tilt, at Zoom times the size at which the
+  // whole form just fits, and the form can sit off to one side of the name.
+  function welcomeFrame(dur){
+    var pitch = Math.max(-1.2, Math.min(1.2, (SETTINGS.welcomeTilt || 0) * Math.PI/180));
+    var keepPitch = view.pitch, keepYaw = view.yaw;
+    view.pitch = pitch; view.yaw = cam.yaw;
+    var whole = fitAllDistance();
+    view.pitch = keepPitch; view.yaw = keepYaw;
+    var dist = Math.max(DIST_MIN, Math.min(distMax(), whole / Math.max(0.2, SETTINGS.welcomeZoom || 1)));
+    var scale = FOCAL / Math.max(1, dist);
+    IDLE.pan = { x: -(SETTINGS.welcomeX || 0)/100 * W / scale, y: -(SETTINGS.welcomeY || 0)/100 * H / scale };
+    var d = reduceMotion ? 1 : dur;
+    camPulse = { fromYaw:cam.yaw, toYaw:cam.yaw, fromPitch:cam.pitch, toPitch:pitch,
+                 fromDist:cam.dist, toDist:dist, start:performance.now(), duration:d };
+    panGlideTo(IDLE.pan.x, IDLE.pan.y, d);
+  }
+  // a slider moved while the welcome screen is up: it follows at once
+  function welcomeRetune(){ if(IDLE && IDLE.on) welcomeFrame(500); }
   function idleVeilUp(){
     IDLE.phase = 'veil'; IDLE.t0 = performance.now();
     idleVeil.classList.add('up');
@@ -6635,6 +6757,8 @@
     idleVeil.classList.remove('up');
     document.documentElement.classList.remove('idle-on');
     introBuildTo(1, 700);                 // whatever was still to come arrives at once
+    IDLE.pan = null;
+    if(PAN.x || PAN.y) panGlideTo(0, 0, 900);
     clearTimeout(IDLE.hideT);
     IDLE.hideT = setTimeout(function(){ if(!IDLE.on) idleEl.hidden = true; }, 950);
     lastInteraction = performance.now();
@@ -6650,12 +6774,12 @@
     if(IDLE.phase === 'veil' && now - IDLE.t0 > IDLE_VEIL_MS){
       // behind the ground: the paper is wiped, then the drawing begins again
       introBuild = 0; INTRO.build = null;
-      introBuildTo(1, reduceMotion ? 1 : IDLE_RETRACE_MS);
+      introBuildTo(1, reduceMotion ? 1 : Math.max(1, SETTINGS.welcomeRetrace || 15) * 1000);
       idleVeil.classList.remove('up');
       IDLE.phase = 'build'; IDLE.t0 = now;
     } else if(IDLE.phase === 'build' && !INTRO.build && introBuild >= 1){
       IDLE.phase = 'hold'; IDLE.t0 = now;
-    } else if(IDLE.phase === 'hold' && now - IDLE.t0 > IDLE_HOLD_MS){
+    } else if(IDLE.phase === 'hold' && now - IDLE.t0 > Math.max(0, SETTINGS.welcomeHold) * 1000){
       idleVeilUp();
     }
   }
