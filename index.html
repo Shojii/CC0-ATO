@@ -1097,6 +1097,24 @@
         <input type="range" id="welHold" min="0" max="30" step="1" value="6" aria-label="Hold">
         <span class="setting-note">How long the finished drawing stays before it starts over.</span>
       </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Appear from</span>
+          <span class="setting-val" id="valWelAppear">85%</span>
+        </div>
+        <input type="range" id="welAppear" min="0.4" max="1.3" step="0.01" value="0.85" aria-label="Appear from">
+        <span class="setting-note">The size the form grows from as it fades in, here and in the intro. 100% only fades; above 100% it settles down from larger.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Last points</span>
+          <span class="setting-val" id="valWelLast">5</span>
+        </div>
+        <input type="range" id="welLast" min="0" max="15" step="1" value="5" aria-label="Last points">
+        <span class="setting-note">How many of the most recent points arrive one by one once the form is in, each reaching out with its lines. 0: the whole form fades in at once.</span>
+      </div>
     </div>
 
     <div class="settings-group">
@@ -2073,7 +2091,7 @@
   var SETTINGS_DEFAULTS = { glitchOn:1, glitchEvery:3, glitchJitter:0.85, glitchFrames:10, glitchFrameMs:115,
     glitchShift:3, glitchRows:3, glitchSplit:0.7, glitchSplitShift:2, glitchSplitAlpha:1, glitchWhole:0.3,
     welcomeZoom:1.6, welcomeTilt:-16, welcomeX:0, welcomeY:0, welcomeSpin:1, welcomeRetrace:15, welcomeHold:6,
-    idleAfter:60, rotSpeed:0.7, enterZoom:1, fov:0.58, depth:0.7, depthFalloff:1.25, inertia:0.95, reach:1.4,
+    idleAfter:60, rotSpeed:0.7, enterZoom:1, welcomeAppear:0.85, welcomeLast:5, fov:0.58, depth:0.7, depthFalloff:1.25, inertia:0.95, reach:1.4,
     erode:1.05, grainSpread:5.85, grainSize:1.2, grainDrift:0.3,
     dust:2.65, dustCount:640, dustSize:0.5, dustZoom:0, dof:1.8, focusRange:1.3, dofZoom:1.45, fadeSpan:45,
     springback:0.8, follow:0.45, grainNoise:0.25, dustForm:1, dustSpin:0.8,
@@ -2454,15 +2472,7 @@
   // of its bounding box — rather than around the origin it happens to be
   // laid out from, so a pinch or the wheel closes in on the form itself.
   var PIVOT = { x:0, y:0, z:0 };
-  // How far the orbit centre is raised or lowered from the middle of the
-  // drawing's box so the form sits in the middle of the screen (set on
-  // entering, see enterFrame). A vertical shift survives the form turning.
-  var PIVOT_LIFT = 0;
-  function formCentre(){
-    var c = formBoxCentre();
-    c.y += PIVOT_LIFT;
-    return c;
-  }
+  function formCentre(){ return formBoxCentre(); }
   function formBoxCentre(){
     if(!nodes.length) return { x:0, y:0, z:0 };
     var lx = Infinity, ly = Infinity, lz = Infinity, hx = -Infinity, hy = -Infinity, hz = -Infinity;
@@ -2551,12 +2561,16 @@
   // PAN slides the whole view sideways and up or down, in the camera's own
   // plane: the look-around of the left button, which always comes back to 0
   var PAN = { x:0, y:0 }, PAN_RET = null;
+  var CENTRE = { x:0, y:0, last:0 };        // on-screen shift that keeps the form centred (updateCentring)
+  var APPEAR = { s:1, a:1 };                 // the form scaling and fading in (formAppear)
   function project(p){
     var cs = toCameraSpace(p);
     var viewZ = cs.z + cam.dist;
     if(viewZ < 24) return null;
     var scale = FOCAL/viewZ;
-    return { x: W/2 + (cs.x - PAN.x)*scale, y: H/2 - (cs.y - PAN.y)*scale, scale:scale, viewZ:viewZ };
+    var x = W/2 + CENTRE.x + (cs.x - PAN.x)*scale, y = H/2 + CENTRE.y - (cs.y - PAN.y)*scale;
+    if(APPEAR.s !== 1){ x = W/2 + (x - W/2)*APPEAR.s; y = H/2 + (y - H/2)*APPEAR.s; scale *= APPEAR.s; }
+    return { x:x, y:y, scale:scale, viewZ:viewZ };
   }
 
   // Every point is a tiny axis-aligned cube in world space, so it reads as
@@ -3174,7 +3188,7 @@
     var lit = hoverLitFor(n);
     var list = [];
     for(var id in lit.nodes){ if(nodeById[id]) list.push(nodeById[id]); }
-    focusPt = n;
+    focusPt = n; focusFramed = n;
     hoverNode = n; hoverTraceId = n.traceId;
     lastInteraction = performance.now();
     // the group's heart is brought to the middle of the screen, on the near
@@ -3282,11 +3296,7 @@
      Entering the archive — through the intro's door, the welcome screen's,
      or the installation's resting view — the camera stands back until the
      whole form fits between the name at the top and "Leave a trace" at the
-     foot, and the form sits in the middle of the screen. The middle is
-     found on screen rather than in the drawing's box: seen from above, the
-     near end of the form looks larger, so the box's centre sits high. The
-     orbit centre is lifted along the vertical to make up for it, a shift
-     the form keeps as it turns.
+     foot. Keeping it in the middle is updateCentring's job, every frame.
   ------------------------------------------------------------------- */
   // the room the form has: clear of the name above and the button below
   function enterBand(){
@@ -3315,34 +3325,26 @@
       if(X < lx) lx = X; if(X > hx) hx = X;
       if(Y < ly) ly = Y; if(Y > hy) hy = Y;
     }
-    return { lx:lx, hx:hx, ly:ly, hy:hy, cy:(ly + hy)/2 };
+    return { lx:lx, hx:hx, ly:ly, hy:hy };
   }
-  function enterFraming(yaw, pitch, band, lift0){
-    var base = formBoxCentre();
-    var lift = lift0, d = cam.dist;
-    var cp = Math.max(0.2, Math.cos(pitch));
-    function over(pv, dd){
+  // the distance at which the form, centred, fills the band from that angle
+  function enterFraming(yaw, pitch, band){
+    var pv = formBoxCentre();
+    function over(dd){
       var b = formBoxAt(pv, yaw, pitch, dd);
       if(!b) return Infinity;
-      return Math.max(Math.max(-b.lx, b.hx)/band.hx, (b.hy - b.ly)/2/band.hy);
+      return Math.max((b.hx - b.lx)/2/band.hx, (b.hy - b.ly)/2/band.hy);
     }
-    for(var k=0; k<5; k++){
-      var pv = { x:base.x, y:base.y + lift, z:base.z };
-      var lo = 1, hi = Math.max(distMax(), cam.dist)*2;
-      for(var g=0; g<8 && over(pv, hi) > 1; g++) hi *= 2;
-      for(var it=0; it<30; it++){
-        var mid = (lo + hi)/2;
-        if(over(pv, mid) > 1) lo = mid; else hi = mid;
-      }
-      d = hi;
-      var b = formBoxAt(pv, yaw, pitch, d);
-      if(!b || Math.abs(b.cy) < 0.5) break;
-      lift -= b.cy / (cp * FOCAL/d);
+    var lo = 1, hi = Math.max(distMax(), cam.dist)*2;
+    for(var g=0; g<8 && over(hi) > 1; g++) hi *= 2;
+    for(var it=0; it<30; it++){
+      var mid = (lo + hi)/2;
+      if(over(mid) > 1) lo = mid; else hi = mid;
     }
-    return { dist:d, lift:lift };
+    return hi;
   }
   // distMul > 1 lands further out (the installation's resting view)
-  var ENTER_MOVE_MS = 2000, ENTER_DIST = 0;
+  var ENTER_MOVE_MS = 2000;
   function enterFrame(dur, distMul){
     if(!nodes.length) return;
     var D = reduceMotion ? 1 : dur;
@@ -3350,16 +3352,10 @@
     // a turn already under way carries on and settles, rather than stopping dead
     var yaw = cam.yaw + ((AMBIENT && AMBIENT.v) || 0) * (D/1000) / 3;
     var band = enterBand();
-    var f = enterFraming(yaw, pitch, band, PIVOT_LIFT);
     // far enough back that the form still fits as it turns: the turn shows
     // it from every side, and some sides are bigger than others
-    var need = f.dist;
-    for(var a=0; a<8; a++){
-      var fa = enterFraming(yaw + a*Math.PI/4, pitch, band, f.lift);
-      if(fa.dist > need) need = fa.dist;
-    }
-    PIVOT_LIFT = f.lift;
-    ENTER_DIST = need;
+    var need = enterFraming(yaw, pitch, band);
+    for(var a=1; a<8; a++) need = Math.max(need, enterFraming(yaw + a*Math.PI/4, pitch, band));
     var dist = need * Math.max(0.2, distMul || 1) / Math.max(0.2, SETTINGS.enterZoom || 1);
     dist = Math.max(DIST_MIN, Math.min(distMax(), dist));
     pivotGlideTo(formCentre(), D);
@@ -3369,19 +3365,59 @@
     DOF_HOME = dist;                       // the look is tuned for where the visitor lands
   }
 
-  // While the form turns on its own with nobody steering, the side facing
-  // the lens changes and with it how high the form looks: the lift follows,
-  // slowly, so the form stays in the middle. Only when the whole form is in
-  // view and nothing is lit, slid, focused or on its way somewhere.
-  function keepCentred(dt){
-    if(!ENTER_DIST || !(AMBIENT && AMBIENT.v > 0.0005)) return;
-    if(mode !== 'idle' || introActive() || INTRO.on || evolutionMode || (IDLE && IDLE.on)) return;
-    if(camPulse || PIVOT_TW || PAN_RET || PEEK.active || focusPt || hoverNode || pinnedNode) return;
-    if(cam.dist < ENTER_DIST*0.75) return;
-    var b = formBoxAt(formCentre(), view.yaw, view.pitch, cam.dist);
-    if(!b) return;
-    var want = PIVOT_LIFT - b.cy / (Math.max(0.2, Math.cos(view.pitch)) * FOCAL/cam.dist);
-    PIVOT_LIFT += (want - PIVOT_LIFT) * Math.min(1, dt/2.5);
+  /* ------------------------------------------------------------------
+     The form is kept in the middle of the screen, all the time. The camera
+     turns around the middle of the drawing's box in space, but on screen
+     that is not the middle of the picture: seen from above, the near end
+     looks larger, and which end is near changes as the form turns. So every
+     frame the box the form covers on screen is measured and the whole
+     picture is shifted (CENTRE, in pixels, in project()) to put that box in
+     the middle, eased so nothing jumps.
+     What counts as the form is what the camera is about: the focused group
+     while a click has focused a point or the origin (the new trace lit after
+     adding is not a click: the whole form stays centred), what is drawn so far while the
+     evolution plays, all of it otherwise. A slide of the hand still moves
+     it off and lets it spring back. Too close to see it whole — some of it
+     behind the lens — and the shift lets go.
+  ------------------------------------------------------------------- */
+  var CENTRE_EASE = 0.35;                  // seconds
+  var centreGroup = { key:null, list:null };
+  var focusFramed = null;                  // the point a click focused (not the one lit after adding)
+  function centringList(){
+    if(focusPt && focusPt === focusFramed && mode === 'idle' && !evolutionMode && nodeById[focusPt.id] === focusPt){
+      var key = (isOrigin(focusPt) ? 'ORIGIN' : focusPt.id) + ':' + nodes.length + ':' + edges.length;
+      if(centreGroup.key !== key){
+        var lit = hoverLitFor(focusPt), list = [];
+        for(var id in lit.nodes){ if(nodeById[id]) list.push(nodeById[id]); }
+        centreGroup = { key:key, list:list };
+      }
+      return centreGroup.list;
+    }
+    return nodes;
+  }
+  function updateCentring(){
+    var now = performance.now();
+    var dt = CENTRE.last ? Math.min(0.1, (now - CENTRE.last)/1000) : 0.016;
+    CENTRE.last = now;
+    var list = centringList();
+    var cap = evolutionMode ? evoThreshold : Infinity;
+    // points at the lens itself are left out of the measure: they fly off
+    // to the edges of the picture and would drag it about
+    var lx = Infinity, hx = -Infinity, ly = Infinity, hy = -Infinity, cnt = 0, near = 0;
+    for(var i=0;i<list.length;i++){
+      var n = list[i];
+      if(n.generation > cap) continue;
+      var cs = toCameraSpace(n), vz = cs.z + cam.dist;
+      if(vz < 70){ near++; continue; }
+      var s = FOCAL/vz, X = cs.x*s, Y = -cs.y*s;
+      if(X < lx) lx = X; if(X > hx) hx = X;
+      if(Y < ly) ly = Y; if(Y > hy) hy = Y;
+      cnt++;
+    }
+    var tx = 0, ty = 0;
+    if(cnt && near <= (cnt + near)*0.25){ tx = -(lx + hx)/2; ty = -(ly + hy)/2; }
+    var k = reduceMotion ? 1 : 1 - Math.exp(-dt/CENTRE_EASE);
+    CENTRE.x += (tx - CENTRE.x)*k; CENTRE.y += (ty - CENTRE.y)*k;
   }
 
   // smoothly re-frame the camera on newly created point(s), pulled in tight
@@ -4052,8 +4088,29 @@
   // The blur runs at the layer's own small resolution — a fraction of the
   // pixels — and the upscale back to full size does the rest of the
   // softening for free.
+  // While the form fades in it is drawn on a layer of its own, laid down
+  // at the fade's opacity, so the lines and points that cross stay as they
+  // are rather than each going pale on its own; the dust is not part of it.
+  var FORM_LAYER = { cv:null, ctx:null }, baseCtx = null;
+  function beginFormLayer(){
+    if(!FORM_LAYER.cv){ FORM_LAYER.cv = document.createElement('canvas'); FORM_LAYER.ctx = FORM_LAYER.cv.getContext('2d'); }
+    var w = Math.max(1, Math.round(W*DPR)), h = Math.max(1, Math.round(H*DPR));
+    if(FORM_LAYER.cv.width !== w || FORM_LAYER.cv.height !== h){ FORM_LAYER.cv.width = w; FORM_LAYER.cv.height = h; }
+    FORM_LAYER.ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    FORM_LAYER.ctx.clearRect(0, 0, W, H);
+    ctx = baseCtx = FORM_LAYER.ctx;
+  }
+  function endFormLayer(a){
+    ctx = mainCtx; baseCtx = null;
+    if(!(a > 0.002)) return;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalAlpha = Math.min(1, a);
+    ctx.drawImage(FORM_LAYER.cv, 0, 0);
+    ctx.restore();
+  }
   function endLayer(L, blurPx){
-    ctx = mainCtx;
+    ctx = baseCtx || mainCtx;
     var small = blurPx * L.scale * DPR;
     var src = L.cv;
     if(small > 0.15){
@@ -4077,6 +4134,9 @@
   function draw(){
     ctx.clearRect(0,0,W,H);
     lastProjected = {};
+    var ap = formAppear();
+    APPEAR.a = ap;
+    APPEAR.s = ap >= 1 ? 1 : lerp(Math.max(0.2, +SETTINGS.welcomeAppear || 1), 1, ap);
 
     var showLabels = cam.dist < DIST_REF*1.05;
     var showCoords = cam.dist < DIST_REF*0.40;
@@ -4215,7 +4275,7 @@
         var nk = introNodeKey[n.id];
         if(nk !== undefined){
           if(nk >= introBuild) continue;
-          nGrow = Math.min(1, (introBuild - nk)/(INTRO_W*0.5));
+          nGrow = Math.min(1, (introBuild - nk)/INTRO_NODE_W);
         }
       }
       var p = project(n);
@@ -4249,6 +4309,12 @@
           if(halo) strokeCube(halo, rgba(hcN, 0.5*HK), 1.2);
         }
         strokeCube(corners, nc, isHoverGroup ? (n.big ? 1.7 : 1.5) : (n.big ? 1.3 : (showFineStroke ? 1 : 0.8)));
+        if(d.grow < 1){
+          // a point arriving in the empty space: a ring opens out of it and fades
+          var g = 1 - Math.pow(1 - d.grow, 2);
+          var ring = projectCube(n, n.r*(n.big ? 0.95 : 0.8)*(1.3 + 2.8*g));
+          if(ring) strokeCube(ring, rgba(THEME.ink, 0.45*(1 - g)*fog), 0.8);
+        }
       } else {
         // fallback for the rare case a corner is behind the near plane; a
         // point that close is at the lens itself, and is better not drawn
@@ -4272,6 +4338,8 @@
     // ---- lay the shells down, far to near ----
     var useDof = dofSupported && SETTINGS.dof > 0.01;
     drawDust();
+    var fadingIn = APPEAR.a < 0.999;
+    if(fadingIn) beginFormLayer();
     if(!useDof){
       renderEdges(-Infinity, Infinity);
       renderNodes(-Infinity, Infinity);
@@ -4295,6 +4363,7 @@
     litEdgeQ.forEach(edgeBody);
     litNodeQ.forEach(nodeBody);
     drawHoverMark();
+    if(fadingIn) endFormLayer(APPEAR.a);
 
     pending.edges.forEach(function(pe){
       var a = nodeById[pe.a] || pending.nodes.find(function(n){return n.id===pe.a;});
@@ -4431,10 +4500,10 @@
     updateCamPulse();
     updatePanReturn();
     updateAmbientRotation();
-    keepCentred(AMBIENT.dt || 0.016);
     updateFit();
     updateSway();
     updatePivot(false);
+    updateCentring();
     updateErode();
     updateGhost();
     updateIntro();
@@ -4980,8 +5049,9 @@
     // solve the screen ray at the depth actually chosen, so the point stays
     // under the cursor however far back or forward it ended up
     var scale = FOCAL / Math.max(24, cam.dist + csZ);
-    var csX = (sx - W/2)/scale + PAN.x;
-    var csY = -(sy - H/2)/scale + PAN.y;
+    var ax = (sx - W/2)/APPEAR.s, ay = (sy - H/2)/APPEAR.s;
+    var csX = (ax - CENTRE.x)/scale + PAN.x;
+    var csY = -(ay - CENTRE.y)/scale + PAN.y;
 
     // a light lateral drift, so the lattice never reads as machined
     var lateral = 7 + reach*0.05;
@@ -5068,6 +5138,9 @@
     { key:'welcomeSpin',  input:'welSpin',     out:'valWelSpin',     fmt:function(v){ return v.toFixed(1) + 'x'; } },
     { key:'welcomeRetrace', input:'welRetrace', out:'valWelRetrace', fmt:function(v){ return Math.round(v) + ' s'; } },
     { key:'welcomeHold',  input:'welHold',     out:'valWelHold',     fmt:function(v){ return Math.round(v) + ' s'; } },
+    { key:'welcomeAppear', input:'welAppear',  out:'valWelAppear',   fmt:function(v){ return Math.round(v*100) + '%'; } },
+    { key:'welcomeLast',  input:'welLast',     out:'valWelLast',     fmt:function(v){ return String(Math.round(v)); },
+      onChange:function(){ introComputeKeys(); } },
     { key:'glitchEvery',  input:'glEvery',     out:'valGlEvery',     fmt:function(v){ return v.toFixed(1) + ' s'; } },
     { key:'glitchJitter', input:'glJitter',    out:'valGlJitter',    fmt:function(v){ return Math.round(v*100) + '%'; } },
     { key:'glitchFrames', input:'glFrames',    out:'valGlFrames',    fmt:function(v){ return String(Math.round(v)); } },
@@ -6165,50 +6238,46 @@
     });
   }
 
-  // Where each line sits in the build: the archive is drawn again in the
-  // order it was made — every point keeps the date it was set down — each
-  // line growing out of the older of its two ends; points that share a date
-  // go from the heart outward, loosened by a little chance. Visitors' traces
-  // come after it, in the order they were left.
+  /* ------------------------------------------------------------------
+     How the form appears (intro and welcome screen). Over the first part of
+     the build (INTRO_BASE) the whole drawing comes in at once, growing from
+     a little smaller (Welcome > Appear from) while it fades up from nothing.
+     Then only the last few points set down (Welcome > Last points) arrive
+     one after another: each point appears with a small ring, then its lines
+     reach out from it to the points it is tied to. Everything else has the
+     key -1: there from the start, carried by the fade and the scale.
+  ------------------------------------------------------------------- */
+  var INTRO_BASE = 0.55;                     // share of the build the fade and scale take
+  var INTRO_NODE_W = 0.045;                  // how long one of the last points takes to appear
   function introComputeKeys(){
     introKey = {}; introFlip = {}; introNodeKey = {};
     if(!nodes.length) return;
-    var cx = 0, cy = 0, cz = 0;
-    nodes.forEach(function(n){ cx += n.x; cy += n.y; cz += n.z; });
-    cx /= nodes.length; cy /= nodes.length; cz /= nodes.length;
-    var rOf = {}, maxR = 1;
-    nodes.forEach(function(n){
-      var r = Math.sqrt((n.x-cx)*(n.x-cx) + (n.y-cy)*(n.y-cy) + (n.z-cz)*(n.z-cz));
-      rOf[n.id] = r; if(r > maxR) maxR = r;
+    nodes.forEach(function(n){ introNodeKey[n.id] = -1; });
+    edges.forEach(function(e){ introKey[e.id] = -1; introFlip[e.id] = false; });
+    var K = Math.max(0, Math.min(nodes.length - 1, Math.round(+SETTINGS.welcomeLast || 0)));
+    if(!K) return;
+    // the last points set down, oldest of them first
+    var order = nodes.map(function(n, i){ return { n:n, t:n.createdAt || 0, i:i }; });
+    order.sort(function(x, y){ return (x.t - y.t) || (x.i - y.i); });
+    var rank = {};
+    order.slice(order.length - K).forEach(function(r, i){ rank[r.n.id] = i; });
+    var slot = (1 - INTRO_BASE - 0.02) / K;
+    for(var id in rank) introNodeKey[id] = INTRO_BASE + rank[id]*slot;
+    edges.forEach(function(e){
+      var ra = rank[e.a], rb = rank[e.b];
+      if(ra === undefined && rb === undefined) return;
+      // a line belongs to the later of its two ends and grows out of it
+      var fromA = rb === undefined || (ra !== undefined && ra > rb);
+      var r = fromA ? ra : rb;
+      introKey[e.id] = INTRO_BASE + r*slot + Math.min(slot*0.35, INTRO_NODE_W);
+      introFlip[e.id] = !fromA;
     });
-    var ARCH = 0.84, arch = [], vis = [];
-    edges.forEach(function(e, i){
-      var A = nodeById[e.a], B = nodeById[e.b];
-      if(!A || !B) return;
-      var ta = A.createdAt || 0, tb = B.createdAt || 0;
-      var rec = { e:e, t:Math.max(ta, tb), r:Math.min(rOf[e.a], rOf[e.b])/maxR, h:hash2(i, 577),
-                  flip: tb < ta || (tb === ta && rOf[e.b] < rOf[e.a]) };
-      (A.origin === 'visitor' || B.origin === 'visitor' || e.origin === 'visitor' ? vis : arch).push(rec);
-    });
-    function lay(list, k0, k1){
-      list.sort(function(x, y){ return (x.t - y.t) || ((x.r + x.h*0.35) - (y.r + y.h*0.35)); });
-      var n = list.length;
-      list.forEach(function(rec, i){
-        var k = k0 + (k1 - k0 - INTRO_W) * (n > 1 ? i/(n-1) : 0);
-        var e = rec.e;
-        introKey[e.id] = k; introFlip[e.id] = rec.flip;
-        // a point arrives with the first line to reach it
-        var ka = k + (rec.flip ? INTRO_W : 0), kb = k + (rec.flip ? 0 : INTRO_W);
-        if(introNodeKey[e.a] === undefined || ka < introNodeKey[e.a]) introNodeKey[e.a] = ka;
-        if(introNodeKey[e.b] === undefined || kb < introNodeKey[e.b]) introNodeKey[e.b] = kb;
-      });
-    }
-    lay(arch, 0, ARCH);
-    lay(vis, ARCH + 0.02, 0.995);
-    nodes.forEach(function(n){
-      if(introNodeKey[n.id] === undefined)
-        introNodeKey[n.id] = n.origin === 'visitor' ? ARCH + 0.02 : (rOf[n.id]/maxR) * (ARCH - INTRO_W);
-    });
+  }
+  // 0 → 1 as the whole form comes in
+  function formAppear(){
+    if(introBuild >= 1) return 1;
+    var u = Math.max(0, Math.min(1, introBuild / INTRO_BASE));
+    return 1 - Math.pow(1 - u, 2);
   }
 
   function introBuildTo(to, dur){
