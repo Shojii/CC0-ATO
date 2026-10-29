@@ -1373,6 +1373,15 @@
 
       <div class="setting">
         <div class="setting-top">
+          <span class="setting-name">Intro text speed</span>
+          <span class="setting-val" id="valIntroText">1.8x</span>
+        </div>
+        <input type="range" id="setIntroText" min="0.5" max="4" step="0.1" value="1.8" aria-label="Intro text speed">
+        <span class="setting-note">How fast the intro's sentences type themselves in, and the pauses before and between their lines. 1x is the original pace.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
           <span class="setting-name">Form at the end of the intro</span>
           <span class="setting-val" id="valIntroEndFill">100%</span>
         </div>
@@ -2118,7 +2127,7 @@
   var SETTINGS_DEFAULTS = { glitchOn:1, glitchEvery:3, glitchJitter:0.85, glitchFrames:10, glitchFrameMs:115,
     glitchShift:3, glitchRows:3, glitchSplit:0.7, glitchSplitShift:2, glitchSplitAlpha:1, glitchWhole:0.3,
     welcomeZoom:1.6, welcomeTilt:-16, welcomeX:0, welcomeY:0, welcomeSpin:1, welcomeRetrace:15, welcomeHold:6,
-    idleAfter:60, rotSpeed:0.7, enterZoom:1, introEndFill:1, welcomeAppear:0.85, welcomeLast:5, fov:0.58, depth:0.7, depthFalloff:1.25, inertia:0.95, reach:1.4,
+    idleAfter:60, rotSpeed:0.7, enterZoom:1, introEndFill:1, introTextSpeed:1.8, welcomeAppear:0.85, welcomeLast:5, fov:0.58, depth:0.7, depthFalloff:1.25, inertia:0.95, reach:1.4,
     erode:1.05, grainSpread:5.85, grainSize:1.2, grainDrift:0.3,
     dust:2.65, dustCount:640, dustSize:0.5, dustZoom:0, dof:1.8, focusRange:1.3, dofZoom:1.45, fadeSpan:45,
     springback:0.8, follow:0.45, grainNoise:0.25, dustForm:1, dustSpin:0.8,
@@ -5180,6 +5189,7 @@
     { key:'rotSpeed',     input:'setRot',      out:'valRot',      fmt:function(v){ return v.toFixed(1)+'x'; } },
     { key:'enterZoom',    input:'setEnterZoom', out:'valEnterZoom', fmt:x2,
       onChange:function(){ if(mode === 'idle' && !introActive() && !(IDLE && IDLE.on)) enterFrame(500); } },
+    { key:'introTextSpeed', input:'setIntroText', out:'valIntroText', fmt:function(v){ return v.toFixed(1) + 'x'; } },
     { key:'introEndFill', input:'setIntroEndFill', out:'valIntroEndFill', fmt:function(v){ return Math.round(v*100) + '%'; } },
     { key:'idleAfter',    input:'setIdleAfter', out:'valIdleAfter', fmt:function(v){ return v < 5 ? 'Off' : Math.round(v) + ' s'; }, onChange:function(){ syncKey('idleAfter'); } },
     { key:'idleAfter',    input:'welIdleAfter', out:'valWelIdleAfter', fmt:function(v){ return v < 5 ? 'Off' : Math.round(v) + ' s'; }, onChange:function(){ syncKey('idleAfter'); } },
@@ -6412,7 +6422,10 @@
   }
   function introType(p, line, tk){
     return new Promise(function(done){
-      var chars = p._chars, i = 0, speed = line.speed || 46;
+      // Settings > Motion > Intro text speed divides every wait: letters,
+      // punctuation, the breath before the line
+      var k = introTextK();
+      var chars = p._chars, i = 0, speed = (line.speed || 46) / k;
       if(!chars.length) return done();
       function finish(){
         chars.forEach(function(c){ c.classList.add('on'); });
@@ -6430,12 +6443,13 @@
         c.classList.add('on'); introCaret(c);
         if(i >= chars.length) return done();
         var ch = c.textContent, d = speed*(0.55 + Math.random()*0.9);
-        if(ch === ',') d += 260; else if(ch === '.') d += 340; else if(ch === ' ') d += speed*0.5;
+        if(ch === ',') d += 260/k; else if(ch === '.') d += 340/k; else if(ch === ' ') d += speed*0.5;
         introTimer(step, d);
       }
-      introTimer(step, line.lead || 380);
+      introTimer(step, (line.lead || 380) / k);
     });
   }
+  function introTextK(){ return Math.max(0.3, Math.min(5, +SETTINGS.introTextSpeed || 1)); }
   // the letters give way the way the lines do under the cursor: each turns
   // to grit, then falls out of the light
   var INTRO_GRIT = ['.', '.', '.', ':', ',', '_', "'"];
@@ -6511,7 +6525,7 @@
       await introType(els[i], sc.lines[i], tk);
       if(tk !== INTRO.token) return;
       if(i < els.length - 1){
-        await introWait(sc.lines[i].pause || 700);
+        await introWait((sc.lines[i].pause || 700) / introTextK());
         if(tk !== INTRO.token) return;
       }
     }
