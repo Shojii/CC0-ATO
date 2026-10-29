@@ -247,17 +247,26 @@
   /* the name glitches now and then, on the font's own pixel grid: one
      module is 0.0875em and the letters stand 8 modules tall from 0.075em,
      so every slice cuts between rows of pixels and every jump is a whole
-     number of them. A white-backed slice shifts in ink; an orange split,
-     multiplied, runs off at the edges. The script plays it (Glitch panel),
-     through these variables. */
+     number of them. A slice of the word shifts in ink while the letters
+     underneath are masked out over the same rows, so nothing but ink moves
+     and the drawing stays visible through the gaps (no backing); an orange
+     split, multiplied, runs off at the edges. The script plays it (Welcome
+     panel), through these variables. */
   .intro-mark b, .glitch-preview b{ position:relative; display:inline-block; }
   .intro-mark b::before, .intro-mark b::after, .glitch-preview b::before, .glitch-preview b::after{
     content:attr(data-text); position:absolute; left:0; top:0;
     white-space:nowrap; letter-spacing:inherit; line-height:1; pointer-events:none;
     text-shadow:none;
   }
+  .intro-mark i, .glitch-preview i{
+    font-style:normal; display:inline-block; line-height:1;
+    -webkit-mask-image:linear-gradient(to bottom, #000 var(--g1-mt, 0em), transparent var(--g1-mt, 0em),
+      transparent calc(1em - var(--g1-mb, 1em)), #000 calc(1em - var(--g1-mb, 1em)));
+    mask-image:linear-gradient(to bottom, #000 var(--g1-mt, 0em), transparent var(--g1-mt, 0em),
+      transparent calc(1em - var(--g1-mb, 1em)), #000 calc(1em - var(--g1-mb, 1em)));
+  }
   .intro-mark b::before, .glitch-preview b::before{
-    color:var(--ink); background:var(--bg-core, var(--paper));
+    color:var(--ink); background:transparent;
     opacity:var(--g1-o, 0);
     clip-path:inset(var(--g1-t, 0em) 0 var(--g1-b, 1em) 0);
     transform:translateX(var(--g1-x, 0em));
@@ -1016,7 +1025,7 @@
       <button class="settings-close" id="glitchClose" aria-label="Close welcome screen">x</button>
     </div>
 
-    <div class="glitch-preview" aria-hidden="true"><b data-text="ATO">ATO</b></div>
+    <div class="glitch-preview" aria-hidden="true"><b data-text="ATO"><i>A</i><i>T</i><i>O</i></b></div>
     <button class="settings-reset glitch-stage-btn" id="glStage" aria-pressed="false">Show on the welcome screen</button>
 
     <div class="settings-group">
@@ -1694,11 +1703,11 @@
 
       <div class="setting">
         <div class="setting-top">
-          <span class="setting-name">Dust count</span>
-          <span class="setting-val" id="valDustN">340</span>
+          <span class="setting-name">Particles in the air</span>
+          <span class="setting-val" id="valDustN">640</span>
         </div>
-        <input type="range" id="setDustN" min="0" max="900" step="10" value="340" aria-label="Dust count">
-        <span class="setting-note">How many motes are in the air.</span>
+        <input type="range" id="setDustN" min="0" max="3000" step="10" value="640" aria-label="Particles in the air">
+        <span class="setting-note">How many motes of dust float around the form. (The grains a line breaks into under the cursor are set in Particles &gt; Particle density.)</span>
       </div>
 
       <div class="setting">
@@ -1822,6 +1831,15 @@
 
     <div class="settings-group">
       <span class="settings-group-name">Screen</span>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Particles in the air</span>
+          <span class="setting-val" id="valIDustN">640</span>
+        </div>
+        <input type="range" id="iDustN" min="0" max="3000" step="10" value="640" aria-label="Particles in the air">
+        <span class="setting-note">How many motes of dust float around the form. The same setting as Settings &gt; Environment.</span>
+      </div>
 
       <div class="setting">
         <div class="setting-top">
@@ -3843,7 +3861,7 @@
      its own depth, which drives its size, its opacity and how far it
      swims, so the air still reads as a volume.
   ------------------------------------------------------------------- */
-  var DUST_POOL = 900;   // built once; the count setting decides how many draw
+  var DUST_POOL = 3000;  // built once (same seed: the first ones never change); the count setting decides how many draw
   var dust = [];
   function buildDust(){
     var r = mulberry32(90210);
@@ -5210,7 +5228,8 @@
     { key:'bgAngle',      input:'setBgAngle',  out:'valBgAngle',  fmt:function(v){ return Math.round(v)+' deg'; }, onChange:applyBackground },
     { key:'bgVignette',   input:'setBgVig',    out:'valBgVig',    fmt:function(v){ return Math.round(v*100)+'%'; }, onChange:applyBackground },
     { key:'dust',         input:'setDust',     out:'valDust',     fmt:x2 },
-    { key:'dustCount',    input:'setDustN',    out:'valDustN',    fmt:function(v){ return String(Math.round(v)); } },
+    { key:'dustCount',    input:'setDustN',    out:'valDustN',    fmt:function(v){ return String(Math.round(v)); }, onChange:function(){ syncKey('dustCount'); } },
+    { key:'dustCount',    input:'iDustN',      out:'valIDustN',   fmt:function(v){ return String(Math.round(v)); }, onChange:function(){ syncKey('dustCount'); } },
     { key:'dustSize',     input:'setDustSz',   out:'valDustSz',   fmt:x2 },
     { key:'dustSpin',     input:'setDustSpin', out:'valDustSpin', fmt:x2 },
     { key:'dustZoom',     input:'setDustZoom', out:'valDustZoom', fmt:x2 },
@@ -5604,6 +5623,8 @@
     for(var i=0;i<list.length;i++){
       var st = list[i] && list[i].style; if(!st) continue;
       st.setProperty('--g1-o', f.o1); st.setProperty('--g1-t', f.t1 + 'em'); st.setProperty('--g1-b', f.b1 + 'em'); st.setProperty('--g1-x', f.x1 + 'em');
+      // the letters give way under the slice only while it is showing
+      st.setProperty('--g1-mt', (f.o1 > 0 ? f.t1 : 0) + 'em'); st.setProperty('--g1-mb', (f.o1 > 0 ? f.b1 : 1) + 'em');
       st.setProperty('--g2-o', f.o2); st.setProperty('--g2-t', f.t2 + 'em'); st.setProperty('--g2-b', f.b2 + 'em'); st.setProperty('--g2-x', f.x2 + 'em');
     }
   }
