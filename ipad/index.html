@@ -734,7 +734,8 @@
   /* everything else kept inside the arch */
   .hud-bottom{ padding-bottom: calc(clamp(14px, 2.4vw, 26px) + var(--pad-top, 16px) + calc(var(--arch-bottom, 0px) / var(--ui-scale, 1)) - var(--leave-pad, 0px)); }
   html.install #nodeTip{ bottom:calc(clamp(14px, 2.4vw, 26px) + 76px + var(--pad-top, 16px) + calc(var(--arch-bottom, 0px) / var(--ui-scale, 1))); }
-  .toast{ top:calc(clamp(14px, 2.4vw, 26px) + var(--pad-top, 16px) + 64px + calc(var(--arch-top, 0px) / var(--ui-scale, 1))); }
+  .toast, .nudge{ top:calc(clamp(14px, 2.4vw, 26px) + var(--pad-top, 16px) + 64px + calc(var(--arch-top, 0px) / var(--ui-scale, 1))); }
+  .nudge{ text-shadow: 0 0 6px var(--surface), 0 0 12px var(--surface); max-width:min(440px, calc(100vw - 60px)); }
   .hud-corner--left{ margin-left: calc(var(--arch-left, 0px) / var(--ui-scale, 1)); margin-top: calc((var(--arch-top, 0px) + var(--arch-spring, 0px)) / var(--ui-scale, 1)); }
   @media (max-width: 720px){ .hud-center{ display:flex; } }
   /* the panel buttons are gone from the corner: Cmd/Ctrl + Space or three fingers */
@@ -6339,11 +6340,47 @@
           changed = true;
         }
       }
-      if(changed){ persist(); animateTraceCount(); }
+      if(changed){ persist(); animateTraceCount(); reframeForArchive(); }
     } finally { ARC.pulling = false; }
   }
+  // ATO - IPAD: the shared archive arrives (or grows) while the intro or the
+  // welcome screen is up: their framing is measured again on the whole of it,
+  // so the form never ends up around the camera or off the screen
+  function reframeForArchive(){
+    if(INTRO.on && INTRO.path){
+      var endD = introEndDistance(cam.yaw, cam.pitch);
+      var startD = Math.max(endD, fillDistanceAll(cam.yaw, cam.pitch, Math.max(0.2, +SETTINGS.introStartFill || 0.7)));
+      INTRO.path = { start:startD, mid:startD + (endD - startD)*0.45, end:endD };
+      DOF_HOME = endD;
+      var sc = INTRO_SCENES[INTRO.scene];
+      var want = (sc && sc.dolly) ? endD
+               : startD + (INTRO.path.mid - startD) * smoothT(Math.max(0, Math.min(1, introBuild)));
+      var ratio = Math.max(want, cam.dist) / Math.max(1, Math.min(want, cam.dist));
+      var shown = parseFloat(getComputedStyle(introCurtain).opacity) < 0.97;
+      if(ratio < 1.25){ introCamTo(want, 1400); }           // a small change: the camera glides
+      else if(!shown){ introCamTo(want, 0); }               // behind the curtain: straight there
+      else {
+        // a big jump while the drawing is visible: never fly through it, the
+        // ground comes up for a moment, the camera moves behind it, it lifts again
+        var back = introCurtain.style.opacity;
+        introCurtain.style.transition = 'opacity .35s ease';
+        introCurtain.style.opacity = '1';
+        setTimeout(function(){
+          introCamTo(want, 0);
+          introCurtain.style.transition = 'opacity .9s ease';
+          var sc2 = INTRO_SCENES[INTRO.scene];
+          introCurtain.style.opacity = String(sc2 && sc2.curtain !== undefined ? sc2.curtain : back);
+          setTimeout(function(){ introCurtain.style.transition = ''; }, 950);
+        }, 380);
+      }
+      introComputeKeys();
+    } else if(IDLE.on){
+      welcomeFrame(1600);   // only ever a trace or two at a time by then: a glide
+      introComputeKeys();
+    }
+  }
   if(SHARED_ARCHIVE){
-    setTimeout(function(){ archivePull(true); }, 600);
+    setTimeout(function(){ archivePull(true); }, 50);
     setInterval(function(){ archivePull(false); }, ARCHIVE_DB.pullEvery);
     window.addEventListener('online', function(){ archivePull(false); });
     document.addEventListener('visibilitychange', function(){ if(!document.hidden) archivePull(false); });
