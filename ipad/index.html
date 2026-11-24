@@ -1990,6 +1990,14 @@
 
       <div class="setting">
         <div class="setting-top">
+          <span class="setting-name">Full screen</span>
+          <button class="setting-cycle" id="iFullscreen">Full screen</button>
+        </div>
+        <span class="setting-note">Hides the status bar (time, battery) and Safari's bars, on the iPad and on the projector. Tap once after each launch; swipe down from the top to leave. Works in Safari on iPad; inside claude.ai or from the Home Screen it may not be allowed.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
           <span class="setting-name">Particles in the air</span>
           <span class="setting-val" id="valIDustN">640</span>
         </div>
@@ -2222,7 +2230,6 @@
     </div>
 
     <div class="settings-actions install-actions">
-      <button class="settings-reset" id="iFullscreen">Full screen</button>
       <button class="settings-reset" id="iExport">Export traces</button>
       <button class="settings-reset" id="iImport">Import traces</button>
       <button class="settings-reset" id="iClear">Clear traces</button>
@@ -7803,12 +7810,28 @@
     btn._noteT = setTimeout(function(){ btn.textContent = btn.dataset.label; }, 2200);
   }
 
+  function fsElement(){ return document.fullscreenElement || document.webkitFullscreenElement || null; }
+  function fsLabel(){
+    var b = document.getElementById('iFullscreen');
+    if(!b) return;
+    var t = fsElement() ? 'Exit full screen' : 'Full screen';
+    b.dataset.label = t;
+    b.textContent = t;
+  }
+  document.addEventListener('fullscreenchange', fsLabel);
+  document.addEventListener('webkitfullscreenchange', fsLabel);
   function installFullscreen(btn){
+    if(fsElement()){
+      var ex = document.exitFullscreen || document.webkitExitFullscreen;
+      try{ var q = ex && ex.call(document); if(q && q.catch) q.catch(function(){}); }catch(e){}
+      return;
+    }
     var el = document.documentElement;
     var req = el.requestFullscreen || el.webkitRequestFullscreen;
-    if(!req){ iNote(btn, 'Not available here'); return; }
+    var fsOk = document.fullscreenEnabled !== false || document.webkitFullscreenEnabled;
+    if(!req || !fsOk){ iNote(btn, 'Not available here'); return; }
     try{
-      var p = req.call(el);
+      var p = req.call(el, { navigationUI:'hide' });
       if(p && p.catch) p.catch(function(){ iNote(btn, 'Not available here'); });
     }catch(e){ iNote(btn, 'Not available here'); }
   }
