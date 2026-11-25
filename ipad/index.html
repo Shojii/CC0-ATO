@@ -1502,11 +1502,28 @@
 
       <div class="setting">
         <div class="setting-top">
+          <span class="setting-name">Main view</span>
+          <button class="setting-cycle" id="setEnterFit"></button>
+        </div>
+        <span class="setting-note">Fixed scale: the camera keeps the scale set by the origin (times Zoom on entering), so as the archive grows it runs out of the frame instead of shrinking. Fit the form: the camera stands back to keep the form's body in view (see Frame the dense part).</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
           <span class="setting-name">Zoom on entering</span>
           <span class="setting-val" id="valEnterZoom">1.00x</span>
         </div>
-        <input type="range" id="setEnterZoom" min="0.5" max="3" step="0.05" value="1.12" aria-label="Zoom on entering">
+        <input type="range" id="setEnterZoom" min="0.5" max="3" step="0.05" value="1.2" aria-label="Zoom on entering">
         <span class="setting-note">Where the camera lands after Enter the archive (from the intro or the welcome screen), with the form centred. At 1x the whole form fits between the name and Leave a trace; higher goes in closer.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Frame the dense part</span>
+          <span class="setting-val" id="valFrameTrim">8%</span>
+        </div>
+        <input type="range" id="setFrameTrim" min="0" max="0.3" step="0.01" value="0.08" aria-label="Frame the dense part">
+        <span class="setting-note">In the main view, this share of the outermost points on each side is left out of the framing, so one far-off trace doesn't make the rest small: its lines run off the edge. 0 = the whole form always fits.</span>
       </div>
 
       <div class="setting">
@@ -1530,9 +1547,9 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Form during the sentences</span>
-          <span class="setting-val" id="valIntroStartFill">70%</span>
+          <span class="setting-val" id="valIntroStartFill">84%</span>
         </div>
-        <input type="range" id="setIntroStartFill" min="0.3" max="1" step="0.05" value="0.7" aria-label="Form during the sentences">
+        <input type="range" id="setIntroStartFill" min="0.3" max="1.2" step="0.02" value="0.84" aria-label="Form during the sentences">
         <span class="setting-note">How much of the arch the whole form fills behind the intro's sentences, all of it always in view while it turns; it closes in to the last screen's size. Seen on the next Replay intro.</span>
       </div>
 
@@ -1541,7 +1558,7 @@
           <span class="setting-name">Form at the end of the intro</span>
           <span class="setting-val" id="valIntroEndFill">100%</span>
         </div>
-        <input type="range" id="setIntroEndFill" min="0.4" max="1.6" step="0.05" value="0.85" aria-label="Form at the end of the intro">
+        <input type="range" id="setIntroEndFill" min="0.4" max="1.6" step="0.01" value="1.02" aria-label="Form at the end of the intro">
         <span class="setting-note">How much of the screen the form fills behind the big ATO on the intro's last screen: 100% is the full height (or width, if it is wider than the screen). Seen on the next Replay intro.</span>
       </div>
 
@@ -1862,7 +1879,7 @@
           <span class="setting-name">Ambient dust</span>
           <span class="setting-val" id="valDust">2.55x</span>
         </div>
-        <input type="range" id="setDust" min="0" max="3" step="0.05" value="2.55" aria-label="Ambient dust">
+        <input type="range" id="setDust" min="0" max="3" step="0.05" value="3" aria-label="Ambient dust">
         <span class="setting-note">Motes hanging in the air of the room. They drift on their own and never turn with the form.</span>
       </div>
 
@@ -1871,7 +1888,7 @@
           <span class="setting-name">Particles in the air</span>
           <span class="setting-val" id="valDustN">640</span>
         </div>
-        <input type="range" id="setDustN" min="0" max="3000" step="10" value="640" aria-label="Particles in the air">
+        <input type="range" id="setDustN" min="0" max="3000" step="10" value="1400" aria-label="Particles in the air">
         <span class="setting-note">How many motes of dust float around the form. (The grains a line breaks into under the cursor are set in Particles &gt; Particle density.)</span>
       </div>
 
@@ -1880,7 +1897,7 @@
           <span class="setting-name">Dust parallax</span>
           <span class="setting-val" id="valDustPar">0.00x</span>
         </div>
-        <input type="range" id="setDustPar" min="0" max="3" step="0.05" value="0" aria-label="Dust parallax">
+        <input type="range" id="setDustPar" min="0" max="3" step="0.05" value="1.2" aria-label="Dust parallax">
         <span class="setting-note">As the form turns or slides, the near motes travel further than the far ones, so the air around it reads in depth. 0 = the dust ignores the camera.</span>
       </div>
 
@@ -2019,7 +2036,7 @@
           <span class="setting-name">Particles in the air</span>
           <span class="setting-val" id="valIDustN">640</span>
         </div>
-        <input type="range" id="iDustN" min="0" max="3000" step="10" value="640" aria-label="Particles in the air">
+        <input type="range" id="iDustN" min="0" max="3000" step="10" value="1400" aria-label="Particles in the air">
         <span class="setting-note">How many motes of dust float around the form. The same setting as Settings &gt; Environment.</span>
       </div>
 
@@ -2340,9 +2357,9 @@
   var SETTINGS_DEFAULTS = { glitchOn:1, glitchEvery:3, glitchJitter:0.85, glitchFrames:10, glitchFrameMs:115,
     glitchShift:3, glitchRows:3, glitchSplit:0.7, glitchSplitShift:2, glitchSplitAlpha:1, glitchWhole:0.3,
     welcomeZoom:0.85, welcomeTilt:-16, welcomeX:0, welcomeY:0, welcomeSpin:1, welcomeRetrace:15, welcomeHold:6,
-    idleAfter:10, rotSpeed:0.7, enterZoom:1.12, inkHalo:2.2, dustParallax:0, introEndFill:0.85, introTextSpeed:1.8, introReplaySpeed:1.6, introStartFill:0.7, welcomeAppear:0.85, welcomeLast:5, fov:0.58, depth:0.7, depthFalloff:1.25, inertia:0.95, reach:1.4,
+    idleAfter:10, rotSpeed:0.7, enterZoom:1.2, enterFit:1, frameTrim:0.08, inkHalo:2.2, dustParallax:1.2, introEndFill:1.02, introTextSpeed:1.8, introReplaySpeed:1.6, introStartFill:0.84, welcomeAppear:0.85, welcomeLast:5, fov:0.58, depth:0.7, depthFalloff:1.25, inertia:0.95, reach:1.4,
     erode:1.05, grainSpread:5.85, grainSize:1.2, grainDrift:0.3,
-    dust:2.65, dustCount:640, dustSize:0.5, dustZoom:0, dof:1.8, focusRange:1.3, dofZoom:1.45, fadeSpan:45,
+    dust:3, dustCount:1400, dustSize:0.5, dustZoom:0, dof:1.8, focusRange:1.3, dofZoom:1.45, fadeSpan:45,
     springback:0.8, follow:0.45, grainNoise:0.25, dustForm:1, dustSpin:0.8,
     sound:0, volume:0.7, chimes:1, noteVol:1, gestureAmt:1, spaceAmt:0.75,
     reticle:2, reticleSize:1.4, hoverDim:0.62, hoverCol:0, hoverWeight:1, hoverMark:1, erodeSoft:1.5, erodeCore:0.42, erodeWake:0.8, cordon:0.4,
@@ -2678,6 +2695,14 @@
 
   var liveGen = MAX_GENERATION;
   var SHARED_ARCHIVE = archiveDbOn();
+  // ATO - IPAD on claude.ai (its own, per-browser archive): the test traces
+  // were wiped once on 2026-11-25; settings are kept. Bump to wipe again.
+  var LOCAL_RESET = 1;
+  if(!SHARED_ARCHIVE && (storeState.localReset || 0) < LOCAL_RESET){
+    storeState.contributions = []; storeState.pending = [];
+    storeState.localReset = LOCAL_RESET;
+    persist();
+  }
   (storeState.contributions || []).forEach(function(trace){
     liveGen++;
     placeTrace(trace, liveGen, !SHARED_ARCHIVE);
@@ -3607,26 +3632,51 @@
   }
   // the form's box on screen, around the screen's centre, for a camera at
   // that angle and distance looking at that centre
-  function formBoxAt(pivot, yaw, pitch, d){
+  // ATO - IPAD: the main view frames the body of the form, not its strays.
+  // A share of the outermost points on each side (Settings > Motion > "Frame
+  // the dense part") is left out of the box, so one far trace can't shrink
+  // everything else; its lines simply run off the edge.
+  function mainTrim(){
+    if(!INSTALL || mode !== 'idle' || introActive() || (typeof IDLE !== 'undefined' && IDLE.on) || evolutionMode) return 0;
+    if(focusPt && focusPt === focusFramed) return 0;
+    return Math.max(0, Math.min(0.3, +SETTINGS.frameTrim || 0));
+  }
+  function trimBox(xs, ys, q){
+    xs.sort(function(a,b){ return a-b; }); ys.sort(function(a,b){ return a-b; });
+    var n = xs.length, i0 = Math.min(n-1, Math.floor(q*n)), i1 = Math.max(0, n-1-Math.floor(q*n));
+    return { lx:xs[i0], hx:xs[i1], ly:ys[i0], hy:ys[i1] };
+  }
+  function formBoxAt(pivot, yaw, pitch, d, trim, only){
     var cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
     var lx = Infinity, hx = -Infinity, ly = Infinity, hy = -Infinity;
+    var xs = trim ? [] : null, ys = trim ? [] : null;
     for(var i=0;i<nodes.length;i++){
       var n = nodes[i];
+      if(only && !only(n)) continue;
       var x = n.x - pivot.x, y = n.y - pivot.y, z = n.z - pivot.z;
       var x1 = x*cy + z*sy, z1 = -x*sy + z*cy;
       var vz = y*sp + z1*cp + d;
       if(vz < 30) return null;
       var s = FOCAL/vz, X = x1*s, Y = -(y*cp - z1*sp)*s;
+      if(trim){ xs.push(X); ys.push(Y); continue; }
       if(X < lx) lx = X; if(X > hx) hx = X;
       if(Y < ly) ly = Y; if(Y > hy) hy = Y;
     }
+    if(trim && xs.length > 6) return trimBox(xs, ys, trim);
+    if(trim){ xs.forEach(function(X, i){ lx = Math.min(lx, X); hx = Math.max(hx, X); ly = Math.min(ly, ys[i]); hy = Math.max(hy, ys[i]); }); }
     return { lx:lx, hx:hx, ly:ly, hy:hy };
   }
   // the distance at which the form, centred, fills the band from that angle
   function enterFraming(yaw, pitch, band){
-    var pv = formBoxCentre();
+    var pv = formBoxCentre(), trim = Math.max(0, Math.min(0.3, +SETTINGS.frameTrim || 0));
+    // Fixed scale (Settings > Motion > Main view): the distance is measured on
+    // the origin alone, so the scale never shrinks as visitors add traces;
+    // once the archive outgrows the screen, it simply runs out of the frame
+    var fixed = Math.round(SETTINGS.enterFit) === 1;
+    var only = fixed ? isOrigin : null;
+    if(fixed) trim = 0;
     function over(dd){
-      var b = formBoxAt(pv, yaw, pitch, dd);
+      var b = formBoxAt(pv, yaw, pitch, dd, trim, only);
       if(!b) return Infinity;
       return Math.max((b.hx - b.lx)/2/band.hx, (b.hy - b.ly)/2/band.hy);
     }
@@ -3736,16 +3786,19 @@
     // points at the lens itself are left out of the measure: they fly off
     // to the edges of the picture and would drag it about
     var lx = Infinity, hx = -Infinity, ly = Infinity, hy = -Infinity, cnt = 0, near = 0;
+    var trim = list === nodes ? mainTrim() : 0, xs = trim ? [] : null, ys = trim ? [] : null;
     for(var i=0;i<list.length;i++){
       var n = list[i];
       if(n.generation > cap) continue;
       var cs = toCameraSpace(n), vz = cs.z + cam.dist;
       if(vz < 70){ near++; continue; }
       var s = FOCAL/vz, X = cs.x*s, Y = -cs.y*s;
+      if(trim){ xs.push(X); ys.push(Y); }
       if(X < lx) lx = X; if(X > hx) hx = X;
       if(Y < ly) ly = Y; if(Y > hy) hy = Y;
       cnt++;
     }
+    if(trim && cnt > 6){ var tb = trimBox(xs, ys, trim); lx = tb.lx; hx = tb.hx; ly = tb.ly; hy = tb.hy; }
     var tx = 0, ty = 0;
     if(cnt && near <= (cnt + near)*0.25){ tx = -(lx + hx)/2; ty = -(ly + hy)/2; }
     var k = reduceMotion ? 1 : 1 - Math.exp(-dt/CENTRE_EASE);
@@ -5492,6 +5545,8 @@
     { key:'dofZoom',      input:'setDofZoom',  out:'valDofZoom',  fmt:x2 },
     { key:'reach',        input:'setReach',    out:'valReach',    fmt:x2 },
     { key:'rotSpeed',     input:'setRot',      out:'valRot',      fmt:function(v){ return v.toFixed(1)+'x'; } },
+    { key:'frameTrim',    input:'setFrameTrim', out:'valFrameTrim', fmt:function(v){ return v < 0.005 ? 'Whole form' : Math.round(v*100) + '%'; },
+      onChange:function(){ if(mode === 'idle' && !introActive() && !(IDLE && IDLE.on)) enterFrame(500); } },
     { key:'enterZoom',    input:'setEnterZoom', out:'valEnterZoom', fmt:x2,
       onChange:function(){ if(mode === 'idle' && !introActive() && !(IDLE && IDLE.on)) enterFrame(500); } },
     { key:'introTextSpeed', input:'setIntroText', out:'valIntroText', fmt:function(v){ return v.toFixed(1) + 'x'; } },
@@ -5581,6 +5636,8 @@
     { key:'dustForm', btn:'setShape', labels:['Dot','Square','Wireframe','Solid'] },
     { key:'reticle',     btn:'setReticle',    labels:['Square','Circle','Cross','Hidden'] },
     { key:'hoverCol',    btn:'setHoverCol',   labels:['Orange','Black'] },
+    { key:'enterFit',    btn:'setEnterFit',   labels:['Fit the form','Fixed scale'],
+      onChange:function(){ if(mode === 'idle' && !introActive() && !(IDLE && IDLE.on)) enterFrame(700); } },
     { key:'glitchOn',    btn:'glOn',          labels:['Off','On'] },
     { key:'grainColour', btn:'setGrainCol',   labels:['Ink','Accent','Mixed'] },
     { key:'grainForm',   btn:'setGrainShape', labels:['Square','Dot','Cross'] },
@@ -5793,8 +5850,11 @@
   // Bumped whenever a default is changed on purpose. A browser holding a
   // tuning saved before that change gets the new default for those values,
   // rather than keeping the old one alive for ever because it was saved.
-  var TUNING_REV = 18;
+  var TUNING_REV = 21;
   var TUNING_REDEFAULTS = {
+    21: { settings: ["enterZoom"], lines: [] },   // bigger again, framing the dense part
+    20: { settings: ["dust", "dustCount", "dustParallax"], lines: [] },   // Elisa's dust: 3 / 1400 / 1.2
+    19: { settings: ["introStartFill", "introEndFill"], lines: [] },   // the intro 20% closer
     18: { settings: ["dustParallax"], lines: [] },   // the dust stays still when the form moves
     17: { settings: ["enterZoom"], lines: [] },   // a bigger form in the main view
     16: { settings: ["introEndFill", "welcomeZoom"], lines: [] },   // the whole form kept in frame (intro, welcome)
@@ -6442,16 +6502,19 @@
       else {
         // a big jump while the drawing is visible: never fly through it, the
         // ground comes up for a moment, the camera moves behind it, it lifts again
+        // (at once, in this same task: the new lines must never be painted
+        // around the camera, not even for one frame)
         var back = introCurtain.style.opacity;
-        introCurtain.style.transition = 'opacity .35s ease';
+        introCurtain.style.transition = 'none';
         introCurtain.style.opacity = '1';
+        void introCurtain.offsetWidth;
+        introCamTo(want, 0);
         setTimeout(function(){
-          introCamTo(want, 0);
-          introCurtain.style.transition = 'opacity .9s ease';
+          introCurtain.style.transition = 'opacity 1.1s ease';
           var sc2 = INTRO_SCENES[INTRO.scene];
           introCurtain.style.opacity = String(sc2 && sc2.curtain !== undefined ? sc2.curtain : back);
-          setTimeout(function(){ introCurtain.style.transition = ''; }, 950);
-        }, 380);
+          setTimeout(function(){ introCurtain.style.transition = ''; }, 1150);
+        }, 120);
       }
       introComputeKeys();
     } else if(IDLE.on){
