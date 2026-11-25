@@ -1878,9 +1878,9 @@
       <div class="setting">
         <div class="setting-top">
           <span class="setting-name">Dust parallax</span>
-          <span class="setting-val" id="valDustPar">1.00x</span>
+          <span class="setting-val" id="valDustPar">0.00x</span>
         </div>
-        <input type="range" id="setDustPar" min="0" max="3" step="0.05" value="1" aria-label="Dust parallax">
+        <input type="range" id="setDustPar" min="0" max="3" step="0.05" value="0" aria-label="Dust parallax">
         <span class="setting-note">As the form turns or slides, the near motes travel further than the far ones, so the air around it reads in depth. 0 = the dust ignores the camera.</span>
       </div>
 
@@ -2340,7 +2340,7 @@
   var SETTINGS_DEFAULTS = { glitchOn:1, glitchEvery:3, glitchJitter:0.85, glitchFrames:10, glitchFrameMs:115,
     glitchShift:3, glitchRows:3, glitchSplit:0.7, glitchSplitShift:2, glitchSplitAlpha:1, glitchWhole:0.3,
     welcomeZoom:0.85, welcomeTilt:-16, welcomeX:0, welcomeY:0, welcomeSpin:1, welcomeRetrace:15, welcomeHold:6,
-    idleAfter:10, rotSpeed:0.7, enterZoom:1.12, inkHalo:2.2, dustParallax:1, introEndFill:0.85, introTextSpeed:1.8, introReplaySpeed:1.6, introStartFill:0.7, welcomeAppear:0.85, welcomeLast:5, fov:0.58, depth:0.7, depthFalloff:1.25, inertia:0.95, reach:1.4,
+    idleAfter:10, rotSpeed:0.7, enterZoom:1.12, inkHalo:2.2, dustParallax:0, introEndFill:0.85, introTextSpeed:1.8, introReplaySpeed:1.6, introStartFill:0.7, welcomeAppear:0.85, welcomeLast:5, fov:0.58, depth:0.7, depthFalloff:1.25, inertia:0.95, reach:1.4,
     erode:1.05, grainSpread:5.85, grainSize:1.2, grainDrift:0.3,
     dust:2.65, dustCount:640, dustSize:0.5, dustZoom:0, dof:1.8, focusRange:1.3, dofZoom:1.45, fadeSpan:45,
     springback:0.8, follow:0.45, grainNoise:0.25, dustForm:1, dustSpin:0.8,
@@ -5793,8 +5793,9 @@
   // Bumped whenever a default is changed on purpose. A browser holding a
   // tuning saved before that change gets the new default for those values,
   // rather than keeping the old one alive for ever because it was saved.
-  var TUNING_REV = 17;
+  var TUNING_REV = 18;
   var TUNING_REDEFAULTS = {
+    18: { settings: ["dustParallax"], lines: [] },   // the dust stays still when the form moves
     17: { settings: ["enterZoom"], lines: [] },   // a bigger form in the main view
     16: { settings: ["introEndFill", "welcomeZoom"], lines: [] },   // the whole form kept in frame (intro, welcome)
     15: { settings: ["introEndFill"], lines: [] },   // closer in on the intro
