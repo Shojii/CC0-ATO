@@ -1426,6 +1426,15 @@
 
       <div class="setting">
         <div class="setting-top">
+          <span class="setting-name">Lines in front cut</span>
+          <span class="setting-val" id="valInkHalo">2.2 px</span>
+        </div>
+        <input type="range" id="setInkHalo" min="0" max="6" step="0.1" value="2.2" aria-label="Lines in front cut">
+        <span class="setting-note">Each line carries a thin edge of paper, so a nearer line interrupts the ones behind it where they cross, as in a technical drawing: the strongest depth cue a line drawing has. Its ends are left alone so the junctions stay closed. 0 turns it off.</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
           <span class="setting-name">Depth falloff</span>
           <span class="setting-val" id="valFalloff">1.20x</span>
         </div>
@@ -1496,7 +1505,7 @@
           <span class="setting-name">Zoom on entering</span>
           <span class="setting-val" id="valEnterZoom">1.00x</span>
         </div>
-        <input type="range" id="setEnterZoom" min="0.5" max="3" step="0.05" value="1" aria-label="Zoom on entering">
+        <input type="range" id="setEnterZoom" min="0.5" max="3" step="0.05" value="1.12" aria-label="Zoom on entering">
         <span class="setting-note">Where the camera lands after Enter the archive (from the intro or the welcome screen), with the form centred. At 1x the whole form fits between the name and Leave a trace; higher goes in closer.</span>
       </div>
 
@@ -1864,6 +1873,15 @@
         </div>
         <input type="range" id="setDustN" min="0" max="3000" step="10" value="640" aria-label="Particles in the air">
         <span class="setting-note">How many motes of dust float around the form. (The grains a line breaks into under the cursor are set in Particles &gt; Particle density.)</span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-top">
+          <span class="setting-name">Dust parallax</span>
+          <span class="setting-val" id="valDustPar">1.00x</span>
+        </div>
+        <input type="range" id="setDustPar" min="0" max="3" step="0.05" value="1" aria-label="Dust parallax">
+        <span class="setting-note">As the form turns or slides, the near motes travel further than the far ones, so the air around it reads in depth. 0 = the dust ignores the camera.</span>
       </div>
 
       <div class="setting">
@@ -2322,7 +2340,7 @@
   var SETTINGS_DEFAULTS = { glitchOn:1, glitchEvery:3, glitchJitter:0.85, glitchFrames:10, glitchFrameMs:115,
     glitchShift:3, glitchRows:3, glitchSplit:0.7, glitchSplitShift:2, glitchSplitAlpha:1, glitchWhole:0.3,
     welcomeZoom:0.85, welcomeTilt:-16, welcomeX:0, welcomeY:0, welcomeSpin:1, welcomeRetrace:15, welcomeHold:6,
-    idleAfter:10, rotSpeed:0.7, enterZoom:1, introEndFill:0.85, introTextSpeed:1.8, introReplaySpeed:1.6, introStartFill:0.7, welcomeAppear:0.85, welcomeLast:5, fov:0.58, depth:0.7, depthFalloff:1.25, inertia:0.95, reach:1.4,
+    idleAfter:10, rotSpeed:0.7, enterZoom:1.12, inkHalo:2.2, dustParallax:1, introEndFill:0.85, introTextSpeed:1.8, introReplaySpeed:1.6, introStartFill:0.7, welcomeAppear:0.85, welcomeLast:5, fov:0.58, depth:0.7, depthFalloff:1.25, inertia:0.95, reach:1.4,
     erode:1.05, grainSpread:5.85, grainSize:1.2, grainDrift:0.3,
     dust:2.65, dustCount:640, dustSize:0.5, dustZoom:0, dof:1.8, focusRange:1.3, dofZoom:1.45, fadeSpan:45,
     springback:0.8, follow:0.45, grainNoise:0.25, dustForm:1, dustSpin:0.8,
@@ -3272,6 +3290,52 @@
   }
 
   var _jp = [], _jp2 = [], _jOff = [];
+  // ATO - IPAD: occlusion. Under each line, a band of the ground colour a
+  // little wider than the line, so a nearer line (drawn later) interrupts
+  // the farther ones where they cross. Only its middle stretch: near the
+  // points the lines meet, and cutting there would open every junction.
+  var _jpH = [];
+  function groundRgb(){
+    var m = Math.round(SETTINGS.bgMode);
+    if(m === 1 || m === 2) return hexToRgb(validHex(SETTINGS.bgA, SETTINGS_DEFAULTS.bgA));
+    return THEME.paperRgb || { r:255, g:255, b:255 };
+  }
+  function haloSeg(pa, pb, width, seed, fog){
+    var len = Math.hypot(pb.x - pa.x, pb.y - pa.y);
+    if(len < 18) return;
+    var gap = Math.max(10, Math.min(len*0.18, 28));     // px kept clear of each end
+    var t0 = gap/len, t1 = 1 - t0;
+    var steps = Math.max(2, Math.round(LINES.grain));
+    var pts = (LINES.jitter > 0.001 || LINES.wave > 0.001)
+      ? jitterPath(pa, pb, seed, 0, LINES.jitter*1.7, steps, _jpH)
+      : [pa, pb];
+    var n = pts.length - 1;
+    ctx.save();
+    ctx.strokeStyle = rgba(groundRgb(), Math.min(1, 0.35 + 0.65*fog));
+    ctx.lineWidth = Math.max(0.05, width * LINES.weight) + 2*SETTINGS.inkHalo;
+    ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    var started = false;
+    for(var i=0;i<=n;i++){
+      var t = n ? i/n : 0;
+      if(t < t0 || t > t1){
+        // the cut ends exactly where the clear stretch begins
+        if(i < n){
+          var tn = (i+1)/n;
+          if(t < t0 && tn > t0){ var f = (t0 - t)/(tn - t); ctx.moveTo(pts[i].x + (pts[i+1].x-pts[i].x)*f, pts[i].y + (pts[i+1].y-pts[i].y)*f); started = true; }
+        }
+        if(t > t1 && started && i > 0){
+          var tp = (i-1)/n, g = (t1 - tp)/(t - tp);
+          ctx.lineTo(pts[i-1].x + (pts[i].x-pts[i-1].x)*g, pts[i-1].y + (pts[i].y-pts[i-1].y)*g);
+          started = false;
+        }
+        continue;
+      }
+      if(!started){ ctx.moveTo(pts[i].x, pts[i].y); started = true; } else ctx.lineTo(pts[i].x, pts[i].y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
   function strokeSeg(pa, pb, style, width, seed){
     // Untouched settings take the plain path: no save/restore, no dash or cap
     // state to set and unset. The panel only costs what it is actually using.
@@ -4161,13 +4225,17 @@
     var zoomK = Math.max(0.05, DIST_REF / Math.max(1, cam.dist));
     var step = DUST_A_MAX / DUST_TIERS;
     var anyCube = false;
+    // parallax: the air turns and slides with the camera, the near motes most
+    var pk = Math.max(0, +SETTINGS.dustParallax || 0);
+    var parX = -(cam.yaw + (view.yaw - cam.yaw)) * W * 0.32 * pk - PAN.x * (FOCAL / Math.max(1, cam.dist)) * 0.5 * pk;
+    var parY =  (cam.pitch + (view.pitch - cam.pitch)) * H * 0.22 * pk + PAN.y * (FOCAL / Math.max(1, cam.dist)) * 0.5 * pk;
     for(var i=0;i<count;i++){
       var d = dust[i];
       // zooming leaves the air alone unless asked to fly the camera through it
       var par = Math.pow(zoomK, 0.5 * d.depth * Math.max(0, SETTINGS.dustZoom));
       var amp = (10 + d.depth*46) * Math.min(3, par);
-      var x = W/2 + (d.nx-0.5)*W*par + Math.sin(t*d.w + d.ph)*amp;
-      var y = H/2 + (d.ny-0.5)*H*par + Math.cos(t*d.w*0.77 + d.ph*1.4)*amp*0.8;
+      var x = W/2 + (d.nx-0.5)*W*par + Math.sin(t*d.w + d.ph)*amp + parX*(0.25 + d.depth);
+      var y = H/2 + (d.ny-0.5)*H*par + Math.cos(t*d.w*0.77 + d.ph*1.4)*amp*0.8 + parY*(0.25 + d.depth);
       x = ((x % W) + W) % W;                       // wrap, so nothing piles at an edge
       y = ((y % H) + H) % H;
       // the motes furthest off swell and thin out, the way an out-of-focus
@@ -4530,6 +4598,7 @@
         strokeEroded(d.pa, d.pb, eStyle, eWidth, d.e.seed, erodeBreathe, grainCol, grainA,
                      nodeById[d.e.a], nodeById[d.e.b], d.gate);
       } else {
+        if(!hl && SETTINGS.inkHalo > 0.05) haloSeg(d.pa, d.pb, eWidth, d.e.seed, fog);
         strokeSeg(d.pa, d.pb, eStyle, eWidth, d.e.seed);
       }
     }
@@ -5415,6 +5484,8 @@
   var SETTING_CONTROLS = [
     { key:'fov',          input:'setFov',      out:'valFov',      fmt:x2, onChange:applyFov },
     { key:'depth',        input:'setDepth',    out:'valDepth',    fmt:x2, onChange:applyDepth },
+    { key:'inkHalo',      input:'setInkHalo',  out:'valInkHalo',  fmt:function(v){ return v < 0.05 ? 'Off' : v.toFixed(1) + ' px'; } },
+    { key:'dustParallax', input:'setDustPar',  out:'valDustPar',  fmt:x2 },
     { key:'depthFalloff', input:'setFalloff',  out:'valFalloff',  fmt:x2 },
     { key:'dof',          input:'setDof',      out:'valDof',      fmt:x2 },
     { key:'focusRange',   input:'setFocus',    out:'valFocus',    fmt:x2 },
@@ -5722,8 +5793,9 @@
   // Bumped whenever a default is changed on purpose. A browser holding a
   // tuning saved before that change gets the new default for those values,
   // rather than keeping the old one alive for ever because it was saved.
-  var TUNING_REV = 16;
+  var TUNING_REV = 17;
   var TUNING_REDEFAULTS = {
+    17: { settings: ["enterZoom"], lines: [] },   // a bigger form in the main view
     16: { settings: ["introEndFill", "welcomeZoom"], lines: [] },   // the whole form kept in frame (intro, welcome)
     15: { settings: ["introEndFill"], lines: [] },   // closer in on the intro
     14: { settings: ["idleAfter"], lines: [] },   // back to the welcome screen after 10 s
